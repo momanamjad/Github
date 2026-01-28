@@ -1,11 +1,15 @@
+import { BrowserRouter, Routes } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+
 const Tabs = () => {
   const tabs = ["Overview", "Repositories", "Projects", "Packages", "Stars"];
 
   return (
-    <nav className="border-b border-github-border bg-github-bg">
+    <>
+    <nav className="border-b border-github-border bg-[#EFF2F5]">
       <div className="max-w-7xl mx-auto px-4 flex gap-6 h-12">
         {tabs.map((tab) => {
-          const active = tab === "Repositories";
+          const active = tab === "Overview";
 
           return (
             <button
@@ -27,6 +31,7 @@ const Tabs = () => {
         })}
       </div>
     </nav>
+    </>
   );
 };
 

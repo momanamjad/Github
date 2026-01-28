@@ -16,7 +16,7 @@ const handleSubmit = (e) => {
     setValue("");
   };
   return (
-   <header className="bg-github-bg border-b border-github-border">
+   <header className="bg-[#EFF2F5]   border-github-border">
   <div className="max-w-7xl mx-auto h-16 px-4 flex items-center justify-between">
 
        <div className="flex items-center gap-2">

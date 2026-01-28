@@ -21,7 +21,7 @@ const ProfileSidebar = () => {
 
         <div className="mt-4">
           <Button variant="outline" className=" cursor-pointer w-full">
-            Edit profile
+            Edit profile  
           </Button>
         </div>
         <div className="flex gap-4 text-sm mt-4">
