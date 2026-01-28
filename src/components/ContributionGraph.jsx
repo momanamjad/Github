@@ -1,5 +1,5 @@
-import { GitHubCalendar } from 'react-github-calendar';
-
+import { GitHubCalendar } from "react-github-calendar";
+import { Tooltip } from "react-tooltip";
 // const LEVELS = [
 //   "bg-[#161b22]",
 //   "bg-[#0e4429]",
@@ -84,10 +84,22 @@ import { GitHubCalendar } from 'react-github-calendar';
 //     )
 //   );
 // }
-
 function ContributionGraph({ username }) {
   return (
-    <GitHubCalendar username={username} />
+    <section className="px-4 mt-8">
+      <GitHubCalendar
+        username={username}
+        blockSize={10}  
+        blockMargin={4}  
+        blockRadius={2}
+        fontSize={12}
+        tooltips={true}
+        theme={{
+          light: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
+          dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+        }}
+      />
+    </section>
   );
 }
 

@@ -11,7 +11,6 @@ import { getUser, getRepos } from "../services/githubApi";
 import { GitHubCalendar } from 'react-github-calendar';
 const Profile = () => {
   const { username } = useParams();
-
   const [user, setUser] = useState(null);
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +44,7 @@ const Profile = () => {
       <Navbar />
       <Tabs />
 
-{/* <GitHubCalendar username="grubersjoe" /> */}
+{/* <GitHubCalendar username="momanamjad" /> */}
 
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
         <ProfileSidebar  user={user}/>

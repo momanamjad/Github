@@ -48,9 +48,9 @@ const handleSubmit = (e) => {
             <VscIssues />,
             <IoIosGitPullRequest />,
             <RiGitRepositoryLine />,
-          ].map((item) => (
+          ].map((item,index) => (
             <span
-              key={item}
+              key={index}
               className="
                 text-github-text
                 px-2 py-1 rounded-md
