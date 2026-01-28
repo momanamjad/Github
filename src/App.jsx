@@ -1,6 +1,6 @@
 import React from 'react'
 import Profile from './pages/Profile'
-
+import { Navigate, Route, Routes } from 'react-router-dom'
 const App = () => {
   return (
     <>

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import Loader from "../components/Loader";
 import Error from "../components/Error";
 import { getUser, getRepos } from "../services/githubApi";
+import { GitHubCalendar } from 'react-github-calendar';
 const Profile = () => {
   const { username } = useParams();
 
@@ -43,6 +44,8 @@ const Profile = () => {
     <>
       <Navbar />
       <Tabs />
+
+{/* <GitHubCalendar username="grubersjoe" /> */}
 
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
         <ProfileSidebar  user={user}/>
