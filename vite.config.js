@@ -1,0 +1,30 @@
+import { defineConfig } from 'vite'
+import path from "path"
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+export default defineConfig({
+      content: ["./index.html", "./src/**/*.{js,jsx}"],
+  theme: {
+    extend: {
+      colors: {
+        github: {
+          bg: "#0d1117",
+          panel: "#161b22",
+          panelHover: "#1f242c",
+          border: "#30363d",
+          text: "#c9d1d9",
+          muted: "#8b949e",
+          link: "#58a6ff",
+          green: "#238636",
+          orange: "#f78166",
+        },
+      },
+    },
+  },
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+})
