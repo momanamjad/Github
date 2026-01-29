@@ -27,3 +27,15 @@ export const getRepos = async (username) => {
 
   return res.json();
 };
+export const getStarredRepos = async (username) => {
+  const res = await fetch(
+    `https://api.github.com/users/${username}/starred?per_page=100`
+  );
+
+  if (!res.ok) {
+    throw new Error("Starred repos not found");
+  }
+
+  return res.json();
+};
+

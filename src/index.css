@@ -16,6 +16,19 @@
 .tooltip-styles.show {
   opacity: 1 !important;
 }
+.filter-select {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
 
 
 

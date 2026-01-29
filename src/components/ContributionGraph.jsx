@@ -1,147 +1,147 @@
+import { useEffect, useState } from "react";
 import { GitHubCalendar } from "react-github-calendar";
-import { Tooltip } from "react-tooltip";
-import React, { useState, useMemo } from "react";
 
-// const LEVELS = [
-//   "bg-[#161b22]",
-//   "bg-[#0e4429]",
-//   "bg-[#006d32]",
-//   "bg-[#26a641]",
-//   "bg-[#39d353]",
-// ];
+const ContributionGraph = ({ username = "momanamjad" }) => {
+  const [allContributions, setAllContributions] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-// const ContributionGraph = () => {
-//   const data = generateContributions();
+  useEffect(() => {
+    if (!username) return;
 
-//   return (
-//     <section className="px-4 mt-8">
-//       {/* Header */}
-//       <h2 className="font-semibold mb-2">
-//         208 contributions in the last year
-//       </h2>
+    setLoading(true);
 
-//       <div className="overflow-x-auto">
-//         <div className="inline-block">
-//           {/* Month Labels */}
-//           <div className="flex mb-2 ml-8 text-[12px] text-github-muted">
-//             {[
-//               "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-//               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-//             ].map((month, i) => (
-//               <span key={i} className="w-[52px]">
-//                 {month}
-//               </span>
-//             ))}
-//           </div>
+    fetch("https://github-contributions-api.deno.dev/momanamjad.json")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data?.contributions) {
+          setLoading(false);
+          return;
+        }
 
-//           <div className="flex">
-//             {/* Day Labels */}
-//             <div className="flex flex-col justify-between mr-2 text-[12px] text-github-muted h-[110px]">
-//               <span>Mon</span>
-//               <span>Wed</span>
-//               <span>Fri</span>
-//             </div>
+        setAllContributions(data.contributions);
 
-//             {/* Grid */}
-//             <div className="flex gap-[2px]">
-//               {data.map((week, wIdx) => (
-//                 <div key={wIdx} className="flex flex-col gap-[2px]">
-//                   {week.map((level, dIdx) => (
-//                     <div
-//                       key={dIdx}
-//                       className={`w-[10px] h-[10px] rounded-sm ${LEVELS[level]}`}
-//                     />
-//                   ))}
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
+        const years = new Set(
+          data.contributions.map((item) => new Date(item.date).getFullYear()),
+        );
 
-//           {/* Footer */}
-//           <div className="flex items-center justify-between mt-3 text-[12px] text-github-muted">
-//             <span>Less</span>
-//             <div className="flex gap-[2px]">
-//               {LEVELS.map((c, i) => (
-//                 <div
-//                   key={i}
-//                   className={`w-[10px] h-[10px] rounded-sm ${c}`}
-//                 />
-//               ))}
-//             </div>
-//             <span>More</span>
-//           </div>
-//         </div>
-//       </div>
-//     </section>
-//   );
-// };
+        const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-// function generateContributions() {
-//   const weeks = 53;
-//   const days = 7;
+        setAvailableYears(sortedYears);
+        setSelectedYear(sortedYears[0]);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching contributions:", err);
+        setLoading(false);
+      });
+  }, [username]);
 
-//   return Array.from({ length: weeks }, () =>
-//     Array.from({ length: days }, () =>
-//       Math.floor(Math.random() * 5)
-//     )
-//   );
-// }
-function ContributionGraph({ username }) {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    // Generate years from current year up to 3 years prior (adjust as needed)
-    return Array.from({ length: 4 }, (_, i) => currentYear - i);
-  }, []);
-  const filterDataByYear = (contributions) => {
-    return contributions.filter((activity) => {
-      const date = new Date(activity.date);
-      return date.getFullYear() === selectedYear;
-    });
+  const filterDataBySelectedYear = (contributions) => {
+    if (!selectedYear) return contributions;
+
+    return contributions.filter(
+      (activity) => new Date(activity.date).getFullYear() === selectedYear,
+    );
   };
 
+  if (loading) {
+    return <div style={{ padding: 16 }}>Loading contributions…</div>;
+  }
+
   return (
-    <div className="github-container">
-      {/* 3. Create the Year Selection Dropdown UI */}
-      <div className="year-selector">
-        <select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(Number(e.target.value))}
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 72px",
+        gap: "24px",
+        padding: "16px 0",
+        fontFamily:
+          '-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
+      }}
+    >
+      {/* LEFT: GRAPH */}
+      <section>
+        <h2
           style={{
-            padding: "8px 12px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
+            fontSize: "16px",
+            fontWeight: 400,
+            marginBottom: "8px",
+            color: "#24292f",
           }}
         >
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-      </div>
+          {filterDataBySelectedYear(allContributions).length} contributions in{" "}
+          {selectedYear}
+        </h2>
 
-      <section className="px-4 mt-8">
-        <GitHubCalendar
-          username={username}
-          transformData={filterDataByYear}
-          showColorLegend={true}
-          blockSize={10}
-          blockMargin={4}
-          blockRadius={2}
-          fontSize={12}
-          tooltips={true}
-          theme={{
-            light: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
-            dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+        <div
+          style={{
+            border: "1px solid #d0d7de",
+            borderRadius: "6px",
+            padding: "16px",
+            background: "#ffffff",
           }}
-          labels={{
-            totalCount: "{{count}} contributions in {{year}}",
-          }}
-        />
+        >
+          <GitHubCalendar
+            username="momanamjad"
+            transformData={filterDataBySelectedYear}
+            showColorLegend
+            blockSize={10}
+            blockMargin={4}
+            blockRadius={2}
+            fontSize={12}
+            tooltips
+            theme={{
+              light: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
+              dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+            }}
+            labels={{
+              totalCount: "{{count}} contributions in {{year}}",
+            }}
+          />
+        </div>
       </section>
+
+      {/* RIGHT: YEAR SELECTOR */}
+      <aside>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {availableYears.map((year) => {
+            const active = year === selectedYear;
+
+            return (
+              <li key={year} style={{ marginBottom: "4px" }}>
+                <button
+                  onClick={() => setSelectedYear(year)}
+                  style={{
+                    width: "100%",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    backgroundColor: active ? "#ddf4ff" : "transparent",
+                    color: active ? "#0969da" : "#57606a",
+                    fontWeight: active ? 600 : 400,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) e.currentTarget.style.background = "#f6f8fa";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active)
+                      e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  {year}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </aside>
     </div>
   );
-}
+};
 
 export default ContributionGraph;

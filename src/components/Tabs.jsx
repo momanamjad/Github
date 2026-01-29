@@ -1,37 +1,90 @@
-import { BrowserRouter, Routes } from "react-router-dom";
+// import { Book, Repo, Star } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { Book, Library, Star } from "lucide-react";
 
-const Tabs = () => {
-  const tabs = ["Overview", "Repositories", "Projects", "Packages", "Stars"];
+const tabs = [
+  { name: "Overview", icon: Book },
+  { name: "Repositories", icon: Library },
+  { name: "Stars", icon: Star },
+];
 
+const Tabs = ({ username }) => {
   return (
-    <>
-    <nav className="border-b border-github-border bg-[#EFF2F5]">
-      <div className="max-w-7xl mx-auto px-4 flex gap-6 h-12">
-        {tabs.map((tab) => {
-          const active = tab === "Overview";
+    //     <div className="border-b border-github-border bg-github-bg">
+    //       <div className="max-w-7xl mx-auto px-4">
+    //         <nav className="flex gap-6">
+    //           {tabs.map((tab) => {
+    //             const Icon = tab.icon;
+    //             const active = tab.name === "Overview";
 
-          return (
-            <button
-              key={tab}
-              className={`
-                 h-full flex items-center
-    text-[14px] font-medium
-                ${
-                  active
-                    ? "text-github-text border-b-2 border-github-orange"
-                    : "text-github-muted"
-                }
-                hover:text-github-text
-              `}
-            >
-              {tab}
-            </button>
-          );
-        })}
+    //             return (
+    //               <button
+    //                 key={tab.name}
+    //                 className={`
+    //                   flex items-center gap-2 px-2 py-3
+    //                   text-sm font-medium
+    //                   border-b-2
+    //                   ${
+    //                     active
+    //                       ? "border-orange-500 text-github-text"
+    //                       : "border-transparent text-github-muted hover:text-github-text"
+    //                   }
+    //                   hover:bg-transparent
+    //                 `}
+    //               >
+    //                 <Icon size={16} />
+    //                 {tab.name}
+    //                 {tab.count && (
+    //                   <span className="
+    //                     bg-github-panel text-xs px-2 py-0.5 rounded-full
+    //                   ">
+    //                     {tab.count}
+    //                   </span>
+    //                 )}
+    //               </button>
+    //             );
+    //           })}
+    //         </nav>
+    //       </div>
+    //     </div>
+    //   );
+    // };
+    <div className="border-b border-github-border">
+      <div className="max-w-7xl mx-auto px-4">
+        <nav className="flex gap-6">
+          <Tab to={`/${username}`} icon={Book} label="Overview" end />
+          <Tab
+            to={`/${username}/repositories`}
+            icon={Library}
+            label="Repositories"
+          />
+          <Tab to={`/${username}/stars`} icon={Star} label="Stars" />
+        </nav>
       </div>
-    </nav>
-    </>
+    </div>
+  );
+};
+
+const Tab = ({ to, icon: Icon, label, end }) => {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        `
+        flex items-center gap-2 px-2 py-3 text-sm font-medium
+        border-b-2
+        ${
+          isActive
+            ? "border-orange-500 text-github-text"
+            : "border-transparent text-github-muted hover:text-github-text"
+        }
+        `
+      }
+    >
+      <Icon size={16} />
+      {label}
+    </NavLink>
   );
 };
 

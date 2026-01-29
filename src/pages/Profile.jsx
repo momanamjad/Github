@@ -8,7 +8,10 @@ import { useEffect, useState } from "react";
 import Loader from "../components/Loader";
 import Error from "../components/Error";
 import { getUser, getRepos } from "../services/githubApi";
-import { GitHubCalendar } from 'react-github-calendar';
+import { GitHubCalendar } from "react-github-calendar";
+import RepoList from "@/components/RepoList";
+import RepoFilterBar from "../components/RepoFilterBar";
+
 const Profile = () => {
   const { username } = useParams();
   const [user, setUser] = useState(null);
@@ -44,12 +47,15 @@ const Profile = () => {
       <Navbar />
       <Tabs />
 
-{/* <GitHubCalendar username="momanamjad" /> */}
+      {/* <GitHubCalendar username="momanamjad" /> */}
 
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
-        <ProfileSidebar  user={user}/>
+        <ProfileSidebar user={user} />
         <div className="flex-1">
-          <PinnedRepos  repos={repos}/>
+          {/* <RepoFilterBar />
+<RepoList repos={repos} /> */}
+
+          <RepoList repos={repos} />
           <ContributionGraph username={user.login} />
         </div>
       </div>
