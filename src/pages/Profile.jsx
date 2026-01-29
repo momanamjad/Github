@@ -52,9 +52,6 @@ const Profile = () => {
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
         <ProfileSidebar user={user} />
         <div className="flex-1">
-          {/* <RepoFilterBar />
-<RepoList repos={repos} /> */}
-
           <RepoList repos={repos} />
           <ContributionGraph username={user.login} />
         </div>

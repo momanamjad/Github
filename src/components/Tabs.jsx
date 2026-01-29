@@ -1,10 +1,12 @@
 // import { Book, Repo, Star } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { Book, Library, Star } from "lucide-react";
+import { Book, Library, Star, Folder, Package } from "lucide-react";
 
 const tabs = [
   { name: "Overview", icon: Book },
   { name: "Repositories", icon: Library },
+  { name: "Projects", icon: Folder },
+  { name: "Packages", icon: Package },
   { name: "Stars", icon: Star },
 ];
 
@@ -49,7 +51,7 @@ const Tabs = ({ username }) => {
     //     </div>
     //   );
     // };
-    <div className="border-b border-github-border">
+    <div className="border-b bg-[#EFF2F5] border-github-border">
       <div className="max-w-7xl mx-auto px-4">
         <nav className="flex gap-6">
           <Tab to={`/${username}`} icon={Book} label="Overview" end />
@@ -58,6 +60,9 @@ const Tabs = ({ username }) => {
             icon={Library}
             label="Repositories"
           />
+          <Tab to={`/${username}/Projects`} icon={Folder} label="Projects" />
+
+          <Tab to={`/${username}/Packages`} icon={Package} label="Packages" />
           <Tab to={`/${username}/stars`} icon={Star} label="Stars" />
         </nav>
       </div>

@@ -12,7 +12,9 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
 
     setLoading(true);
 
-    fetch("https://github-contributions-api.deno.dev/momanamjad.json")
+ fetch(`https://github-contributions-api.deno.dev/${username}.json`)
+
+
       .then((res) => res.json())
       .then((data) => {
         if (!data?.contributions) {
@@ -49,6 +51,12 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
   if (loading) {
     return <div style={{ padding: 16 }}>Loading contributions…</div>;
   }
+  const getTotalContributionsForYear = (data) => {
+    return filterDataBySelectedYear(data).reduce(
+      (sum, day) => sum + (day.contributionCount || 0),
+      0,
+    );
+  };
 
   return (
     <div
@@ -63,7 +71,7 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
     >
       {/* LEFT: GRAPH */}
       <section>
-        <h2
+        {/* <h2
           style={{
             fontSize: "16px",
             fontWeight: 400,
@@ -73,8 +81,18 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
         >
           {filterDataBySelectedYear(allContributions).length} contributions in{" "}
           {selectedYear}
+        </h2> */}
+        <h2
+          style={{
+            fontSize: "16px",
+            fontWeight: 400,
+            marginBottom: "8px",
+            color: "#24292f",
+          }}
+        >
+          {getTotalContributionsForYear(allContributions)} contributions in{" "}
+          {selectedYear}
         </h2>
-
         <div
           style={{
             border: "1px solid #d0d7de",
@@ -84,7 +102,7 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
           }}
         >
           <GitHubCalendar
-            username="momanamjad"
+            username={username}
             transformData={filterDataBySelectedYear}
             showColorLegend
             blockSize={10}

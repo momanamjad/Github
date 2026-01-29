@@ -1,9 +1,13 @@
-import React from 'react'
+import ContributionGraph from "../ContributionGraph";
+import PinnedRepos from "../PinnedRepos";
 
 const Overview = () => {
   return (
-    <div>Overview</div>
-  )
-}
+    <>
+      <PinnedRepos />
+      <ContributionGraph/>
+    </>
+  );
+};
 
-export default Overview
+export default Overview;

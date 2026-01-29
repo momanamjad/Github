@@ -26,6 +26,7 @@ const RepoFilterBar = ({
         {/* FILTERS */}
         <div className="flex gap-2">
           <select
+        
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
             className="filter-select"

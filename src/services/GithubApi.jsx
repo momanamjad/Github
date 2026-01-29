@@ -1,8 +1,6 @@
 const BASE_URL = "https://api.github.com";
 
-/**
- * Fetch GitHub user profile
- */
+//  get user github profile from baseurl
 export const getUser = async (username) => {
   const res = await fetch(`${BASE_URL}/users/${username}`);
 
@@ -13,12 +11,11 @@ export const getUser = async (username) => {
   return res.json();
 };
 
-/**
- * Fetch user's repositories
- */
+  // Getting the  user repositories from api
+ 
 export const getRepos = async (username) => {
   const res = await fetch(
-    `${BASE_URL}/users/${username}/repos?sort=updated&per_page=6`
+    `${BASE_URL}/users/${username}/repos?per_page=100&sort=updated`
   );
 
   if (!res.ok) {
@@ -38,4 +35,19 @@ export const getStarredRepos = async (username) => {
 
   return res.json();
 };
+// for repository details on clicking repo
+export const getRepo = async (username, repo) => {
+  const res = await fetch(
+    `https://api.github.com/repos/${username}/${repo}`
+  );
+  if (!res.ok) throw new Error("Repo not found");
+  return res.json();
+};
 
+export const getRepoContents = async (user, repo, path = "") => {
+  const res = await fetch(
+    `${BASE_URL}/repos/${user}/${repo}/contents/${path}`
+  );
+  if (!res.ok) throw new Error("Contents not found");
+  return res.json();
+};

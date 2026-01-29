@@ -11,7 +11,7 @@ const ProfileSidebar = () => {
     name: "Moman Amjad",
     username: "momanamjad",
     pronouns: "he/him",
-    avatar: "https://avatars.githubusercontent.com/u/1?v=4",
+    avatar: "/profile.png",
     bio: "",
     company: "Filinix Solutions",
     location: "koh e noor Faisalabad",
