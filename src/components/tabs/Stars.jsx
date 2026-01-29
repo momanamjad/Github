@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-// import { getStarredRepos } from "../services/githubApi";
 import RepoList from "../RepoList";
 import { getStarredRepos } from "@/services/githubApi";
 
