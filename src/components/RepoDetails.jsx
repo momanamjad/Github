@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getRepo, getRepoContents } from "../services/GithubApi";
+import { getRepo, getRepoContents } from "../services/githubApi";
 import RepoHeader from "../components/RepoHeader";
 import RepoFileList from "../components/RepoFileList";
 
