@@ -69,7 +69,6 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
           '-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
       }}
     >
-      {/* LEFT: GRAPH */}
       <section>
         {/* <h2
           style={{
@@ -90,7 +89,7 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
             color: "#24292f",
           }}
         >
-          {getTotalContributionsForYear(allContributions)} contributions in{" "}
+          {getTotalContributionsForYear(allContributions)} contributions in 
           {selectedYear}
         </h2>
         <div
@@ -121,7 +120,6 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
         </div>
       </section>
 
-      {/* RIGHT: YEAR SELECTOR */}
       <aside>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {availableYears.map((year) => {

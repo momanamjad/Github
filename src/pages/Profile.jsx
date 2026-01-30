@@ -7,7 +7,6 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Loader from "../components/Loader";
 import Error from "../components/Error";
-// import { getUser, getRepos } from "../services/githubApi";
 import { getUser, getRepos } from "../services/GithubApi.jsx";
 import { GitHubCalendar } from "react-github-calendar";
 import RepoList from "@/components/RepoList";
@@ -47,8 +46,6 @@ const Profile = () => {
     <>
       <Navbar />
       <Tabs />
-
-      {/* <GitHubCalendar username="momanamjad" /> */}
 
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
         <ProfileSidebar user={user} />

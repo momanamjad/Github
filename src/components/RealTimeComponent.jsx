@@ -8,12 +8,10 @@ const RealTimeComponent = () => {
     const updateTime = () => {
       const now = new Date();
 
-      // Format time as HH:MM
       const hours = String(now.getHours()).padStart(2, "0");
       const minutes = String(now.getMinutes()).padStart(2, "0");
       const timeString = `${hours}:${minutes}`;
 
-      // Calculate timezone offset
       const offset = -now.getTimezoneOffset() / 60;
       const sign = offset >= 0 ? "+" : "";
       const timezoneString = `(UTC ${sign}${offset})`;

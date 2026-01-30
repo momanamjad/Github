@@ -10,7 +10,6 @@ const RepoFilterBar = ({
   return (
     <div className="flex flex-col gap-3 py-4 border-b border-github-border">
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* SEARCH */}
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -23,7 +22,6 @@ const RepoFilterBar = ({
           "
         />
 
-        {/* FILTERS */}
         <div className="flex gap-2">
           <select
         

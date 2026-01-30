@@ -90,15 +90,12 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
       className="fixed inset-0 z-50 flex items-center justify-center"
       onClick={onClose}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" />
 
-      {/* Modal */}
       <div
         className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Edit Profile</h2>
           <button
@@ -109,9 +106,7 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="px-6 py-4 space-y-6">
-          {/* Profile Picture */}
           <div className="space-y-2">
             <label className="text-sm font-semibold block">Profile picture</label>
             <div className="flex items-center gap-4">
@@ -142,7 +137,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             </div>
           </div>
 
-          {/* Name */}
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-semibold block">
               Name
@@ -157,7 +151,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             />
           </div>
 
-          {/* Bio */}
           <div className="space-y-2">
             <label htmlFor="bio" className="text-sm font-semibold block">
               Bio
@@ -175,7 +168,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             </p>
           </div>
 
-          {/* Pronouns */}
           <div className="space-y-2">
             <label htmlFor="pronouns" className="text-sm font-semibold block">
               Pronouns
@@ -195,7 +187,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             </select>
           </div>
 
-          {/* Company */}
           <div className="space-y-2">
             <label htmlFor="company" className="text-sm font-semibold block flex items-center gap-2">
               <Building2 className="w-4 h-4" />
@@ -211,7 +202,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             />
           </div>
 
-          {/* Location */}
           <div className="space-y-2">
             <label htmlFor="location" className="text-sm font-semibold block flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -227,7 +217,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             />
           </div>
 
-          {/* Display Local Time */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
               <input
@@ -274,7 +263,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             </select>
           </div>
 
-          {/* Website */}
           <div className="space-y-2">
             <label htmlFor="website" className="text-sm font-semibold block flex items-center gap-2">
               <LinkIcon className="w-4 h-4" />
@@ -290,7 +278,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
             />
           </div>
 
-          {/* Social Accounts */}
           <div className="space-y-2">
             <label className="text-sm font-semibold block">Social accounts</label>
             <div className="space-y-2">
@@ -310,7 +297,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
           <button
             onClick={onClose}

@@ -29,7 +29,6 @@ const ProfileSidebar = () => {
       ...prev,
       ...updatedProfile,
     }));
-    // Here you would typically make an API call to save the profile
     console.log("Profile updated:", updatedProfile);
   };
 
@@ -139,6 +138,7 @@ const ProfileSidebar = () => {
         userProfile={userProfile}
         onSave={handleSaveProfile}
       />
+      
     </>
   );
 };

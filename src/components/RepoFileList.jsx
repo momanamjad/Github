@@ -9,7 +9,8 @@ const RepoFileList = ({ files }) => {
           className="
             flex items-center gap-2 px-4 py-2
             border-b border-github-border
-            hover:bg-[#161b22]
+            hover:bg-[#EFF2F5]
+            cursor-pointer
           "
         >
           {item.type === "dir" ? (

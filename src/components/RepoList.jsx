@@ -7,7 +7,6 @@ const RepoList = ({ repos }) => {
     <div className="divide-y divide-github-border">
       {repos.map((repo) => (
         <div key={repo.id} className="py-6 flex justify-between items-start">
-          {/* LEFT */}
           <div>
             <Link
               to={`/${repo.owner.login}/${repo.name}`}
@@ -43,7 +42,6 @@ const RepoList = ({ repos }) => {
             </div>
           </div>
 
-          {/* RIGHT */}
           <button
             className="
               flex items-center gap-1

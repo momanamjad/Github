@@ -20,19 +20,16 @@ const Repositories = () => {
   const filteredRepos = useMemo(() => {
     let result = [...repos];
 
-    // 🔍 Search
     if (search) {
       result = result.filter((repo) =>
         repo.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
-    // 🌐 Language filter
     if (language !== "All") {
       result = result.filter((repo) => repo.language === language);
     }
 
-    // 🔃 Sorting
     if (sort === "stars") {
       result.sort((a, b) => b.stargazers_count - a.stargazers_count);
     }
