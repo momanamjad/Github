@@ -29,15 +29,15 @@ const IconButton = ({ children, label }) => (
 );
 
 const Divider = () => (
-  <div className="w-px h-6 bg-[#30363d] mx-2" />
+  <div className="w-px h-6 bg-[#d1d9e0] mx-2" />
 );
 
 const TopBarActions = () => {
   return (
-    <div className="hidden lg:flex items-center gap-1">
+    <div className="hidden lg:flex items-center gap-2.5">
      
  
-      <Divider className="text-[#C8D1DA]" />
+      <Divider   />
 
       {/* Create New */}
       <IconButton label="Create new">

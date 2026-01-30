@@ -1,14 +1,18 @@
 // import { Book, Repo, Star } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Book, Library, Star, Folder, Package } from "lucide-react";
-
-const tabs = [
-  { name: "Overview", icon: Book },
-  { name: "Repositories", icon: Library },
-  { name: "Projects", icon: Folder },
-  { name: "Packages", icon: Package },
-  { name: "Stars", icon: Star },
-];
+import OverviewIcon from '../../public/customIcons/OverviewIcon'
+import ReposotoryIcon from '../../public/customIcons/ReposotoryIcon'
+import ProjectsIcon from '../../public/customIcons/ProjectsIcon'
+import PackageIcon from '../../public/customIcons/PackageIcon'          
+import StarsIcon from '../../public/customIcons/StarsIcon'
+// const tabs = [
+//   { name: "Overview", icon: Book },
+//   { name: "Repositories", icon: Library },
+//   { name: "Projects", icon: Folder },
+//   { name: "Packages", icon: Package },
+//   { name: "Stars", icon: Star },
+// ];
 
 const Tabs = ({ username }) => {
   return (
@@ -52,18 +56,19 @@ const Tabs = ({ username }) => {
     //   );
     // };
     <div className="border-b bg-[#EFF2F5] border-github-border ">
-      <div className="max-w-7xl mx-auto px-4  text-[#1f2328]">
+      <div className="  mx-auto px-4  text-[#1f2328]">
         <nav className="flex gap-6 text-[14px]">
-          <Tab to={`/${username}`} icon={Book} label="Overview" end />
+          <Tab to={`/${username}`} icon={OverviewIcon} label="Overview" end />
+      
           <Tab
             to={`/${username}/repositories`}
-            icon={Library}
+            icon={ReposotoryIcon}
             label="Repositories"
           />
-          <Tab to={`/${username}/Projects`} icon={Folder} label="Projects" />
+          <Tab to={`/${username}/Projects`} icon={ProjectsIcon} label="Projects" />
 
-          <Tab to={`/${username}/Packages`} icon={Package} label="Packages" />
-          <Tab to={`/${username}/stars`} icon={Star} label="Stars" />
+          <Tab to={`/${username}/Packages`} icon={PackageIcon} label="Packages" />
+          <Tab to={`/${username}/stars`} icon={StarsIcon} label="Stars" />
         </nav>
       </div>
     </div>
