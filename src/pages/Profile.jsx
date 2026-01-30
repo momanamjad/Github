@@ -12,6 +12,7 @@ import { GitHubCalendar } from "react-github-calendar";
 import RepoList from "@/components/RepoList";
 import RepoFilterBar from "../components/RepoFilterBar";
 
+
 const Profile = () => {
   const { username } = useParams();
   const [user, setUser] = useState(null);

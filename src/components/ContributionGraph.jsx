@@ -117,6 +117,7 @@ const ContributionGraph = ({ username = "momanamjad" }) => {
               totalCount: "{{count}} contributions in {{year}}",
             }}
           />
+         
         </div>
       </section>
 
