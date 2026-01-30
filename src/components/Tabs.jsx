@@ -51,9 +51,9 @@ const Tabs = ({ username }) => {
     //     </div>
     //   );
     // };
-    <div className="border-b bg-[#EFF2F5] border-github-border">
-      <div className="max-w-7xl mx-auto px-4">
-        <nav className="flex gap-6">
+    <div className="border-b bg-[#EFF2F5] border-github-border ">
+      <div className="max-w-7xl mx-auto px-4  text-[#1f2328]">
+        <nav className="flex gap-6 text-[14px]">
           <Tab to={`/${username}`} icon={Book} label="Overview" end />
           <Tab
             to={`/${username}/repositories`}

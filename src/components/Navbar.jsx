@@ -1,12 +1,9 @@
 import { IoLogoGithub } from "react-icons/io";
-import { CiMenuBurger } from "react-icons/ci";
-import { RiGitRepositoryLine } from "react-icons/ri";
-import { IoIosGitPullRequest } from "react-icons/io";
-import { VscIssues } from "react-icons/vsc";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
 import { Search } from "lucide-react";
+import GitHubUserMenu from "./GitHubUserMenu";
+import TopBarActions from "./Topbar";
 
 const Navbar = () => {
   const [value, setValue] = useState("");
@@ -29,6 +26,10 @@ const Navbar = () => {
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
   };
+
+ 
+
+
 
   return (
     <header className="bg-[#EFF2F5]   border-github-border">
@@ -89,26 +90,9 @@ const Navbar = () => {
             )}
           </div>
         </form>
-
-        <div className="flex items-center gap-4">
-          {[
-            <VscIssues size={32} />,
-            <IoIosGitPullRequest size={32} />,
-            <RiGitRepositoryLine size={32} />,
-          ].map((item, index) => (
-            <span
-              key={index}
-              className="
-                text-github-text
-                px-2 py-1 rounded-md
-                hover:bg-github-panelHover
-                cursor-pointer
-              "
-            >
-              {item}
-            </span>
-          ))}
-        </div>
+  <TopBarActions/>
+            <GitHubUserMenu />,
+        
       </div>
     </header>
   );

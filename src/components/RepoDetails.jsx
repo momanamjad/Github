@@ -10,16 +10,24 @@ const RepoDetails = () => {
   const [repoData, setRepoData] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadRepo = async () => {
-      setLoading(true);
-      const repoInfo = await getRepo(username, repo);
-      const contents = await getRepoContents(username, repo);
+      try {
+        setLoading(true);
+        setError(null);
 
-      setRepoData(repoInfo);
-      setFiles(contents);
-      setLoading(false);
+        const repoInfo = await getRepo(username, repo);
+        const contents = await getRepoContents(username, repo);
+
+        setRepoData(repoInfo);
+        setFiles(contents);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadRepo();
@@ -27,6 +35,14 @@ const RepoDetails = () => {
 
   if (loading) {
     return <p className="text-github-muted p-6">Loading repository…</p>;
+  }
+
+  if (error) {
+    return (
+      <p className="text-red-500 p-6">
+        {error}
+      </p>
+    );
   }
 
   return (

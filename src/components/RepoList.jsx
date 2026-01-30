@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import { languageColors } from "../utils/languageColors";
+import { languageColors } from "../utils/LanguageColors.jsx";
 import { Link } from "react-router-dom";
 
 const RepoList = ({ repos }) => {
