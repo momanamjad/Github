@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import GitHubUserMenu from "./GitHubUserMenu";
 import TopBarActions from "./Topbar";
+import GithubOpenMenu from "./GithubOpenMenu";
 
 const Navbar = () => {
   const [value, setValue] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-
+const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,8 +35,8 @@ const Navbar = () => {
           <button
             type="button"
             aria-label="Open Menu"
-            // aria-expanded={isOpen}
-            // onClick={() => setIsOpen(!isOpen)}
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen(!isOpen)}
             className="btn-octicon m-2 p-2 border border-[#C8D1DA] rounded-[8px] cursor-pointer"
             size={36}
           >
@@ -54,7 +55,7 @@ const Navbar = () => {
               <path d="M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z"></path>
             </svg>
           </button>
-
+   <GithubOpenMenu/>
           <IoLogoGithub size={33} className=" cursor-pointer" />
          <div className="hover:bg-[#c8d1da]  px-2 py-1 rounded-md ">
            <span className="font-semibold text-github-text  cursor-pointer ">
@@ -94,9 +95,9 @@ const Navbar = () => {
           </div>
           <div className="pt-4 pr-4 pb-1 pl-2 gap-6">
             <TopBarActions />
-          </div>
-          <div className="pt-4 pr-4 pb-1 pl-2 gap-6">
-            {/* <GitHubUserMenu />, */}
+          </div> 
+          <div className="pt-4 pr-4 pb-1 pl-2 gap-6 ">
+            <GitHubUserMenu />,
           </div>
         </div>
       </div>

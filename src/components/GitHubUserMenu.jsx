@@ -32,9 +32,9 @@ export default function GitHubUserMenu() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative cursor-pointer">
       {/* User Menu Button */}
-      <button
+      <button 
         ref={buttonRef}
         onClick={toggleMenu}
         className="flex items-center gap-1 group"
@@ -42,7 +42,7 @@ export default function GitHubUserMenu() {
         aria-haspopup="true"
       >
         {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm transition-opacity group-hover:opacity-80">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm transition-opacity group-hover:opacity-80 cursor-pointer ">
           MA
         </div>
       </button>
