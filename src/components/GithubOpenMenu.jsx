@@ -277,35 +277,8 @@ const GithubOpenMenu = () => {
             </button>
           </div>
 
-          <div className="flex flex-col gap-0.5">
-            {repos.map((repo) => (
-              <button
-                key={repo}
-                type="button"
-                className="flex items-center gap-2 py-1.5 px-2 text-left text-blue-400 hover:text-blue-300 transition-colors"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  borderRadius: "6px",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#21262d")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-              >
-                <span className="text-gray-600 flex-shrink-0">{Icons.repo}</span>
-                <span className="truncate">{repo}</span>
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className="mt-2 text-gray-500 hover:text-gray-300 transition-colors"
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12px", padding: "4px 0" }}
-          >
-            Show more
-          </button>
+        
+ 
         </div>
       </div>
 </>  )
