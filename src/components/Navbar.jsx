@@ -55,10 +55,12 @@ const Navbar = () => {
             </svg>
           </button>
 
-          <IoLogoGithub size={33} className="cursor-pointer" />
-          <span className="font-semibold text-github-text cursor-pointer ">
+          <IoLogoGithub size={33} className=" cursor-pointer" />
+         <div className="hover:bg-[#c8d1da]  px-2 py-1 rounded-md ">
+           <span className="font-semibold text-github-text  cursor-pointer ">
             momanamjad
           </span>
+         </div>
         </div>
         <div className=" pt-4 pr-4 pb-1 pl-2    flex">
           <div className=" pt-4 pr-4 pb-1 pl-2 ">
@@ -94,7 +96,7 @@ const Navbar = () => {
             <TopBarActions />
           </div>
           <div className="pt-4 pr-4 pb-1 pl-2 gap-6">
-            <GitHubUserMenu />,
+            {/* <GitHubUserMenu />, */}
           </div>
         </div>
       </div>

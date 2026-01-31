@@ -6,61 +6,19 @@ import ReposotoryIcon from '../../public/customIcons/ReposotoryIcon'
 import ProjectsIcon from '../../public/customIcons/ProjectsIcon'
 import PackageIcon from '../../public/customIcons/PackageIcon'          
 import StarsIcon from '../../public/customIcons/StarsIcon'
-// const tabs = [
-//   { name: "Overview", icon: Book },
-//   { name: "Repositories", icon: Library },
-//   { name: "Projects", icon: Folder },
-//   { name: "Packages", icon: Package },
-//   { name: "Stars", icon: Star },
-// ];
+ 
 
 const Tabs = ({ username }) => {
   return (
-    //     <div className="border-b border-github-border bg-github-bg">
-    //       <div className="max-w-7xl mx-auto px-4">
-    //         <nav className="flex gap-6">
-    //           {tabs.map((tab) => {
-    //             const Icon = tab.icon;
-    //             const active = tab.name === "Overview";
-
-    //             return (
-    //               <button
-    //                 key={tab.name}
-    //                 className={`
-    //                   flex items-center gap-2 px-2 py-3
-    //                   text-sm font-medium
-    //                   border-b-2
-    //                   ${
-    //                     active
-    //                       ? "border-orange-500 text-github-text"
-    //                       : "border-transparent text-github-muted hover:text-github-text"
-    //                   }
-    //                   hover:bg-transparent
-    //                 `}
-    //               >
-    //                 <Icon size={16} />
-    //                 {tab.name}
-    //                 {tab.count && (
-    //                   <span className="
-    //                     bg-github-panel text-xs px-2 py-0.5 rounded-full
-    //                   ">
-    //                     {tab.count}
-    //                   </span>
-    //                 )}
-    //               </button>
-    //             );
-    //           })}
-    //         </nav>
-    //       </div>
-    //     </div>
-    //   );
-    // };
+    
+   
+    
     <div className="border-b bg-[#EFF2F5] border-github-border ">
-      <div className="  mx-auto px-4  text-[#1f2328]">
-        <nav className="flex gap-6 text-[14px]">
-          <Tab to={`/${username}`} icon={OverviewIcon} label="Overview" end />
+      <div className="  mx-auto px-4  text-[#1f2328] ">
+        <nav className="flex gap-6 text-[14px] ">
+          <Tab to={`/${username}`} icon={OverviewIcon} label="Overview" end  />
       
-          <Tab
+          <Tab 
             to={`/${username}/repositories`}
             icon={ReposotoryIcon}
             label="Repositories"
@@ -87,7 +45,7 @@ const Tab = ({ to, icon: Icon, label, end }) => {
         ${
           isActive
             ? "border-orange-500 text-github-text"
-            : "border-transparent text-github-muted hover:text-github-text"
+            : "border-transparent text-github-muted hover:text-github-text hover:bg-[#C8D1DA]"
         }
         `
       }
