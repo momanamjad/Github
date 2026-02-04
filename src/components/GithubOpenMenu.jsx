@@ -1,5 +1,6 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
+import { IoLogoGithub } from "react-icons/io";
 
 const exploreItems = [
   { label: "Explore" },
@@ -7,13 +8,13 @@ const exploreItems = [
   { label: "MCP registry" },
 ];
 
-const repos = [
-  "momanajad/Employ",
-  "momanajad/k_72-Clone-in-react-GSAP",
-  "momanajad/theater-web-in-react",
-  "momanajad/Github",
-  "momanajad/Todo-list",
-];
+// const repos = [
+//   "momanajad/Employ",
+//   "momanajad/k_72-Clone-in-react-GSAP",
+//   "momanajad/theater-web-in-react",
+//   "momanajad/Github",
+//   "momanajad/Todo-list",
+// ];
 
 // Simple SVG icons
 const Icons = {
@@ -51,7 +52,6 @@ const GithubOpenMenu = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const sidebarRef = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
     const handleClick = (e) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
@@ -62,7 +62,6 @@ const GithubOpenMenu = () => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
-  // Close on Escape
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") setIsOpen(false);
@@ -110,8 +109,8 @@ const GithubOpenMenu = () => {
         className="fixed top-0 left-0 z-50 h-full overflow-y-auto"
         style={{
           width: "296px",
-          backgroundColor: "#F6F8FA",
-          borderRight: "1px solid #30363d",
+          backgroundColor: "#FFFFFF",
+          // borderRight: "1px solid #30363d",
           transform: isOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
           boxShadow: isOpen ? "4px 0 20px rgba(0,0,0,0.4)" : "none",
@@ -122,7 +121,7 @@ const GithubOpenMenu = () => {
           className="flex items-center justify-between px-3 py-3"
           style={{ borderBottom: "1px solid #30363d" }}
         >
-          <div className="text-white">{Icons.github}</div>
+          <IoLogoGithub size={33} className=" cursor-pointer" />
           <button
             type="button"
             aria-label="Close Menu"
@@ -133,14 +132,11 @@ const GithubOpenMenu = () => {
               border: "none",
               cursor: "pointer",
               padding: "4px",
-           
             }}
           >
             <CrossBTN />
           </button>
         </div>
-
-         
 
         {/* Main Nav */}
         <nav className="py-2" style={{ borderBottom: "1px solid #30363d" }}>
@@ -160,7 +156,7 @@ const GithubOpenMenu = () => {
             <button
               key={item.label}
               type="button"
-              className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-300 hover:text-white transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2 text-left text-[#59636E]"
               style={{
                 background: "transparent",
                 border: "none",
@@ -171,7 +167,7 @@ const GithubOpenMenu = () => {
                 width: "calc(100% - 16px)",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#21262d")
+                (e.currentTarget.style.backgroundColor = "#D1D9E0")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
@@ -209,7 +205,7 @@ const GithubOpenMenu = () => {
             <button
               key={item.label}
               type="button"
-              className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-300 hover:text-white transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2 text-left text-[#59636E] "
               style={{
                 background: "transparent",
                 border: "none",
@@ -220,7 +216,7 @@ const GithubOpenMenu = () => {
                 width: "calc(100% - 16px)",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#21262d")
+                (e.currentTarget.style.backgroundColor = "#D1D9E0")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")

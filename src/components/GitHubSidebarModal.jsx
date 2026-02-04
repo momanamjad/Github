@@ -124,7 +124,7 @@ export default function GitHubSidebarModal() {
             cursor: "pointer",
           }}
         >
-          {Icons.hamburger}
+          {Icons.hamburger} 
         </button>
 
         {/* GitHub logo */}
@@ -296,7 +296,9 @@ export default function GitHubSidebarModal() {
         <div className="py-3 px-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-500 font-semibold" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Top repositories
+              Top repositories 
+
+              
             </span>
             <button
               type="button"
