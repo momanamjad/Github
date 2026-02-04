@@ -18,7 +18,13 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Building2, MapPin, Mail, Link as LinkIcon } from "lucide-react";
+import {
+  Camera,
+  Building2,
+  MapPin,
+  Mail,
+  Link as LinkIcon,
+} from "lucide-react";
 
 const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
   const [formData, setFormData] = useState({
@@ -28,14 +34,15 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
     company: userProfile?.company || "",
     location: userProfile?.location || "",
     displayLocalTime: userProfile?.displayLocalTime || false,
-    timezone: userProfile?.timezone || "(GMT-12:00) International Date Line West",
+    timezone:
+      userProfile?.timezone || "(GMT-12:00) International Date Line West",
     email: userProfile?.email || "",
     website: userProfile?.website || "",
     socialLinks: userProfile?.socialLinks || ["", "", "", ""],
   });
 
   const [avatarPreview, setAvatarPreview] = useState(
-    userProfile?.avatar || "https://avatars.githubusercontent.com/u/1?v=4"
+    userProfile?.avatar || "https://avatars.githubusercontent.com/u/1?v=4",
   );
 
   const handleInputChange = (field, value) => {
@@ -107,12 +114,16 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">
-            Edit Profile
+      <svg text="muted" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true"  >
+    <path d="M2 5.5a3.5 3.5 0 1 1 5.898 2.549 5.508 5.508 0 0 1 3.034 4.084.75.75 0 1 1-1.482.235 4 4 0 0 0-7.9 0 .75.75 0 0 1-1.482-.236A5.507 5.507 0 0 1 3.102 8.05 3.493 3.493 0 0 1 2 5.5ZM11 4a3.001 3.001 0 0 1 2.22 5.018 5.01 5.01 0 0 1 2.56 3.012.749.749 0 0 1-.885.954.752.752 0 0 1-.549-.514 3.507 3.507 0 0 0-2.522-2.372.75.75 0 0 1-.574-.73v-.352a.75.75 0 0 1 .416-.672A1.5 1.5 0 0 0 11 5.5.75.75 0 0 1 11 4Zm-5.5-.5a2 2 0 1 0-.001 3.999A2 2 0 0 0 5.5 3.5Z"></path>
+</svg>
+          <span className="text-bold text-[#1f2328]">0</span>
+          followers
+ Edit Profile
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Profile Picture */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Profile picture</Label>
             <div className="flex items-center gap-4">
@@ -197,9 +208,7 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
                 <SelectItem value="she/her">she/her</SelectItem>
                 <SelectItem value="they/them">they/them</SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>
-                <SelectItem value="not-specified">
-                  Don't specify
-                </SelectItem>
+                <SelectItem value="not-specified">Don't specify</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -334,7 +343,10 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+          <Button
+            onClick={handleSave}
+            className="bg-green-600 hover:bg-green-700"
+          >
             Save
           </Button>
         </div>

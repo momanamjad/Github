@@ -13,6 +13,7 @@ const buttonVariants = (variant = "default", size = "default") => {
     secondary: "bg-slate-100 text-slate-900 hover:bg-slate-100/80",
     ghost: "hover:bg-slate-100 hover:text-slate-900",
     link: "text-slate-900 underline-offset-4 hover:underline",
+    editProfile:"border border-[#E6E8ED] bg-[#EFF2F2]  hover:bg-[#EFF2F6] hover:text-slate-900"
   };
 
   const sizes = {

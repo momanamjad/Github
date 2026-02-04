@@ -45,7 +45,7 @@ export default function GitHubSearch({ isOpen, onClose }) {
     <div className="fixed inset-0 mr-[230px] z-50 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-[#D1D9E0]/50 transition-opacity"
+        className="fixed inset-0 bg-[#F3F5F7]/50 transition-opacity"
 
         onClick={onClose}
       />

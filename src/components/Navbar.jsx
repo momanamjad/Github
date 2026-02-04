@@ -5,10 +5,8 @@ import { Search } from "lucide-react";
 import GitHubUserMenu from "./GitHubUserMenu";
 import TopBarActions from "./Topbar";
 import GithubOpenMenu from "./GithubOpenMenu";
-// import GitHubSearch from "./GitHubSearch";
 import GitHubSearch from "./GitHubSearch";
-// import { useState, useEffect } from 'react';
-// import { Search } from 'lucide-react';
+
 
 const Navbar = () => {
   const [value, setValue] = useState("");
@@ -57,13 +55,13 @@ const Navbar = () => {
   };
 
   return (
-    <header className="bg-[#EFF2F5]   border-github-border">
+    <header className="bg-[#F6F8FA]   border-github-border">
       <div className=" mx-auto h-13  flex items-center justify-between">
         <div className="flex items-center gap-2  pt-4 pr-4 pb-1 pl-2 ">
           <GithubOpenMenu />
           <IoLogoGithub size={33} className=" cursor-pointer" />
-          <div className="hover:bg-[#c8d1da]  px-2 py-1 rounded-md ">
-            <span className="font-semibold text-github-text  cursor-pointer ">
+          <div className="hover:bg-[#ebeff6]  px-2 py-1 rounded-md ">
+            <span className="font-semibold text-[14px]  cursor-pointer ">
               momanamjad
             </span>
           </div>

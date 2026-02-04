@@ -2,7 +2,6 @@ import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { IoLogoGithub } from "react-icons/io";
 
-
 // const repos = [
 //   "momanajad/Employ",
 //   "momanajad/k_72-Clone-in-react-GSAP",
@@ -117,8 +116,6 @@ const exploreItems = [
   { label: "Explore", icon: Icons.Explore },
   { label: "MarketPlace", icon: Icons.MarketPlace },
   { label: "MCP Registory", icon: Icons.MCPRegistory },
-
- 
 ];
 
 const GithubOpenMenu = () => {
@@ -158,9 +155,9 @@ const GithubOpenMenu = () => {
           focusable="false"
           // class="octicon octicon-three-bars"
           viewBox="0 0 16 16"
-          width="16"
-          height="16"
-          fill="currentColor"
+          width="14.4"
+          height="14.4"
+          fill="#7B7C7D"
           display="inline-block"
           overflow="visible"
           // style="vertical-align:text-bottom"
@@ -183,18 +180,16 @@ const GithubOpenMenu = () => {
         style={{
           width: "296px",
           backgroundColor: "#FFFFFF",
-          // borderRight: "1px solid #30363d",
           transform: isOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
           boxShadow: isOpen ? "4px 0 20px rgba(0,0,0,0.4)" : "none",
         }}
       >
-        {/* Header: GitHub logo + Close button */}
         <div
           className="flex items-center justify-between px-3 py-3"
           style={{ borderBottom: "1px solid #30363d" }}
         >
-          <IoLogoGithub size={33} className=" cursor-pointer" />
+          <IoLogoGithub size={32} className=" cursor-pointer" />
           <button
             type="button"
             aria-label="Close Menu"
@@ -214,16 +209,15 @@ const GithubOpenMenu = () => {
         {/* Main Nav */}
         <nav className="py-2" style={{ borderBottom: "1px solid #30363d" }}>
           {[
-  { label: "Home", icon: Icons.Home },
-  { label: "Issues", icon: Icons.Issues },
-  { label: "Pull requests", icon: Icons.PullRequest },
-  { label: "Repositories", icon: Icons.Repositories },
-  { label: "Projects", icon: Icons.Projects },
-  { label: "Discussions", icon: Icons.Discussion },
-  { label: "Codespaces", icon: Icons.CodeSpaces },
-  { label: "Copilot", icon: Icons.Copilot },
-]
-.map((item) => (
+            { label: "Home", icon: Icons.Home },
+            { label: "Issues", icon: Icons.Issues },
+            { label: "Pull requests", icon: Icons.PullRequest },
+            { label: "Repositories", icon: Icons.Repositories },
+            { label: "Projects", icon: Icons.Projects },
+            { label: "Discussions", icon: Icons.Discussion },
+            { label: "Codespaces", icon: Icons.CodeSpaces },
+            { label: "Copilot", icon: Icons.Copilot },
+          ].map((item) => (
             <button
               key={item.label}
               type="button"
@@ -244,18 +238,17 @@ const GithubOpenMenu = () => {
                 (e.currentTarget.style.backgroundColor = "transparent")
               }
             >
-              {/* Bullet dot as icon substitute */}
-             <span
-  style={{
-    width: "16px",
-    height: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  }}
->
-  {item.icon}
-</span>
+              <span
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {item.icon}
+              </span>
 
               {item.label}
             </button>

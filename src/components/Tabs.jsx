@@ -1,4 +1,3 @@
-// import { Book, Repo, Star } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Book, Library, Star, Folder, Package } from "lucide-react";
 import OverviewIcon from '../../public/customIcons/OverviewIcon'
@@ -12,9 +11,10 @@ const Tabs = ({ username }) => {
   return (
     
    
-    
-    <div className="border-b bg-[#EFF2F5] border-github-border ">
-      <div className="  mx-auto px-4  text-[#1f2328] text-[14px] ">
+    <div className="pl-4 py-0 ">
+      
+    <div className="border-b bg-[#F6F8FA]  transition-colors duration-200 ease-in    ">
+      <div className="  mx-auto text-[14px] ">
         <nav className="flex gap-6 text-[14px] ">
           <Tab to={`/${username}`} icon={OverviewIcon} label="Overview" end  />
       
@@ -30,6 +30,7 @@ const Tabs = ({ username }) => {
         </nav>
       </div>
     </div>
+    </div>
   );
 };
 
@@ -40,19 +41,21 @@ const Tab = ({ to, icon: Icon, label, end }) => {
       end={end}
       className={({ isActive }) =>
         `
-        flex items-center gap-2 px-2 py-3 text-sm font-medium
-        border-b-2 text-[#59636E]
+        flex items-center gap-2 px-2 py-3 text-sm 
+        border-b-3 text-[#1f2328]
         ${
           isActive
-            ? "border-orange-500 text-black "
-            : "border-transparent text-[#59636E] hover:text-github-text  hover:bg-[#C8D1DA]"
+            ? " border-[#FD8C73] text-black hover:bg-[#ebeff2] rounded-t-md rounded-b-none font-medium "
+            : "border-transparent text-[#1f2328] hover:text-github-text  hover:bg-[#ebeff2] transition-colors duration-200 ease-in  rounded-t-md rounded-b-none"
         }
         `
       }
     >
+      
       <Icon size={16} />
       {label}
     </NavLink>
+    
   );
 };
 

@@ -292,7 +292,6 @@ export default function GitHubSidebarModal() {
           ))}
         </nav>
 
-        {/* Top Repositories */}
         <div className="py-3 px-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-500 font-semibold" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -341,7 +340,6 @@ export default function GitHubSidebarModal() {
         </div>
       </div>
 
-      {/* Page content placeholder */}
       <div className="flex items-center justify-center h-[calc(100vh-44px)]">
         <p className="text-gray-600" style={{ fontSize: "14px" }}>
           ☰ Click the hamburger button above to open the sidebar

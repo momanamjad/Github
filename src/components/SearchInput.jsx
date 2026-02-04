@@ -22,7 +22,6 @@ const SearchInput = () => {
         onChange={handleInputChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        // Add padding to the left to avoid text overlap with the icon
         className="w-full pl-8 pr-2 focus:outline-none text-sm placeholder-gray-500"
       />
 
