@@ -157,7 +157,7 @@ export default function GitHubSidebarModal() {
         <div className="flex items-center justify-between px-3 py-3" style={{ borderBottom: "1px solid #30363d" }}>
           <div className="text-white">{Icons.github}</div>
           <button
-            type=""
+            type="button"
             aria-label="Close Menu"
             onClick={() => setIsOpen(false)}
             className="flex items-center justify-center text-gray-400 hover:text-white transition-colors"
