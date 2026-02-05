@@ -1,3 +1,4 @@
+import { Radius } from "lucide-react";
 import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { IoLogoGithub } from "react-icons/io";
@@ -104,7 +105,6 @@ const Icons = {
       fill="currentColor"
       display="inline-block"
       overflow="visible"
-      // style="vertical-align: text-bottom;"
     >
       <path d="M5.52 1.12a3.578 3.578 0 0 1 6.078 2.98 3.578 3.578 0 0 1 2.982 6.08l-3.292 3.293a.252.252 0 0 0 0 .354l.843.843a.749.749 0 1 1-1.06 1.06l-.844-.843a1.75 1.75 0 0 1 0-2.474L13.52 9.12a2.08 2.08 0 0 0 0-2.94 2.08 2.08 0 0 0-2.94 0L7.731 9.03A.75.75 0 0 1 6.67 7.97l2.85-2.85a2.08 2.08 0 0 0 0-2.94 2.08 2.08 0 0 0-2.94 0l-4.799 4.8A.75.75 0 0 1 .72 5.92Z"></path>
       <path d="M7.52 3.12a.749.749 0 1 1 1.06 1.06L5.731 7.03A2.079 2.079 0 0 0 8.67 9.97l2.85-2.85a.749.749 0 1 1 1.06 1.06l-2.849 2.85A3.578 3.578 0 0 1 4.67 5.97Z"></path>
@@ -147,29 +147,26 @@ const GithubOpenMenu = () => {
         aria-label="Open Menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="btn-octicon m-2 p-2 border border-[#C8D1DA] hover:bg-[#ebeff2] rounded-[8px] cursor-pointer"
+        className="btn-octicon m-2 p-2 border border-[#C8D1DA] hover:bg-[#ebeff2]  rounded-[8px] cursor-pointer"
         size={36}
       >
         <svg
           aria-hidden="true"
           focusable="false"
-          // class="octicon octicon-three-bars"
           viewBox="0 0 16 16"
           width="14.4"
           height="14.4"
           fill="#7B7C7D"
           display="inline-block"
           overflow="visible"
-          // style="vertical-align:text-bottom"
         >
           <path d="M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z"></path>
         </svg>
       </button>
-      {/* open Modall */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          style={{ backgroundColor: "#e4e9ed99" }}
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -178,16 +175,16 @@ const GithubOpenMenu = () => {
         ref={sidebarRef}
         className="fixed top-0 left-0 z-50 h-full overflow-y-auto"
         style={{
-          width: "296px",
+          width: "320px",
+          borderRadius: "0px 9px 9px 0px",
           backgroundColor: "#FFFFFF",
           transform: isOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: isOpen ? "4px 0 20px rgba(0,0,0,0.4)" : "none",
         }}
       >
         <div
           className="flex items-center justify-between px-3 py-3"
-          style={{ borderBottom: "1px solid #30363d" }}
+         
         >
           <IoLogoGithub size={32} className=" cursor-pointer" />
           <button
@@ -207,7 +204,7 @@ const GithubOpenMenu = () => {
         </div>
 
         {/* Main Nav */}
-        <nav className="py-2" style={{ borderBottom: "1px solid #30363d" }}>
+        <nav className="py-2" style={{ borderBottom: "1px solid #C8D1DA" }}>
           {[
             { label: "Home", icon: Icons.Home },
             { label: "Issues", icon: Icons.Issues },
@@ -221,7 +218,7 @@ const GithubOpenMenu = () => {
             <button
               key={item.label}
               type="button"
-              className="w-full flex items-center gap-3 px-4 py-2 text-left text-[#59636E]"
+              className="w-full flex items-center gap-3 px-4 py-2 text-left text-[#1f2328]"
               style={{
                 background: "transparent",
                 border: "none",
@@ -229,10 +226,10 @@ const GithubOpenMenu = () => {
                 fontSize: "14px",
                 borderRadius: "6px",
                 margin: "1px 8px",
-                width: "calc(100% - 16px)",
+                width: "calc(100% - 17px)",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#D1D9E0")
+                (e.currentTarget.style.backgroundColor = "#ebeff2")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
@@ -256,12 +253,12 @@ const GithubOpenMenu = () => {
         </nav>
 
         {/* Explore Section */}
-        <nav className="py-2" style={{ borderBottom: "1px solid #30363d" }}>
+        <nav className="py-2" style={{ borderBottom: "1px solid #C8D1DA" }}>
           {exploreItems.map((item) => (
             <button
               key={item.label}
               type="button"
-              className="w-full flex items-center gap-3 px-4 py-2 text-left text-[#59636E] "
+              className="w-full flex items-center gap-3 px-4 py-2 text-left text-[#1f2328] "
               style={{
                 background: "transparent",
                 border: "none",
@@ -278,16 +275,8 @@ const GithubOpenMenu = () => {
                 (e.currentTarget.style.backgroundColor = "transparent")
               }
             >
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  backgroundColor: "#484f58",
-                  flexShrink: 0,
-                  marginLeft: "5px",
-                }}
-              />
+
+              {item.icon}
               {item.label}
             </button>
           ))}

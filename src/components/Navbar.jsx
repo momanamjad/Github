@@ -70,7 +70,7 @@ const Navbar = () => {
             <form onSubmit={handleSubmit}>
               <div
                 onClick={HandleInputClick}
-                className="relative flex items-center  px-4 py-[6px] border border-gray-300 rounded-md shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-100 transition-all cursor-pointer"
+                className="relative flex items-center  px-4 py-[6px] border border-gray-300 rounded-md  focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-100 transition-all cursor-pointer"
               >
                 <Search
                   className={`absolute left-3 h-4 w-4 text-gray-400 ${isFocused ? "text-blue-500" : ""}`}

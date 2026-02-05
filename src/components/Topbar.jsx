@@ -17,9 +17,8 @@ const IconButton = ({ children, label }) => (
       border
       border-[#C8D1DA]
       hover:bg-[#D1D9E0]
-      rounded-[10px]
+      rounded-[9px]
       transition-colors
-      p-4
       cursor-pointer
       text-[14px]
     "
@@ -32,32 +31,27 @@ const Divider = () => (
   <div className="w-px h-6 bg-[#d1d9e0] mx-2" />
 );
 
+
 const TopBarActions = () => {
   return (
     <div className="hidden lg:flex items-center gap-2.5">
-     
- 
-      <Divider   />
+      <Divider />
 
-      {/* Create New */}
-      <IconButton label="Create new">
-        <PlusIcon size={12} />
-        <TriangleDownIcon size={12} className="ml-0.5" />
+      <IconButton   label="Create new">
+        <PlusIcon size={16} />  
+        <TriangleDownIcon size={16} className=" " />
       </IconButton>
 
-      {/* Issues */}
       <IconButton label="Issues">
-        <IssueOpenedIcon size={12} />
+        <IssueOpenedIcon size={16} />
       </IconButton>
 
-      {/* Pull Requests */}
       <IconButton label="Pull requests">
-        <GitPullRequestIcon size={12} />
+        <GitPullRequestIcon size={16} />
       </IconButton>
 
-      {/* Repositories */}
       <IconButton label="Repositories">
-        <RepoIcon size={12} />
+        <RepoIcon size={16} />
       </IconButton>
     </div>
   );
