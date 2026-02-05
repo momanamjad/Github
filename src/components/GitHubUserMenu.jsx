@@ -22,7 +22,7 @@ export default function GitHubUserMenu() {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
-    return () => {
+    return () => {      
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
@@ -271,3 +271,4 @@ function SignOutIcon() {
     </svg>
   );
 }
+
