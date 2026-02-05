@@ -11,7 +11,7 @@ const Tabs = ({ username }) => {
     <div className="pl-4 py-0  bg-[#F6F8FA] ">
       <div className="border-b  transition-colors duration-200 ease-in">
         <div className="  mx-auto text-[14px]  ">
-          <nav className="flex gap-6 text-[14px] ">
+          <nav className="flex gap-2 text-[14px] ">
             <Tab to={`/${username}`} icon={OverviewIcon} label="Overview" end   />
 
             <Tab

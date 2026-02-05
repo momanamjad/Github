@@ -66,36 +66,7 @@ const Navbar = () => {
           </div>
         </div>
         <div className=" pt-4 pr-4 pb-1 pl-2 flex">
-          {/* <div className=" pt-4 pr-4 pb-1 pl-2 ">
-            <form onSubmit={handleSubmit}>
-              <div className="relative flex items-center w-80 px-4 py-[6px] border border-gray-300 rounded-lg shadow-sm  focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-100 transition-all">
-                <Search
-                  className={`absolute left-3 h-4 w-4 text-gray-400 ${isFocused ? "text-blue-500" : ""}`}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Type"
-                  id="search-input"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  className="w-full pl-8 pr-2 focus:outline-none text-sm placeholder-gray-500"
-                />
-
-                {!inputValue && (
-                  <div className="absolute right-2 flex items-center text-xs text-gray-500 pointer-events-none">
-                    <span className="text-gray-400 mr-1">to search</span>
-                    <kbd className="px-2 py-0.5 ml-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded-md">
-                      /
-                    </kbd>
-                  </div>
-                )}
-              </div>
-            </form>
-          </div> */}
-          <div className="pt-4 pr-4 pb-1 pl-2">
+          <div className="pt-4  pb-1  ">
             <form onSubmit={handleSubmit}>
               <div
                 onClick={HandleInputClick}
@@ -107,22 +78,22 @@ const Navbar = () => {
 
                 <input
                   type="text"
-                  placeholder="Type "
+                  placeholder="Type"
                   id="search-input"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   readOnly
-                  className="w-full pl-5  focus:outline-none text-sm placeholder-gray-800 cursor-pointer"
+                  className="pl-5  focus:outline-none text-sm placeholder-gray-800 cursor-pointer"
                 />
 
                 {!inputValue && (
-                  <div className="absolute right-2 flex items-center text-xs text-gray-500 pointer-events-none">
-                    <kbd className="px-2 py-0.5 ml-1 mr-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-800 rounded">
+                  <div className="absolute p-13 flex items-center   text-gray-500 pointer-events-none">
+                    <kbd className="px-1.5 py-0.4 ml-1 mr-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-800 rounded">
                       /
                     </kbd>
-                    <span className="text-gray-600  ">to search</span>
+                    <span className="text-gray-600">to search</span>
                   </div>
                 )}
               </div>
