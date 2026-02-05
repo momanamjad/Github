@@ -45,34 +45,34 @@ export default function GitHubSearch({ isOpen, onClose }) {
     <div className="fixed inset-0 mr-[230px] z-50 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-[#F3F5F7]/50 transition-opacity"
+        className="fixed inset-0 bg-[#e4e9ed99] transition-opacity"
 
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="flex min-h-full items-start justify-center p-3 ">
+      <div className="flex min-h-full items-start justify-center p-3 rounded  ">
         <div 
           ref={modalRef}
-          className="relative w-full max-w-7.5xl bg-white rounded-lg shadow-2xl"
+          className="relative w-full max-w-7xl bg-white -mt-2 rounded-lg "
         >
           {/* Search Input */}
           <div className="p-4 border-b border-gray-200">
-            <div className="relative flex items-center">
-              <Search className="absolute left-3 h-5 w-5 text-gray-400" />
+            <div className="relative flex items-center ">
+              <Search className="absolute left-3 h-4 w-4 text-[#59636e]" />
               <input
                 ref={inputRef}
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-10 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-10 py-1  border-1 border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-[#0969DA] focus:border-transparent"
               />
               <button
                 onClick={onClose}
                 className="absolute right-3 p-1 hover:bg-gray-100 rounded-md transition-colors"
               >
-                <X className="h-5 w-5 text-gray-500 cursor-pointer" />
+                <X className="h-5 w-5 text-[white] bg-[#818B98] rounded-2xl cursor-pointer" />
               </button>
             </div>
           </div>
@@ -80,7 +80,6 @@ export default function GitHubSearch({ isOpen, onClose }) {
           <div className="max-h-96 overflow-y-auto p-4">
             {searchQuery ? (
               <div className="space-y-2">
-                {/* Add your search results here */}
                 <p className="text-sm text-gray-500">
                   Searching for "{searchQuery}"...
                 </p>
@@ -107,10 +106,10 @@ export default function GitHubSearch({ isOpen, onClose }) {
             )}
           </div>
 
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+          <div className="px-4 py-3 border-t border-gray-200 rounded-b-lg">
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>Press ESC to close</span>
-              <span>↵ to select</span>
+              {/* <span>Press ESC to close</span> */}
+              {/* <span>↵ to select</span> */}
             </div>
           </div>
         </div>

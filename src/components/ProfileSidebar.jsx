@@ -38,7 +38,7 @@ const ProfileSidebar = () => {
         <img
           src={userProfile.avatar}
           alt={userProfile.name}
-          className="rounded-full w-[296px] border-3 border-[#E7E6E8]    "
+          className="rounded-full w-[256px] border-3 border-[#E7E6E8]    "
         />
 
         <h1 className="text-[26px]  font-semibold leading-tight mt-4">
