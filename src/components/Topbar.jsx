@@ -6,6 +6,7 @@ import {
   RepoIcon,
   TriangleDownIcon,
 } from "@primer/octicons-react";
+import CreateNewIssue from "./CreateNewIssue";
 
 const IconButton = ({ children, label }) => (
   <button
@@ -27,21 +28,18 @@ const IconButton = ({ children, label }) => (
   </button>
 );
 
-const Divider = () => (
-  <div className="w-px h-6 bg-[#d1d9e0] mx-2" />
-);
-
+const Divider = () => <div className="w-px h-6 bg-[#d1d9e0] mx-2" />;
 
 const TopBarActions = () => {
   return (
     <div className="hidden lg:flex items-center gap-2.5">
       <Divider />
 
-      <IconButton   label="Create new">
+      {/* <IconButton   label="Create new issue">
         <PlusIcon size={16} />  
         <TriangleDownIcon size={16} className=" " />
-      </IconButton>
-
+      </IconButton> */}
+      <CreateNewIssue />
       <IconButton label="Issues">
         <IssueOpenedIcon size={16} />
       </IconButton>

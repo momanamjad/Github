@@ -11,11 +11,11 @@ export const getUser = async (username) => {
   return res.json();
 };
 
-  // Getting the  user repositories from api
- 
+// Getting the  user repositories from api
+
 export const getRepos = async (username) => {
   const res = await fetch(
-    `${BASE_URL}/users/${username}/repos?per_page=100&sort=updated`
+    `${BASE_URL}/users/${username}/repos?per_page=100&sort=updated`,
   );
 
   if (!res.ok) {
@@ -26,7 +26,7 @@ export const getRepos = async (username) => {
 };
 export const getStarredRepos = async (username) => {
   const res = await fetch(
-    `https://api.github.com/users/${username}/starred?per_page=100`
+    `https://api.github.com/users/${username}/starred?per_page=100`,
   );
 
   if (!res.ok) {
@@ -37,17 +37,14 @@ export const getStarredRepos = async (username) => {
 };
 // for repository details on clicking repo
 export const getRepo = async (username, repo) => {
-  const res = await fetch(
-    `https://api.github.com/repos/${username}/${repo}`
-  );
+  const res = await fetch(`https://api.github.com/repos/${username}/${repo}`);
   if (!res.ok) throw new Error("Repo not found");
   return res.json();
 };
 
 export const getRepoContents = async (user, repo, path = "") => {
-  const res = await fetch(
-    `${BASE_URL}/repos/${user}/${repo}/contents/${path}`
-  );
+  const res = await fetch(`${BASE_URL}/repos/${user}/${repo}/contents/${path}`);
   if (!res.ok) throw new Error("Contents not found");
   return res.json();
 };
+// export const
