@@ -248,7 +248,6 @@ const GithubOpenMenu = () => {
             </button>
           ))}
         </nav>
-
         {/* Explore Section */}
         <nav className="py-2" style={{ borderBottom: "1px solid #C8D1DA" }}>
           {exploreItems.map((item) => (
@@ -289,7 +288,7 @@ const GithubOpenMenu = () => {
                 letterSpacing: "0.05em",
               }}
             >
-              Top repositories
+              Top end repositories
             </span>
             <button
               type="button"
