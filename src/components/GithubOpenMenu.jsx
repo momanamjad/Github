@@ -288,7 +288,7 @@ const GithubOpenMenu = () => {
                 letterSpacing: "0.05em",
               }}
             >
-              Top end repositories
+              Top Repositories
             </span>
             <button
               type="button"
