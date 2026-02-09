@@ -77,7 +77,7 @@ const CreateNewIssue = () => {
 
   return (
     <>
-      <div className="relative" ref={menuRef}>
+      <div className="relative " ref={menuRef}>
         <IconButton label="Create new" onClick={toggleMenu} ref={buttonRef}>
           <PlusIcon size={16} />
           <TriangleDownIcon size={16} />
