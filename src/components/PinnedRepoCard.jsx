@@ -1,44 +1,32 @@
-const PinnedRepoCard = ({ repo, name, desc }) => {
-  const repoName = repo?.name ?? name ?? "Unnamed repository";
-  const repoDesc = repo?.description ?? desc ?? "No description";
-  const repoUrl = repo?.html_url ?? "#";
-  const language = repo?.language;
-  const stars = repo?.stargazers_count ?? 0;
-
+const PinnedRepoCard = ({ name, desc, stars, language, repoUrl }) => {
   return (
-    <article
-      className="
-        bg-github-panel
-        border border-github-border
-        rounded-md p-4
-        transition hover:bg-github-panelHover
-      "
-    >
-      <a
-        href={repoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-github-link font-semibold text-[14px] hover:underline"
-      >
-        {repoName}
-      </a>
+    <article className="bg-[#0d1117] border border-[#30363d] rounded-md p-4 transition hover:bg-[#161b22]">
+      <div className="flex gap-3">
+        <Reposvg />
+        <a
+          href={repoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#58a6ff] font-semibold text-[14px] hover:underline"
+        >
+          {name}
+        </a>
+      </div>
 
-      <p className="text-github-muted text-[12px] mt-1 leading-snug">
-        {repoDesc}
+      <p className="text-[#8b949e] text-[12px] mt-2 leading-snug">
+        {desc || "No description provided"}
       </p>
 
-      <div className="flex items-center gap-4 text-xs text-github-muted mt-4">
+      <div className="flex items-center gap-4 text-xs text-[#8b949e] mt-4">
         {language && (
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-gray-400" />
+            <span className="w-3 h-3 rounded-full bg-[#8b949e]" />
             {language}
           </span>
         )}
-
-        <span>⭐ {stars}</span>
+        <span className="flex items-center gap-1">⭐ {stars}</span>
       </div>
     </article>
   );
 };
-
 export default PinnedRepoCard;

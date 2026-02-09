@@ -86,11 +86,13 @@ export default function RepoSelector({ username, onSelect }) {
 
   return (
     <div ref={containerRef} className="relative max-w-[320px]">
+    
       {/* Selected */}
       <button
         onClick={() => setOpen(!open)}
         className="w-[214px] border rounded-md p-2 text-left bg-white"
       >
+        
         {selected ? selected.full_name : "Select repository"}
       </button>
     
@@ -99,11 +101,11 @@ export default function RepoSelector({ username, onSelect }) {
         <div
           className="absolute mt-1 w-full bg-white border rounded-md shadow-lg z-50"
           onKeyDown={handleKeyDown}
-        >
+        >     <h2 className="p-2 text-[14px] text-[black]">Select an item</h2>
           <input
             ref={inputRef}
             placeholder="Search repository"
-            className="w-full p-2 border-b outline-none"
+            className="w-full p-2 border rounded-md mb-2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
