@@ -1,112 +1,163 @@
 import React from "react";
-import {
-  CopilotIcon,
-  PlusIcon,
-  IssueOpenedIcon,
-  GitPullRequestIcon,
-  RepoIcon,
-  TriangleDownIcon,
-} from "@primer/octicons-react";
-const IconButton = ({ children, label }) => (
+import { PlusIcon, TriangleDownIcon } from "@primer/octicons-react";
+import OpenIssueModal from "./OpenIssueModal";
+
+const IconButton = React.forwardRef(({ children, label, onClick }, ref) => (
   <button
+    ref={ref}
+    onClick={onClick}
     aria-label={label}
-    className="
-      flex items-center justify-center
-      w-8 h-8
-      text-[#59636e]
-      border
-      border-[#C8D1DA]
-      hover:bg-[#D1D9E0]
-      rounded-[9px]
-      transition-colors
-      cursor-pointer
-      text-[14px]
-    "
+    aria-haspopup="menu"
+    className="flex items-center justify-center w-8 h-8 text-[#59636e] border border-[#C8D1DA] hover:bg-[#D1D9E0] rounded-[9px] transition-colors cursor-pointer text-[14px]"
   >
     {children}
   </button>
-);
+));
 
 const CreateNewIssue = () => {
-  const [open, setIsOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
   const [openIssueModal, setOpenIssueModal] = React.useState(false);
-  const createNewIssueRef = React.useRef(null);
+
+  const menuRef = React.useRef(null);
   const buttonRef = React.useRef(null);
+  const itemRefs = React.useRef([]);
+  const [activeIndex, setActiveIndex] = React.useState(0);
+
   React.useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handler = (e) => {
       if (
-        !(
-          createNewIssueRef.current?.contains(event.target) ||
-          buttonRef.current?.contains(event.target)
-        )
+        !menuRef.current?.contains(e.target) &&
+        !buttonRef.current?.contains(e.target)
       ) {
-        setIsOpen(false);
+        setOpen(false);
       }
     };
 
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const toggleMenu = () => {
-    setIsOpen(!open);
-  };
+  React.useEffect(() => {
+    if (!open) return;
+
+    itemRefs.current[0]?.focus();
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((i) => Math.min(i + 1, itemRefs.current.length - 1));
+      }
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((i) => Math.max(i - 1, 0));
+      }
+
+      if (e.key === "Enter") {
+        itemRefs.current[activeIndex]?.click();
+      }
+    };
+
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, activeIndex]);
+
+  React.useEffect(() => {
+    itemRefs.current[activeIndex]?.focus();
+  }, [activeIndex]);
+
+  const toggleMenu = () => setOpen((v) => !v);
+
+  const closeMenu = () => setOpen(false);
 
   return (
     <>
-      <div
-        className="create-new-issue"
-        ref={createNewIssueRef}
-        onClick={() => setIsOpen(!open)}
-      >
-        <IconButton
-          label="Create new issue"
-          onClick={toggleMenu}
-          ref={buttonRef}
-        >
+      <div className="relative" ref={menuRef}>
+        <IconButton label="Create new" onClick={toggleMenu} ref={buttonRef}>
           <PlusIcon size={16} />
-          <TriangleDownIcon size={16} className=" " />
+          <TriangleDownIcon size={16} />
         </IconButton>
-      </div>
-      {open && (
-        <div className="absolute top-15 ml-7   bg-white border border-[#C8D1DA] rounded-md shadow-lg p-4 w-48">
-          <div className="py-2 border-b border-github-border">
-            <Items
+
+        {open && (
+          <div
+            role="menu"
+            aria-label="Create new"
+            className="absolute  top-11  bg-white border border-[#C8D1DA] rounded-md shadow-lg p-4 w-48"
+          >
+            <MenuItem
+              ref={(el) => (itemRefs.current[0] = el)}
               icon={icons.newIssue}
               label="New issue"
-              onClick={() => setOpenIssueModal(true)}
+              onClick={() => {
+                setOpenIssueModal(true);
+                closeMenu();
+              }}
             />
-            <Items icon={icons.NewRepo} label="New repository" />
-            <Items icon={icons.ImportRepo} label="Import repository" />
+            <MenuItem
+              ref={(el) => (itemRefs.current[1] = el)}
+              icon={icons.NewRepo}
+              label="New repository"
+            />
+            <MenuItem
+              ref={(el) => (itemRefs.current[2] = el)}
+              icon={icons.ImportRepo}
+              label="Import repository"
+            />
+
+            <hr className="my-2" />
+
+            <MenuItem
+              ref={(el) => (itemRefs.current[3] = el)}
+              icon={icons.newCodeSpace}
+              label="New codespace"
+            />
+            <MenuItem
+              ref={(el) => (itemRefs.current[4] = el)}
+              icon={icons.newGist}
+              label="New gist"
+            />
+
+            <hr className="my-2" />
+
+            <MenuItem
+              ref={(el) => (itemRefs.current[5] = el)}
+              icon={icons.NewOrganization}
+              label="New organization"
+            />
+            <MenuItem
+              ref={(el) => (itemRefs.current[6] = el)}
+              icon={icons.newProject}
+              label="New project"
+            />
           </div>
-          <div className="py-2 border-b border-github-border">
-            <Items icon={icons.newCodeSpace} label="New codespace" />
-            <Items icon={icons.newGist} label="New gist" />
-          </div>
-          <div className="py-2">
-            <Items icon={icons.NewOrganization} label="New organization" />
-            <Items icon={icons.newProject} label="New project" />
-          </div>
-        </div>
+        )}
+      </div>
+
+      {openIssueModal && (
+        <OpenIssueModal onClose={() => setOpenIssueModal(false)} />
       )}
     </>
   );
 };
 
 export default CreateNewIssue;
-function Items({ icon, label }) {
-  return (
-    <div className="flex items-center gap-2 p-2 hover:bg-[#EFF2F5] rounded-md cursor-pointer">
-      <div className="w-4 h-4 text-[#59636E]">{icon}</div>
-      <span className="text-[14px] text-github-text">{label}</span>
-    </div>
-  );
-}
+
+const MenuItem = React.forwardRef(({ icon, label, onClick }, ref) => (
+  <button
+    ref={ref}
+    role="menuitem"
+    onClick={onClick}
+    className="flex w-full items-center gap-2 p-2 text-left hover:bg-[#EFF2F5] rounded-md cursor-pointer text-[14px] text-github-text focus:outline-none focus:bg-[#EFF2F5]"
+  >
+    <span className="w-4 h-4 text-[#59636E]">{icon}</span>
+    {label}
+  </button>
+));
 const icons = {
   newIssue: (
     <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
