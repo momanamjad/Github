@@ -51,6 +51,7 @@ const PinnedRepos = ({ username }) => {
             language={repo.language}
             repoUrl={`https://github.com/${repo.author}/${repo.name}`}
             languageColor={repo.languageColor}
+            visibility={repo.visibility}
           />
         ))}
       </div>
