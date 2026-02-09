@@ -4,7 +4,7 @@ import PinnedRepos from "../PinnedRepos";
 const Overview = () => {
   return (
     <>
-      <PinnedRepos />
+      <PinnedRepos  username="momanamjad"/>
       <ContributionGraph/>
     </>
   );
