@@ -15,8 +15,8 @@ export default function GitHubUserMenu() {
         !buttonRef.current.contains(event.target)
       ) {
         setIsOpen(false);
+        }
       }
-    }
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -151,7 +151,7 @@ function MenuItem({ icon, text, badge, badgeColor = "blue" }) {
           {badge}
         </span>
       )} */}
-      </a>
+      </a>  
     </div>
   );
 }
