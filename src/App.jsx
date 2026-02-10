@@ -6,6 +6,7 @@ import Overview from "./components/tabs/Overview";
 import Repositories from "./components/tabs/Repositories";
 import Stars from "./components/tabs/Stars";
 import RepoDetails from "./components/RepoDetails";
+import NewRepoPage from "./components/NewRepoPage";
 
 const App = () => {
   
@@ -16,11 +17,13 @@ const App = () => {
         
         <Routes>
           <Route path="/" element={<Navigate to="/momanamjad" />} />
+                  <Route path="/new" element={<NewRepoPage />} />
           <Route path="/:username" element={<ProfileLayout />}>
             <Route index element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
             <Route path="stars" element={<Stars />} />
             <Route path="/:username/:repo" element={<RepoDetails />} />
+    
 
           </Route>
         </Routes>

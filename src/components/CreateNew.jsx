@@ -1,8 +1,8 @@
 import React from "react";
 import { PlusIcon, TriangleDownIcon } from "@primer/octicons-react";
 import OpenIssueModal from "./OpenIssueModal";
-
-const IconButton = React.forwardRef(({ children, label, onClick }, ref) => (
+import NewRepoPage from "./NewRepoPage";
+const IconButton = React.forwardRef(({ children, label, onClick }, ref,) => (
   <button
     ref={ref}
     onClick={onClick}
@@ -14,15 +14,17 @@ const IconButton = React.forwardRef(({ children, label, onClick }, ref) => (
   </button>
 ));
 
-const CreateNewIssue = () => {
+const CreateNew = () => {
   const [open, setOpen] = React.useState(false);
   const [openIssueModal, setOpenIssueModal] = React.useState(false);
-
   const menuRef = React.useRef(null);
   const buttonRef = React.useRef(null);
   const itemRefs = React.useRef([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
-
+ const handleNewRepoClick = () => {
+    setShowDropdown(false);
+    onNavigateToNewRepo();
+  };
   React.useEffect(() => {
     const handler = (e) => {
       if (
@@ -102,6 +104,8 @@ const CreateNewIssue = () => {
               ref={(el) => (itemRefs.current[1] = el)}
               icon={icons.NewRepo}
               label="New repository"
+              onClick={handleNewRepoClick}
+              // onNavigateToNewRepo={() => setCurrentPage('new-repo')}
             />
             <MenuItem
               ref={(el) => (itemRefs.current[2] = el)}
@@ -145,7 +149,7 @@ const CreateNewIssue = () => {
   );
 };
 
-export default CreateNewIssue;
+export default CreateNew;
 
 const MenuItem = React.forwardRef(({ icon, label, onClick }, ref) => (
   <button

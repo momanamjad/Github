@@ -6,7 +6,7 @@ import {
   RepoIcon,
   TriangleDownIcon,
 } from "@primer/octicons-react";
-import CreateNewIssue from "./CreateNewIssue";
+import CreateNewIssue from "./CreateNew";
 
 const IconButton = ({ children, label }) => (
   <button
