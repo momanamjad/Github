@@ -1,10 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { Book, Library, Star, Folder, Package } from "lucide-react";
-import OverviewIcon from "../../../public/customIcons/OverviewIcon";
-import ReposotoryIcon from "../../../public/customIcons/ReposotoryIcon";
-import ProjectsIcon from "../../../public/customIcons/ProjectsIcon";
-import PackageIcon from "../../../public/customIcons/PackageIcon";
-import StarsIcon from "../../../public/customIcons/StarsIcon";
+import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon, StarsIcon } from "@ui/Icons";
 import LoadingBar from 'react-top-loading-bar';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from "react";

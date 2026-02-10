@@ -1,4 +1,3 @@
-// Common Components
 export { default as Check } from './Check';
 export { default as ContributionGraph } from './ContributionGraph';
 export { default as Error } from './Error';
