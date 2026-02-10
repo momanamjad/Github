@@ -2,10 +2,10 @@ import { IoLogoGithub } from "react-icons/io";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-import GitHubUserMenu from "./GitHubUserMenu";
+import GitHubUserMenu from "@features/GitHubUserMenu";
 import TopBarActions from "./Topbar";
 import GithubOpenMenu from "./GithubOpenMenu";
-import GitHubSearch from "./GitHubSearch";
+import GitHubSearch from "@features/GitHubSearch";
 import LoadingBar from "react-top-loading-bar";
 import { useLocation } from "react-router-dom";
 

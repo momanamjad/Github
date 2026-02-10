@@ -1,8 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { getRepos } from "@/services/GithubApi.jsx";
-import RepoList from "../RepoList";
-import RepoFilterBar from "../RepoFilterBar";
+import { getRepos } from "@services/GithubApi.jsx";
+import RepoList from "@features/RepoList";
+import RepoFilterBar from "@features/RepoFilterBar";
 
 const Repositories = () => {
   const { username } = useParams();

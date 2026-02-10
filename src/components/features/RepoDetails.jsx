@@ -1,8 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getRepo, getRepoContents } from "../services/GithubApi.jsx";
-import RepoHeader from "../components/RepoHeader";
-import RepoFileList from "../components/RepoFileList";
+import { getRepo, getRepoContents } from "@services/GithubApi.jsx";
+import RepoHeader from "@features/RepoHeader";
+import RepoFileList from "@features/RepoFileList";
 
 const RepoDetails = () => {
   const { username, repo } = useParams();

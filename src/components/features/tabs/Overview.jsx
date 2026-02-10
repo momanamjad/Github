@@ -1,5 +1,5 @@
-import ContributionGraph from "../ContributionGraph";
-import PinnedRepos from "../PinnedRepos";
+import ContributionGraph from "@common/ContributionGraph";
+import PinnedRepos from "@features/PinnedRepos";
 
 const Overview = () => {
   return (

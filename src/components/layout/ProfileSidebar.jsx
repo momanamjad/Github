@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import RealTimeComponent from "./RealTimeComponent";
-import EditProfileModal from "./EditProfileModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@ui/avatar";
+import { Card, CardContent } from "@ui/card";
+import { Button } from "@ui/button";
+import RealTimeComponent from "@features/RealTimeComponent";
+import EditProfileModal from "@features/EditProfileModal";
 
 const ProfileSidebar = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

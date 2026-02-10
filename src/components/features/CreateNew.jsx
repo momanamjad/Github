@@ -2,7 +2,7 @@ import React from "react";
 import { PlusIcon, TriangleDownIcon } from "@primer/octicons-react";
 import OpenIssueModal from "./OpenIssueModal";
 import NewRepoPage from "./NewRepoPage";
-const IconButton = React.forwardRef(({ children, label, onClick }, ref,) => (
+const IconButton = React.forwardRef(({ children, label, onClick }, ref) => (
   <button
     ref={ref}
     onClick={onClick}
@@ -21,7 +21,7 @@ const CreateNew = () => {
   const buttonRef = React.useRef(null);
   const itemRefs = React.useRef([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
- const handleNewRepoClick = () => {
+  const handleNewRepoClick = () => {
     setShowDropdown(false);
     onNavigateToNewRepo();
   };
@@ -79,11 +79,29 @@ const CreateNew = () => {
 
   return (
     <>
-      <div className="relative " ref={menuRef}>
-        <IconButton label="Create new" onClick={toggleMenu} ref={buttonRef}>
-          <PlusIcon size={16} />
-          <TriangleDownIcon size={16} />
-        </IconButton>
+      <div className="relative  " ref={menuRef}>
+        <div label=" " onClick={toggleMenu} ref={buttonRef} className="border rounded-md pt-1 cursor-pointer">
+          <button className="">
+            <svg
+              viewBox="0 0 48 24"
+              width="48"
+              height="24"
+              fill=""
+              stroke="#59636E"
+              strokeWidth={1.6}
+              xmlns="http://www.w3.org"
+            >
+              <path
+                d="M12 6V18M6 12H18"
+                stroke="#59636E"
+                fill=""
+                strokeWidth={1.6}
+              />
+
+              <path d="M30 10L35 15L40 10" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
 
         {open && (
           <div

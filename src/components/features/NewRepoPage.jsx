@@ -205,20 +205,20 @@ const NewRepoPage = () => {
                     </p>
                   </div>
 
-                  <div className="relative" ref={visibilityRef}>
+                  <div className="relative " ref={visibilityRef}>
                     <button
                       type="button"
                       onClick={() => setVisibilityOpen(!visibilityOpen)}
-                      className="flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200"
+                      className="flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm bg-white hover:bg-gray-200 shadow-2xl m-1"
                     >
                       {formData.visibility === "public"
                         ? " Public"
-                        : "🔒 Private"}
+                        : " Private"}
                       <span>▾</span>
                     </button>
 
                     {visibilityOpen && (
-                      <div className="absolute right-0 mt-2 w-[320px] bg-white border rounded-md shadow-lg z-50">
+                      <div className="absolute right-0 mt-2 w-[320px] bg-white border rounded-md shadow-lg z-50 p-2">
                         <button
                           onClick={() => {
                             setFormData((p) => ({
@@ -227,11 +227,11 @@ const NewRepoPage = () => {
                             }));
                             setVisibilityOpen(false);
                           }}
-                          className={`w-full text-left p-3 hover:bg-gray-100 ${
+                          className={`w-full text-left p-3 hover:bg-gray-100 rounded-md ${
                             formData.visibility === "public"
-                              ? "bg-gray-100"
+                              ? ""
                               : ""
-                          }`}
+                          }`} 
                         >
                           <div className="font-medium text-sm">Public</div>
                           <p className="text-xs text-gray-600 mt-1">
@@ -248,7 +248,7 @@ const NewRepoPage = () => {
                             }));
                             setVisibilityOpen(false);
                           }}
-                          className={`w-full text-left p-3 hover:bg-gray-100 ${
+                          className={`w-full text-left p-3 hover:bg-gray-100 rounded-md ${
                             formData.visibility === "private"
                               ? "bg-gray-100"
                               : ""
@@ -318,7 +318,7 @@ const NewRepoPage = () => {
                       </a>
                     </p>
                   </div>
-                  <div className="relative min-w-[200px]">
+                  <div className="relative  flex items-end  ">
                     <button
                       type="button"
                       onClick={() => {
@@ -395,30 +395,30 @@ const NewRepoPage = () => {
                       <span className="text-xs text-[#8b949e]">▼</span>
                     </button>
                     {showLicenseDropdown && (
-                     <div className="absolute top-full left-0 right-0 mt-1 w-[320px] p-4  bg-[white] border border-[#C8D1DA] rounded-md shadow-lg max-h-60 overflow-y-auto z-10">
-                      <span className="text-[black] font-semibold text-[16px] m-2">
-                        Choose a Licence
-                      </span>
-                      <hr className="my-2 border-t border-[#C8D1DA]" />
-                       <div className="">
-                        {licenses.map((license) => (
-                          <button
-                            key={license}
-                            type="button"
-                            onClick={() => {
-                              setFormData((prev) => ({
-                                ...prev,
-                                license: license.toLowerCase(),
-                              }));
-                              setShowLicenseDropdown(false);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-[black] hover:bg-[#E6EAEF] rounded-md transition-colors"
-                          >
-                            {license === "None" ? "No license" : license}
-                          </button>
-                        ))}
+                      <div className="absolute top-full left-0 right-0 mt-1 w-[320px] p-4  bg-[white] border border-[#C8D1DA] rounded-md shadow-lg max-h-60 overflow-y-auto z-10">
+                        <span className="text-[black] font-semibold text-[16px] m-2">
+                          Choose a Licence
+                        </span>
+                        <hr className="my-2 border-t border-[#C8D1DA]" />
+                        <div className="">
+                          {licenses.map((license) => (
+                            <button
+                              key={license}
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  license: license.toLowerCase(),
+                                }));
+                                setShowLicenseDropdown(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-[black] hover:bg-[#E6EAEF] rounded-md transition-colors"
+                            >
+                              {license === "None" ? "No license" : license}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                     </div>
                     )}
                   </div>
                 </div>
@@ -426,19 +426,16 @@ const NewRepoPage = () => {
             </div>
           </section>
 
-          <div className="bg-[] border border-[#30363d] rounded-md p-6">
-            <p className="text-xs text-[#8b949e] mb-4">
-              You are creating a {formData.visibility} repository in your
-              personal account.
-            </p>
-            <button
+             
+           <div className="flex justify-end ">
+             <button
               type="submit"
               disabled={!formData.repoName.trim()}
-              className="bg-[#238636] hover:bg-[#2ea043] text-white font-semibold px-4 py-2 rounded-md text-sm transition-colors disabled:bg-[#30363d] disabled:text-[#8b949e] disabled:cursor-not-allowed"
+              className="bg-[#238636] hover:bg-[#2ea043]  text-white font-semibold px-4 py-2 rounded-md text-sm transition-colors disabled:bg-[green] disabled:text-[white] disabled:cursor-not-allowed"
             >
               Create repository
             </button>
-          </div>
+           </div>
         </form>
       </div>
     </div>

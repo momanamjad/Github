@@ -1,7 +1,7 @@
 import { Outlet, useParams } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import Tabs from "../components/Tabs";
-import ProfileSidebar from "../components/ProfileSidebar";
+import Navbar from "@layout/Navbar";
+import Tabs from "@layout/Tabs";
+import ProfileSidebar from "@layout/ProfileSidebar";
 
 const ProfileLayout = () => {
   const { username } = useParams();

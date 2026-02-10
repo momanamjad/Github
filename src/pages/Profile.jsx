@@ -1,16 +1,16 @@
-import Navbar from "../components/Navbar";
-import ProfileSidebar from "../components/ProfileSidebar";
-import Tabs from "../components/Tabs";
-import PinnedRepos from "../components/PinnedRepos";
-import ContributionGraph from "../components/ContributionGraph";
+import Navbar from "@layout/Navbar";
+import ProfileSidebar from "@layout/ProfileSidebar";
+import Tabs from "@layout/Tabs";
+import PinnedRepos from "@features/PinnedRepos";
+import ContributionGraph from "@common/ContributionGraph";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Loader from "../components/Loader";
-import Error from "../components/Error";
-import { getUser, getRepos } from "../services/GithubApi.jsx";
+import Loader from "@common/Loader";
+import Error from "@common/Error";
+import { getUser, getRepos } from "@services/GithubApi.jsx";
 import { GitHubCalendar } from "react-github-calendar";
-import RepoList from "@/components/RepoList";
-import RepoFilterBar from "../components/RepoFilterBar";
+import RepoList from "@features/RepoList";
+import RepoFilterBar from "@features/RepoFilterBar";
 
 
 const Profile = () => {

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import Profile from "./pages/Profile";
+import Profile from "@pages/Profile";
 import { Navigate, Route, Routes } from "react-router-dom";
-import ProfileLayout from "./pages/ProfileLayout";
-import Overview from "./components/tabs/Overview";
-import Repositories from "./components/tabs/Repositories";
-import Stars from "./components/tabs/Stars";
-import RepoDetails from "./components/RepoDetails";
-import NewRepoPage from "./components/NewRepoPage";
+import ProfileLayout from "@pages/ProfileLayout";
+import Overview from "@features/tabs/Overview";
+import Repositories from "@features/tabs/Repositories";
+import Stars from "@features/tabs/Stars";
+import RepoDetails from "@features/RepoDetails";
+import NewRepoPage from "@features/NewRepoPage";
 
 const App = () => {
   
