@@ -11,6 +11,7 @@ const Repositories = () => {
   const [search, setSearch] = useState("");
   const [language, setLanguage] = useState("All");
   const [sort, setSort] = useState("updated");
+  const [type, setType] = useState("all");
 
   useEffect(() => {
     getRepos(username).then(setRepos);
@@ -19,16 +20,36 @@ const Repositories = () => {
   const filteredRepos = useMemo(() => {
     let result = [...repos];
 
+    // Search
     if (search) {
-      result = result.filter((repo) =>
+      result = result.filter(repo =>
         repo.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
+    // Language filter
     if (language !== "All") {
-      result = result.filter((repo) => repo.language === language);
+      result = result.filter(repo => repo.language === language);
     }
 
+    // Type filter
+    if (type === "sources") {
+      result = result.filter(repo => !repo.fork);
+    }
+
+    if (type === "forks") {
+      result = result.filter(repo => repo.fork);
+    }
+
+    if (type === "archived") {
+      result = result.filter(repo => repo.archived);
+    }
+
+    if (type === "mirrors") {
+      result = result.filter(repo => repo.mirror_url);
+    }
+
+    // Sorting
     if (sort === "stars") {
       result.sort((a, b) => b.stargazers_count - a.stargazers_count);
     }
@@ -44,11 +65,11 @@ const Repositories = () => {
     }
 
     return result;
-  }, [repos, search, language, sort]);
+  }, [repos, search, language, sort, type]);
 
   const languages = [
     "All",
-    ...new Set(repos.map((r) => r.language).filter(Boolean)),
+    ...new Set(repos.map(r => r.language).filter(Boolean)),
   ];
 
   return (
@@ -60,6 +81,8 @@ const Repositories = () => {
         setLanguage={setLanguage}
         sort={sort}
         setSort={setSort}
+        type={type}
+        setType={setType}
         languages={languages}
       />
 
@@ -69,3 +92,4 @@ const Repositories = () => {
 };
 
 export default Repositories;
+ 
