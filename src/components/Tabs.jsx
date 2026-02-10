@@ -15,7 +15,7 @@ const [progress, setProgress] = useState(0);
     const location = useLocation();
   useEffect(() => {
       setProgress(70);  
-      const timer = setTimeout(() => setProgress(100), 400); // Complete after 500ms
+      const timer = setTimeout(() => setProgress(100), 400);  
       return () => clearTimeout(timer);
     }, [location]);
 
