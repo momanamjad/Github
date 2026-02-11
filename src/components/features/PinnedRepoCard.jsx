@@ -14,7 +14,7 @@ const PinnedRepoCard = ({
     <article
       ref={dragHandleProps?.ref}
       style={style}
-      className="bg-[white] border border-[#C8D1DA] rounded-md p-4 transition flex flex-col justify-between"
+      className="bg-[white] border border-[#C8D1DA] rounded-md p-4 transition flex flex-col justify-between  min-h-[114px]"
       {...(dragHandleProps?.attributes || {})}
     >
       <div>
@@ -34,7 +34,7 @@ const PinnedRepoCard = ({
           {/* Drag handle (six dots) */}
           <button
             {...(dragHandleProps?.listeners || {})}
-            className="p-1 rounded hover:bg-slate-100"
+            className="p-1 rounded hover:bg-slate-100 cursor-pointer"
             aria-label="Drag"
           >
             <svg

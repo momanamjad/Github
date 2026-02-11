@@ -85,7 +85,7 @@ const PinnedRepos = ({ username }) => {
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={ids} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ">
             {repos.map((repo) => {
               const id = repo.name || repo.id || `${repo.author}/${repo.name}`;
               return (
@@ -121,6 +121,7 @@ function SortableItem({ id, repo, repoUrl }) {
         visibility={repo.visibility}
         dragHandleProps={{ attributes, listeners, ref: setNodeRef }}
         style={style}
+        
       />
     </div>
   );
