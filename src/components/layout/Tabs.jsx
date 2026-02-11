@@ -4,11 +4,21 @@ import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon, StarsIcon } fr
 import LoadingBar from 'react-top-loading-bar';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from "react";
+import { useTabsContext } from "@/contexts/TabsContext";
+// import { useTabsContext } from "@contexts/TabsContext";
+
 
 const Tabs = ({ username }) => {
 
 const [progress, setProgress] = useState(0);
     const location = useLocation();
+    const { setHasTabsComponent } = useTabsContext();
+
+  useEffect(() => {
+    setHasTabsComponent(true);
+    return () => setHasTabsComponent(false);
+  }, [setHasTabsComponent]);
+
   useEffect(() => {
       setProgress(70);  
       const timer = setTimeout(() => setProgress(100), 400);  
@@ -28,7 +38,7 @@ const [progress, setProgress] = useState(0);
       />
      <div className="pl-4 py-0 bg-[#F6F8FA] border-b border-[#d0d7de]">
       <div className="mx-auto text-[14px]">
-        <nav className="flex gap-2">
+        <nav className="flex gap-2 ">
           <Tab to={`/${username}`} icon={OverviewIcon} label="Overview" end />
           <Tab
             to={`/${username}/repositories`}

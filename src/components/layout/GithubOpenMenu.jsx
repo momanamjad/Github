@@ -1,6 +1,7 @@
 import { Radius } from "lucide-react";
 import React from "react";
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { IoLogoGithub } from "react-icons/io";
 
 // const repos = [
@@ -121,7 +122,22 @@ const exploreItems = [
 const GithubOpenMenu = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const sidebarRef = useRef(null);
+  const navigate = useNavigate();
 
+  const routeMap = {
+    Home: "/",
+    Issues: "/issues",
+    "Pull requests": "/pull-requests",
+    Repositories: "/repositories",
+    Projects: "/projects",
+    Discussions: "/discussions",
+    Codespaces: "/codespaces",
+    Copilot: "/copilot",
+    Explore: "/explore",
+    MarketPlace: "/marketplace",
+    "MCP Registory": "/mcp-registry",
+  };
+  
   useEffect(() => {
     const handleClick = (e) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
@@ -231,6 +247,11 @@ const GithubOpenMenu = () => {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
               }
+              onClick={() => {
+                const path = routeMap[item.label];
+                if (path) navigate(path);
+                setIsOpen(false);
+              }}
             >
               <span
                 style={{
@@ -270,6 +291,11 @@ const GithubOpenMenu = () => {
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
               }
+              onClick={() => {
+                const path = routeMap[item.label];
+                if (path) navigate(path);
+                setIsOpen(false);
+              }}
             >
               {item.icon}
               {item.label}
