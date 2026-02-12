@@ -9,7 +9,7 @@ const RepoList = ({ repos }) => {
         <div key={repo.id} className="py-6 flex justify-between items-start">
           <div>
             <Link
-              to={`/${repo.owner.login}/${repo.name}`}
+              // to={`/${repo.owner.login}/${repo.name}`}
               className="text-[#0969DA] text-[22px] font-semibold   hover:underline"
             >
               {repo.name}
