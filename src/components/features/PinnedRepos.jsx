@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { getPinnedRepos } from "@services/GithubApi";
 
 const PinnedRepos = ({ username }) => {
   const [repos, setRepos] = useState([]);
@@ -26,19 +27,11 @@ const PinnedRepos = ({ username }) => {
 
       try {
         setLoading(true);
-
-        const url = `https://pinned.berrysauce.dev/get/${username}`;
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setRepos(Array.isArray(data) ? data : []);
+        const pinnedRepos = await getPinnedRepos(username);
+        setRepos(Array.isArray(pinnedRepos) ? pinnedRepos : []);
       } catch (error) {
         console.error("Error fetching pinned repos:", error);
+        setRepos([]);
       } finally {
         setLoading(false);
       }
@@ -46,7 +39,7 @@ const PinnedRepos = ({ username }) => {
 
     fetchPinned();
   }, [username]);
-
+ 
   if (loading)
     return (
       <p className="px-4 text-[#8b949e]">Loading pinned repositories...</p>

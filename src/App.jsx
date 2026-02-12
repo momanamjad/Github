@@ -13,36 +13,37 @@ const App = () => {
   return (
     <>
       <div className="min-h-screen bg-github-bg text-github-text text-[14px] leading-normal">
-          <Routes>
-            <Route element={<OpenMenuLayout />}>
-              {/* <Route path="/" element={<Pages.Home />} /> */}
-              <Route path="/issues" element={<Pages.Issues />} />
-              <Route path="/pull-requests" element={<Pages.PullRequests />} />
-              <Route path="/repositories" element={<Pages.Repositories />} />
-              <Route path="/projects" element={<Pages.Projects />} />
-              <Route path="/discussions" element={<Pages.Discussions />} />
-              <Route path="/codespaces" element={<Pages.Codespaces />} />
-              <Route path="/copilot" element={<Pages.Copilot />} />
-              <Route path="/explore" element={<Pages.Explore />} />
-              <Route path="/marketplace" element={<Pages.Marketplace />} />
-              <Route path="/mcp-registry" element={<Pages.MCPRegistry />} />
-              <Route path="/new" element={<NewRepoPage />} />
-            </Route>
+        <Routes>
+          <Route element={<OpenMenuLayout />}>
+            <Route path="/" element={<Pages.Home />} />
+            <Route path="/issues" element={<Pages.Issues />} />
+            <Route path="/pull-requests" element={<Pages.PullRequests />} />
+            <Route path="/repositories" element={<Pages.Repositories />} />
+            <Route path="/projects" element={<Pages.Projects />} />
+            <Route path="/discussions" element={<Pages.Discussions />} />
+            <Route path="/codespaces" element={<Pages.Codespaces />} />
+            <Route path="/copilot" element={<Pages.Copilot />} />
+            <Route path="/explore" element={<Pages.Explore />} />
+            <Route path="/marketplace" element={<Pages.Marketplace />} />
+            <Route path="/mcp-registry" element={<Pages.MCPRegistry />} />
+            <Route path="/new" element={<NewRepoPage />} />
+          </Route>
 
-            {/* <Route path="/:username" element={<ProfileLayout />}>
+          {/* <Route path="/:username" element={<ProfileLayout />}>
               <Route index element={<Overview />} />
               <Route path="repositories" element={<Repositories />} />
               <Route path="stars" element={<Stars />} />
               <Route path=":repo" element={<RepoDetails />} />
             </Route> */}
-            <Route path="/" element={<Navigate to="/momanamjad" />} />
-                  <Route path="/new" element={<NewRepoPage />} />
+          {/* <Route path="/" element={<Navigate to="/momanamjad" />} /> */}
+          <Route path="/new" element={<NewRepoPage />} />
           <Route path="/:username" element={<ProfileLayout />}>
             <Route index element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
             <Route path="stars" element={<Stars />} />
-            <Route path="/:username/:repo" element={<RepoDetails />} /></Route>
-          </Routes>
+            <Route path="/:username/:repo" element={<RepoDetails />} />
+          </Route>
+        </Routes>
       </div>
     </>
   );

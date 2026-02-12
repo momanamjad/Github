@@ -1,11 +1,23 @@
+// ============================================
+// FILE: src/components/layout/ProfileSidebar.jsx
+// Your EXISTING sidebar + my repository integration
+// ============================================
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Add this for navigation
 import { Avatar, AvatarFallback, AvatarImage } from "@ui/avatar";
 import { Card, CardContent } from "@ui/card";
 import { Button } from "@ui/button";
 import RealTimeComponent from "@features/RealTimeComponent";
 import EditProfileModal from "@features/EditProfileModal";
 
-const ProfileSidebar = () => {
+const ProfileSidebar = ({ 
+  username = "momanamjad", // Add username prop with default
+  repositories = [], // Add repositories prop
+  pinnedRepos = [], // Add pinned repos prop
+  onRepoClick // Add optional callback
+}) => {
+  const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: "Moman Amjad",
@@ -32,16 +44,29 @@ const ProfileSidebar = () => {
     console.log("Profile updated:", updatedProfile);
   };
 
+  // Handle repository click navigation
+  const handleRepoClick = (repoName) => {
+    if (onRepoClick) {
+      onRepoClick(repoName);
+    } else {
+      navigate(`/${userProfile.username || username}/${repoName}`);
+    }
+  };
+
+  // Determine which repos to display (pinned first, then regular)
+  const displayRepos = pinnedRepos.length > 0 ? pinnedRepos : repositories.slice(0, 5);
+
   return (
     <>
       <aside className="w-full lg:w-1/4 px-4 mt-6 lg:sticky lg:top-6">
+        {/* YOUR EXISTING PROFILE SECTION - COMPLETELY UNCHANGED */}
         <img
           src={userProfile.avatar}
           alt={userProfile.name}
-          className="rounded-full w-[256px] border-3 border-[#E7E6E8]    "
+          className="rounded-full w-[256px] border-3 border-[#E7E6E8]"
         />
 
-        <h1 className="text-[26px]  font-semibold leading-tight mt-4">
+        <h1 className="text-[26px] font-semibold leading-tight mt-4">
           {userProfile.name}
         </h1>
         <p className="text-[20px] font-light text-[#59636E] leading-tight">
@@ -53,7 +78,8 @@ const ProfileSidebar = () => {
           <p className="mt-3 text-sm text-github-muted">{userProfile.bio}</p>
         )}
 
-        <div className="mt-4 ">
+        {/* YOUR EXISTING EDIT PROFILE BUTTON */}
+        <div className="mt-4">
           <Button
             variant="editProfile"
             className="cursor-pointer w-full"
@@ -63,6 +89,7 @@ const ProfileSidebar = () => {
           </Button>
         </div>
 
+        {/* YOUR EXISTING FOLLOWERS/FOLLOWING SECTION */}
         <div className="flex gap-4 text-sm mt-4">
           <span className="cursor-pointer text-[#596368] text-[14px] hover:text-blue-500">
             <strong>{userProfile.followers}</strong> followers
@@ -72,13 +99,117 @@ const ProfileSidebar = () => {
           </span>
         </div>
 
+        {/* ===== NEW: REPOSITORIES SECTION - INTEGRATED WITH YOUR STYLING ===== */}
+        {displayRepos.length > 0 && (
+          <div className="mt-6 pt-2 border-t border-[#E7E6E8]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-[#1F2328] uppercase tracking-wide">
+                {pinnedRepos.length > 0 ? 'Pinned repositories' : 'Repositories'}
+              </h3>
+              {pinnedRepos.length > 0 && repositories.length > 0 && (
+                <span className="text-xs text-[#59636E]">
+                  {repositories.length} total
+                </span>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              {displayRepos.map((repo) => (
+                <button
+                  key={repo.id || repo.name}
+                  onClick={() => handleRepoClick(repo.name)}
+                  className="w-full text-left px-3 py-2 text-sm bg-white hover:bg-[#f6f8fa] rounded-md transition-colors duration-150 group border border-transparent hover:border-[#d0d7de]"
+                >
+                  <div className="flex items-center gap-2">
+                    {/* Repository icon - matching your SVG style */}
+                    <span className="text-[#59636E] group-hover:text-[#0969da]">
+                      <svg 
+                        className="fill-current" 
+                        viewBox="0 0 16 16" 
+                        width="16" 
+                        height="16"
+                      >
+                        <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"></path>
+                      </svg>
+                    </span>
+                    
+                    {/* Repository name with hover effect */}
+                    <span className="flex-1 font-medium text-[#0969da] group-hover:underline truncate">
+                      {repo.name}
+                    </span>
+                    
+                    {/* Private/Public badge if available */}
+                    {repo.private !== undefined && (
+                      <span className="text-xs text-[#59636E] border border-[#d0d7de] rounded-full px-2 py-0.5">
+                        {repo.private ? 'Private' : 'Public'}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Repository description - if available */}
+                  {repo.description && (
+                    <p className="mt-1 text-xs text-[#59636E] line-clamp-2 pl-[22px]">
+                      {repo.description}
+                    </p>
+                  )}
+                  
+                  {/* Repository metadata - language, stars, forks */}
+                  {(repo.language || repo.stargazersCount > 0 || repo.forksCount > 0) && (
+                    <div className="mt-1 flex items-center gap-3 pl-[22px] text-xs text-[#59636E]">
+                      {repo.language && (
+                        <span className="flex items-center gap-1">
+                          <span className={`w-2 h-2 rounded-full ${
+                            repo.language === 'JavaScript' ? 'bg-yellow-400' :
+                            repo.language === 'TypeScript' ? 'bg-blue-500' :
+                            repo.language === 'CSS' ? 'bg-purple-500' :
+                            repo.language === 'HTML' ? 'bg-orange-500' :
+                            repo.language === 'Python' ? 'bg-green-500' :
+                            'bg-gray-500'
+                          }`} />
+                          {repo.language}
+                        </span>
+                      )}
+                      {repo.stargazersCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <svg className="fill-current" viewBox="0 0 16 16" width="14" height="14">
+                            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.192L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"></path>
+                          </svg>
+                          {repo.stargazersCount}
+                        </span>
+                      )}
+                      {repo.forksCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <svg className="fill-current" viewBox="0 0 16 16" width="14" height="14">
+                            <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"></path>
+                          </svg>
+                          {repo.forksCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {/* View all repositories link */}
+            {repositories.length > 5 && (
+              <button
+                onClick={() => navigate(`/${userProfile.username || username}?tab=repositories`)}
+                className="w-full text-left mt-2 px-3 py-1.5 text-xs text-[#0969da] hover:bg-[#f6f8fa] rounded-md transition-colors"
+              >
+                View all {repositories.length} repositories →
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* YOUR EXISTING INFO SECTION - COMPLETELY UNCHANGED */}
         <div className="text-sm text-github-muted mt-4 space-y-2">
           {userProfile.company && (
             <div className="flex items-center gap-3">
               <span className="text-lg">
                 <svg
                   className="fill-[#59636E]"
-                  // class="octicon octicon-organization"
                   viewBox="0 0 16 16"
                   version="1.1"
                   width="16"
@@ -95,9 +226,7 @@ const ProfileSidebar = () => {
           {userProfile.location && (
             <div className="flex items-center gap-3">
               <span className="text-lg">
-                {" "}
                 <svg
-                  // class="octicon octicon-location"
                   className="fill-[#59636E]"
                   viewBox="0 0 16 16"
                   version="1.1"
@@ -112,8 +241,8 @@ const ProfileSidebar = () => {
             </div>
           )}
 
-          {/* {userProfile.displayLocalTime && <RealTimeComponent />} */}
           <RealTimeComponent />
+          
           {userProfile.email && (
             <div className="flex items-center gap-3">
               <span className="text-lg">
@@ -125,7 +254,8 @@ const ProfileSidebar = () => {
                   height="16"
                   aria-hidden="true"
                 >
-<path d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25v-8.5C0 2.784.784 2 1.75 2ZM1.5 12.251c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V5.809L8.38 9.397a.75.75 0 0 1-.76 0L1.5 5.809v6.442Zm13-8.181v-.32a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25v.32L8 7.88Z"></path>                </svg>
+                  <path d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25v-8.5C0 2.784.784 2 1.75 2ZM1.5 12.251c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V5.809L8.38 9.397a.75.75 0 0 1-.76 0L1.5 5.809v6.442Zm13-8.181v-.32a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25v.32L8 7.88Z"></path>
+                </svg>
               </span>
               <span>{userProfile.email}</span>
             </div>
@@ -167,6 +297,7 @@ const ProfileSidebar = () => {
         </div>
       </aside>
 
+      {/* YOUR EXISTING EDIT PROFILE MODAL - COMPLETELY UNCHANGED */}
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

@@ -1,5 +1,6 @@
 import { LockIcon, Package } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { getRepos } from "@services/GithubApi.jsx";
 
 export default function RepoSelector({ username, onSelect }) {
   const [repos, setRepos] = useState([]);
@@ -15,19 +16,26 @@ export default function RepoSelector({ username, onSelect }) {
   // fetch repos
   useEffect(() => {
     const fetchRepos = async () => {
-      const res = await fetch(`https://api.github.com/users/${username}/repos`);
-      const data = await res.json();
+      try {
+        const data = await getRepos(username);
 
-      // recent repos first
-      const sorted = [...data].sort(
-        (a, b) => new Date(b.updated_at) - new Date(a.updated_at),
-      );
+        // recent repos first
+        const sorted = [...data].sort(
+          (a, b) => new Date(b.updated_at) - new Date(a.updated_at),
+        );
 
-      setRepos(sorted);
-      setFiltered(sorted);
+        setRepos(sorted);
+        setFiltered(sorted);
+      } catch (error) {
+        console.error("Error fetching repos:", error);
+        setRepos([]);
+        setFiltered([]);
+      }
     };
 
-    fetchRepos();
+    if (username) {
+      fetchRepos();
+    }
   }, [username]);
 
   // filter
