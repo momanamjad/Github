@@ -5,13 +5,11 @@ export default function FilterModal({ open, onClose, title, options = [], onSele
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-24">
-      {/* overlay */}
       <div
         className="absolute inset-0 bg-gray-200/60"
         onClick={onClose}
       />
 
-      {/* modal */}
       <div className="relative w-full max-w-sm bg-white border border-gray-300 rounded-lg shadow-lg">
         <div className="px-4 py-3 border-b font-semibold">{title}</div>
 

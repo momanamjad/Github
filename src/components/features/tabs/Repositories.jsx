@@ -84,6 +84,7 @@ const Repositories = () => {
         type={type}
         setType={setType}
         languages={languages}
+       
       />
 
       <RepoList repos={filteredRepos} />

@@ -23,7 +23,7 @@ const Repositories = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Find a repository..."
+              placeholder="Find a repository ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -88,7 +88,6 @@ const Repositories = () => {
           ))}
         </div>
 
-        {/* Pagination */}
         <div className="mt-8 flex justify-center">
           <nav className="inline-flex rounded-md shadow-sm -space-x-px">
             <button className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">

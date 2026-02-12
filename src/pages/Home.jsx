@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Plus,
   Search,
@@ -10,7 +10,9 @@ import {
   MessageSquare,
   ListTodo,
 } from "lucide-react";
-
+import { NewRepoPage } from "@/components/features";
+import NewRepoBtn from "@/components/common/NewRepoBtn";
+import FilterModal from "@/components/FilterModal";
 const Home = () => {
   const repositories = [
     "momanamjad/Employ",
@@ -21,21 +23,24 @@ const Home = () => {
     "momanamjad/practice-react",
     "momanamjad/Real-Estate",
   ];
+  const [filterOpen, setFilterOpen] = useState();
+  const [filterValue, setFilterValue] = useState();
 
   return (
     <div className="flex min-h-screen bg-[#ffffff] font-sans text-[#1f2328]">
       <aside className="hidden w-80 border-r border-[#d0d7de] p-6 lg:block">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold">Top repositories</h2>
-          <button className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-[#1f883d] rounded-md hover:bg-[#1a7f37]">
-            <Plus size={14} /> New
-          </button>
+          <h2 className="text-[16px] font-semibold text-[#f2328]">
+            Top repositories
+          </h2>
+
+          <NewRepoBtn size="small" />
         </div>
         <div className="relative mb-4">
           <input
             type="text"
             placeholder="Find a repository..."
-            className="w-full px-3 py-1 text-sm border border-[#d0d7de] rounded-md bg-[#f6f8fa] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0969da]"
+            className="w-full font-github px-4 py-2 text-[16px] border border-[#d0d7de] rounded-md bg-[#f6f8fa] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0969da]"
           />
         </div>
         <ul className="space-y-2">
@@ -44,7 +49,14 @@ const Home = () => {
               key={repo}
               className="flex items-center gap-2 text-sm hover:underline cursor-pointer"
             >
-              <span className="w-4 h-4 bg-[#afb8c1] rounded-full"></span> {repo}
+              <span className="w-4 h-4 rounded-full inline-block overflow-hidden">
+                <img
+                  className="w-full h-full object-cover"
+                  src="profile.png"
+                  alt=""
+                />
+              </span>{" "}
+              {repo}
             </li>
           ))}
         </ul>
@@ -53,11 +65,10 @@ const Home = () => {
         </button>
       </aside>
 
-      {/* Main Content - Center */}
       <main className="flex-1 max-w-4xl mx-auto p-4 md:p-8">
         <div className="mb-8">
-          <h1 className="text-xl font-semibold mb-6">Home</h1>
-          <div className="relative flex items-center p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm mb-6">
+          <h2 className="text-[24px] font-semibold mb-6">Home</h2>
+          {/* <div className="relative flex items-center p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm mb-6">
             <span className="text-gray-400 mr-2 font-medium">Ask anything</span>
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-gray-400 italic">
@@ -69,7 +80,6 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Action Tabs */}
           <div className="flex flex-wrap gap-2 mb-6">
             {[
               { icon: <ListTodo size={16} />, label: "Task" },
@@ -94,34 +104,86 @@ const Home = () => {
                 )}
               </button>
             ))}
-          </div>
+          </div> */}
 
           {/* Feed */}
           <div className="flex items-center justify-between border-b border-[#d0d7de] pb-2 mb-4">
             <h2 className="font-semibold">Feed</h2>
-            <button className="flex items-center gap-1 text-sm text-[#0969da] hover:bg-[#f6f8fa] px-2 py-1 rounded-md">
-              <Filter size={14} /> Filter
+
+            <button
+              className="flex items-center gap-2 text-sm  bg-[#EFF2F5] text-[#636c76] hover:bg-[#D1D9E0] px-3 py-2 rounded-md border border-[#d0d7de]"
+              onClick={() => setFilterOpen(true)}
+            >
+              <svg
+                aria-hidden="true"
+                height="16"
+                viewBox="0 0 16 16"
+                version="1.1"
+                width="16"
+                data-view-component="true"
+                class="octicon octicon-filter mr-2"
+              >
+                <path d="M.75 3h14.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1 0-1.5ZM3 7.75A.75.75 0 0 1 3.75 7h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 3 7.75Zm3 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path>
+              </svg>
+              <span className="text-[black] font-semibold">Filter </span>
             </button>
+
+            <FilterModal
+              open={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              title="Filter repositories"
+              options={["All", "JavaScript", "React", "TypeScript"]}
+              onSelect={setFilterValue}
+            />
           </div>
 
-          {/* Repository Card */}
           <div className="p-4 border border-[#d0d7de] rounded-lg bg-white mb-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 bg-gray-800 rounded-full"></div>
+              <div className="w-6 h-6 bg-gray-800 rounded-full overflow-hidden">
+                <img className="object-cover" src="profile.png" alt="" />
+              </div>
               <span className="text-sm">
-                <span className="font-bold">hiteshchoudhary</span> created a
-                repository
+                <span className="font-bold text-[#1f2328]">
+                  hiteshchoudhary
+                </span>{" "}
+                <span className="text-[#59636e]">created a repository</span>
               </span>
-              <span className="text-xs text-gray-500">17 hours ago</span>
             </div>
+              <span className="text-xs text-gray-500">17 hours ago</span>
+
             <div className="ml-8 border border-[#d0d7de] rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="text-blue-600 font-bold hover:underline cursor-pointer">
                   hiteshchoudhary/vibe-translator
                 </h3>
-                <button className="flex items-center gap-1 px-3 py-1 text-xs border border-[#d0d7de] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0]">
-                  <Star size={14} /> Star
-                </button>
+                <div className="flex items-center gap-1 px-3 py-1 text-xs border border-[#d0d7de] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0]">
+                  <Star size={16} /> Star{" "}
+                  <span>
+                    {" "}
+                    <button
+                      group_item="true"
+                      id="details-user-list-1150908408-unstarred-button"
+                      aria-controls="details-user-list-1150908408-unstarred-dialog"
+                      aria-haspopup="dialog"
+                      aria-expanded="true"
+                      aria-labelledby="tooltip-b669a0ea-7387-4031-affe-b07dc995c577"
+                      type="button"
+                      data-view-component="true"
+                    >
+                      {" "}
+                      <svg
+                        aria-hidden="true"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        version="1.1"
+                        width="16"
+                        data-view-component="true"
+                      >
+                        <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
               </div>
               <p className="text-sm font-semibold mb-2">vibe-translator</p>
               <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -171,19 +233,3 @@ const Home = () => {
 };
 
 export default Home;
-
-// onClick={() => setFilterOpen(true)}
-
-//  <FilterModal
-//     open={filterOpen}
-//     onClose={() => setFilterOpen(false)}
-//     title="Filter repositories"
-//     options={[
-//       "All",
-//       "JavaScript",
-//       "React",
-//       "TypeScript",
-//       "Recently updated",
-//     ]}
-//     onSelect={setFilterValue}
-//   />
