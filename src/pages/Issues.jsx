@@ -117,7 +117,6 @@ export default function GitHubIssues() {
               </button>
             </div>
 
-            {/* Search Bar */}
             <div className="mb-4">
               <div className="flex items-center bg-white border border-[#d0d7de] rounded-md focus-within:border-[#0969da] focus-within:ring-1 focus-within:ring-[#0969da]">
                 <input
