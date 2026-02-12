@@ -4,7 +4,7 @@ export default function FilterModal({ open, onClose, title, options = [], onSele
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24">
+    <div className="fixed inset-0 z-50 flex items-start justify-center">
       <div
         className="absolute inset-0 bg-gray-200/60"
         onClick={onClose}

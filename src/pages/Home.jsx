@@ -13,6 +13,7 @@ import {
 import { NewRepoPage } from "@/components/features";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import FilterModal from "@/components/FilterModal";
+import StarsIcon from "../../public/customIcons/StarsIcon";
 const Home = () => {
   const repositories = [
     "momanamjad/Employ",
@@ -125,19 +126,21 @@ const Home = () => {
               >
                 <path d="M.75 3h14.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1 0-1.5ZM3 7.75A.75.75 0 0 1 3.75 7h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 3 7.75Zm3 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path>
               </svg>
-              <span className="text-[black] font-semibold">Filter </span>
+              <span className="text-[black] font-semibold">Filter</span>
             </button>
-
-            <FilterModal
+            
+            {filterOpen&&(
+              <div>  <FilterModal
               open={filterOpen}
               onClose={() => setFilterOpen(false)}
               title="Filter repositories"
               options={["All", "JavaScript", "React", "TypeScript"]}
               onSelect={setFilterValue}
-            />
+            /> </div>
+            )}
+            
           </div>
-
-          <div className="p-4 border border-[#d0d7de] rounded-lg bg-white mb-4">
+          <div className="p-5 border border-[#d0d7de] rounded-lg bg-white mb-4">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 bg-gray-800 rounded-full overflow-hidden">
                 <img className="object-cover" src="profile.png" alt="" />
@@ -149,9 +152,9 @@ const Home = () => {
                 <span className="text-[#59636e]">created a repository</span>
               </span>
             </div>
-              <span className="text-xs text-gray-500">17 hours ago</span>
+            <span className="text-xs text-gray-500 ml-8">17 hours ago</span>
 
-            <div className="ml-8 border border-[#d0d7de] rounded-lg p-4">
+            <div className="      rounded-lg p-4 bg-[#F6F8FA]">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="text-blue-600 font-bold hover:underline cursor-pointer">
                   hiteshchoudhary/vibe-translator
@@ -192,7 +195,7 @@ const Home = () => {
                   Shell
                 </span>
                 <span className="flex items-center gap-1">
-                  <Star size={12} /> 5
+                 <StarsIcon/> 5
                 </span>
               </div>
             </div>
