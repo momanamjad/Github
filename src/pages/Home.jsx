@@ -24,7 +24,6 @@ const Home = () => {
 
   return (
     <div className="flex min-h-screen bg-[#ffffff] font-sans text-[#1f2328]">
-      {/* Sidebar - Left */}
       <aside className="hidden w-80 border-r border-[#d0d7de] p-6 lg:block">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold">Top repositories</h2>
