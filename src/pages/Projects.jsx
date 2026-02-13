@@ -17,31 +17,35 @@ export default function Projects() {
           {/* Left Sidebar */}
           <div className="w-full lg:w-64 flex-shrink-0">
             <nav className="space-y-1">
-              {/* Recently Viewed Button */}
+                <div className={`relative transition-all ${activeTab === 'recently-viewed' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+
               <button
-                onClick={() => setActiveTab('recently-viewed')}
+                     onClick={() => setActiveTab("recently-viewed")}
+
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   activeTab === 'recently-viewed'
-                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                    ? 'bg-gray-100 text-gray-900'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <Clock className="w-4 h-4" />
                 <span>Recently viewed</span>
               </button>
+</div>
+                <div className={`relative transition-all ${activeTab === 'created-by-me' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
 
-              {/* Created by Me Button */}
               <button
                 onClick={() => setActiveTab('created-by-me')}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   activeTab === 'created-by-me'
-                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                    ? 'bg-gray-100 text-gray-900  '
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <User className="w-4 h-4" />
                 <span>Created by me</span>
               </button>
+              </div>
             </nav>
           </div>
 

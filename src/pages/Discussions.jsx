@@ -13,84 +13,84 @@ export default function GitHubClone() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Sidebar */}
           <div className="w-full lg:w-64 flex-shrink-0">
-            <nav className="space-y-1">
-              {/* Projects Section */}
-              <div className="mb-4">
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Projects
-                </h3>
-                <button
-                  onClick={() => {
-                    setMainSection('projects');
-                    setProjectTab('recently-viewed');
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    mainSection === 'projects' && projectTab === 'recently-viewed'
-                      ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>Recently viewed</span>
-                </button>
+           <nav className="space-y-1">
+  <div className="mb-4">
+    <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+      Projects
+    </h3>
+    
+    <div className={`relative transition-all ${mainSection === 'projects' && projectTab === 'recently-viewed' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+      <button
+        onClick={() => {
+          setMainSection('projects');
+          setProjectTab('recently-viewed');
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+          mainSection === 'projects' && projectTab === 'recently-viewed'
+            ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+            : "text-[#57606a] hover:bg-[#f6f8fa]"
+        }`}
+      >
+        <Clock className="w-4 h-4" />
+        <span>Recently viewed</span>
+      </button>
+    </div>
 
-                <button
-                  onClick={() => {
-                    setMainSection('projects');
-                    setProjectTab('created-by-me');
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    mainSection === 'projects' && projectTab === 'created-by-me'
-                      ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                  <span>Created by me</span>
-                </button>
-              </div>
+    <div className={`relative transition-all ${mainSection === 'projects' && projectTab === 'created-by-me' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+      <button
+        onClick={() => {
+          setMainSection('projects');
+          setProjectTab('created-by-me');
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+          mainSection === 'projects' && projectTab === 'created-by-me'
+            ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+            : "text-[#57606a] hover:bg-[#f6f8fa]"
+        }`}
+      >
+        <User className="w-4 h-4" />
+        <span>Created by me</span>
+      </button>
+    </div>
+  </div>
 
-              {/* Discussions Section */}
-              <div>
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Discussions
-                </h3>
-                <button
-                  onClick={() => {
-                    setMainSection('discussions');
-                    setDiscussionTab('created');
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    mainSection === 'discussions'
-                      ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Discussions</span>
-                </button>
-              </div>
-            </nav>
+  <div>
+    <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+      Discussions
+    </h3>
+    <div className={`relative transition-all ${mainSection === 'discussions' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+      <button
+        onClick={() => {
+          setMainSection('discussions');
+          setDiscussionTab('created');
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+          mainSection === 'discussions'
+            ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+            : "text-[#57606a] hover:bg-[#f6f8fa]"
+        }`}
+      >
+        <MessageSquare className="w-4 h-4" />
+        <span>Discussions</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
           </div>
 
-          {/* Main Content Area */}
           <div className="flex-1">
-            {/* PROJECTS SECTION */}
             {mainSection === 'projects' && (
               <>
-                {/* Recently Viewed Projects */}
                 {projectTab === 'recently-viewed' && (
                   <div>
                     <h1 className="text-2xl font-semibold text-gray-900 mb-6">
                       Recently viewed
                     </h1>
 
-                    {/* Search Bar */}
                     <div className="relative mb-6">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-5 w-5 text-gray-400" />
@@ -112,12 +112,10 @@ export default function GitHubClone() {
                       )}
                     </div>
 
-                    {/* Results Count */}
                     <div className="mb-4">
                       <p className="text-sm text-gray-600">0 recently viewed</p>
                     </div>
 
-                    {/* Empty State */}
                     <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
                       <div className="w-12 h-12 mb-4 flex items-center justify-center">
                         <svg
@@ -161,7 +159,6 @@ export default function GitHubClone() {
                   </div>
                 )}
 
-                {/* Created by Me Projects */}
                 {projectTab === 'created-by-me' && (
                   <div>
                     <h1 className="text-2xl font-semibold text-gray-900 mb-6">
@@ -190,7 +187,6 @@ export default function GitHubClone() {
                       )}
                     </div>
 
-                    {/* Tabs and Sort */}
                     <div className="flex items-center justify-between mb-6 border-b border-gray-200">
                       <div className="flex gap-6">
                         <button className="pb-3 px-1 border-b-2 border-gray-900 font-medium text-sm text-gray-900">
@@ -206,7 +202,6 @@ export default function GitHubClone() {
                       </button>
                     </div>
 
-                    {/* Empty State */}
                     <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
                       <div className="w-12 h-12 mb-4 flex items-center justify-center">
                         <svg
@@ -252,10 +247,8 @@ export default function GitHubClone() {
               </>
             )}
 
-            {/* DISCUSSIONS SECTION */}
             {mainSection === 'discussions' && (
               <div>
-                {/* Created/Commented Filter Tabs */}
                 <div className="flex items-center gap-4 mb-6">
                   <button
                     onClick={() => setDiscussionTab('created')}
@@ -278,7 +271,6 @@ export default function GitHubClone() {
                     Commented
                   </button>
 
-                  {/* Search Bar */}
                   <div className="relative flex-1">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Search className="h-5 w-5 text-gray-400" />

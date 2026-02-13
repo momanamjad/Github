@@ -162,71 +162,78 @@ export default function Repositories() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Sidebar */}
           <div className="w-full lg:w-64 flex-shrink-0">
-            <nav className="space-y-1">
-              {/* My contributions */}
-              <button
-                onClick={() => setActiveTab("my-contributions")}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "my-contributions"
-                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                <span>My contributions</span>
-              </button>
+           <nav className="space-y-1">
+  {/* My contributions */}
+  <div className={`relative transition-all ${activeTab === 'my-contributions' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+    <button
+      onClick={() => setActiveTab("my-contributions")}
+      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+        activeTab === "my-contributions"
+          ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+          : "text-[#57606a] hover:bg-[#f6f8fa]"
+      }`}
+    >
+      <Users className="w-4 h-4" />
+      <span>My contributions</span>
+    </button>
+  </div>
 
-              {/* My repositories */}
-              <button
-                onClick={() => setActiveTab("my-repositories")}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "my-repositories"
-                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>My repositories</span>
-              </button>
+  {/* My repositories */}
+  <div className={`relative transition-all ${activeTab === 'my-repositories' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+    <button
+      onClick={() => setActiveTab("my-repositories")}
+      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+        activeTab === "my-repositories"
+          ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+          : "text-[#57606a] hover:bg-[#f6f8fa]"
+      }`}
+    >
+      <BookOpen className="w-4 h-4" />
+      <span>My repositories</span>
+    </button>
+  </div>
 
-              {/* My forks */}
-              <button
-                onClick={() => setActiveTab("my-forks")}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "my-forks"
-                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <GitFork className="w-4 h-4" />
-                <span>My forks</span>
-              </button>
+  {/* My forks */}
+  <div className={`relative transition-all ${activeTab === 'my-forks' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+    <button
+      onClick={() => setActiveTab("my-forks")}
+      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+        activeTab === "my-forks"
+          ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+          : "text-[#57606a] hover:bg-[#f6f8fa]"
+      }`}
+    >
+      <GitFork className="w-4 h-4" />
+      <span>My forks</span>
+    </button>
+  </div>
 
-              {/* Admin access */}
-              <button
-                onClick={() => setActiveTab("admin-access")}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "admin-access"
-                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                <span>Admin access</span>
-              </button>
+  {/* Admin access */}
+  <div className={`relative transition-all ${activeTab === 'admin-access' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+    <button
+      onClick={() => setActiveTab("admin-access")}
+      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+        activeTab === "admin-access"
+          ? "bg-[#ECEEF0] text-[#24292f] font-medium"
+          : "text-[#57606a] hover:bg-[#f6f8fa]"
+      }`}
+    >
+      <Settings className="w-4 h-4" />
+      <span>Admin access</span>
+    </button>
+  </div>
 
-              {/* Views Section */}
-              <div className="pt-6">
-                <div className="flex items-center justify-between px-3 mb-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    Views
-                  </span>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </nav>
+  {/* Views Section */}
+  <div className="pt-6">
+    <div className="flex items-center justify-between px-3 mb-2">
+      <span className="text-sm font-medium text-gray-700">Views</span>
+      <button className="text-gray-400 hover:text-gray-600">
+        <Plus className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+</nav>
+
           </div>
 
           {/* Main Content Area */}

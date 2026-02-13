@@ -4,15 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoLogoGithub } from "react-icons/io";
 
-// const repos = [
-//   "momanajad/Employ",
-//   "momanajad/k_72-Clone-in-react-GSAP",
-//   "momanajad/theater-web-in-react",
-//   "momanajad/Github",
-//   "momanajad/Todo-list",
-// ];
 
-// Simple SVG icons
 const Icons = {
   hamburger: (
     <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">

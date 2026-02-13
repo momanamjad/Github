@@ -27,20 +27,12 @@ const App = () => {
             <Route path="/marketplace" element={<Pages.Marketplace />} />
             <Route path="/mcp-registry" element={<Pages.MCPRegistry />} />
             <Route path="/new" element={<NewRepoPage />} />
+            <Route path="/stars" element={<Stars />} />
           </Route>
-
-          {/* <Route path="/:username" element={<ProfileLayout />}>
-              <Route index element={<Overview />} />
-              <Route path="repositories" element={<Repositories />} />
-              <Route path="stars" element={<Stars />} />
-              <Route path=":repo" element={<RepoDetails />} />
-            </Route> */}
-          {/* <Route path="/" element={<Navigate to="/momanamjad" />} /> */}
           <Route path="/new" element={<NewRepoPage />} />
           <Route path="/:username" element={<ProfileLayout />}>
             <Route index element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
-            <Route path="stars" element={<Stars />} />
             <Route path="/:username/:repo" element={<RepoDetails />} />
           </Route>
         </Routes>

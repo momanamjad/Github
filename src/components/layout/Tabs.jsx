@@ -1,11 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { Book, Library, Star, Folder, Package } from "lucide-react";
 import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon, StarsIcon } from "@ui/Icons";
 import LoadingBar from 'react-top-loading-bar';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import { useTabsContext } from "@/contexts/TabsContext";
-// import { useTabsContext } from "@contexts/TabsContext";
 
 
 const Tabs = ({ username }) => {
