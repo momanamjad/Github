@@ -87,16 +87,18 @@ const Navbar = () => {
         height={2}
         onLoaderFinished={() => setProgress(0)}
       />
-      <header className="bg-[#F6F8FA] border border-github-border h-[70px]" style={{ borderBottom: hasTabsComponent ? "transparent" : undefined }}>
-        <div className=" mx-auto h-full flex items-center  justify-between">
+      <header
+        className="bg-[#F6F8FA] border border-github-border  h-[70px]"
+        style={{ borderBottom: hasTabsComponent ? "transparent" : undefined }}
+      >
+        <div className=" mx-auto  h-full flex items-center  justify-between">
           <div className="flex items-center gap-2    ">
             <GithubOpenMenu />
             <Link to="/">
-            <IoLogoGithub  size={33} className=" cursor-pointer" />
-
+              <IoLogoGithub size={33} className=" cursor-pointer" />
             </Link>
             <div className="hover:bg-[#ebeff6]  px-2 py-1 rounded-md ">
-              <span className="font-semibold text-[14px]  cursor-pointer ">
+              <span className="font-semibold text-[14px]  cursor-pointer whitespace-nowrap">
                 {currentPathName}
               </span>
             </div>
