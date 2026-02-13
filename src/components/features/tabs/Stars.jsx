@@ -466,7 +466,6 @@ const Stars = () => {
                 />
               </div>
 
-              {/* Private Checkbox */}
               <div className="mb-4">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
@@ -484,7 +483,7 @@ const Stars = () => {
                 </label>
               </div>
 
-              {/* Create Button */}
+              
               <button
                 onClick={handleCreateList}
                 disabled={isCreateButtonDisabled}
@@ -509,4 +508,5 @@ const Stars = () => {
   );
 };
 
-export default Stars;
+export default Star
+  

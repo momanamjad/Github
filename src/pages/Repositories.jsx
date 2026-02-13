@@ -1,144 +1,157 @@
-import React, { useState } from 'react';
-import { Search, X, Users, BookOpen, GitFork, Settings, Plus, List, LayoutGrid, ArrowUpDown, Check } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Search,
+  X,
+  Users,
+  BookOpen,
+  GitFork,
+  Settings,
+  Plus,
+  List,
+  LayoutGrid,
+  ArrowUpDown,
+  Check,
+} from "lucide-react";
+import NewRepoBtn from "@/components/common/NewRepoBtn";
 
 export default function Repositories() {
-  const [activeTab, setActiveTab] = useState('my-contributions');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+  const [activeTab, setActiveTab] = useState("my-contributions");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'grid'
   const [isRelevanceOpen, setIsRelevanceOpen] = useState(false);
-  const [selectedSort, setSelectedSort] = useState('relevance');
+  const [selectedSort, setSelectedSort] = useState("relevance");
 
   const clearSearch = () => {
-    setSearchQuery('');
+    setSearchQuery("");
   };
 
   const getSearchPlaceholder = () => {
-    switch(activeTab) {
-      case 'my-contributions':
-        return 'contributed-by:@me';
-      case 'my-repositories':
-        return 'owner:@me';
-      case 'my-forks':
-        return 'owner:@me fork:true';
-      case 'admin-access':
-        return 'admin:@me';
+    switch (activeTab) {
+      case "my-contributions":
+        return "contributed-by:@me";
+      case "my-repositories":
+        return "owner:@me";
+      case "my-forks":
+        return "owner:@me fork:true";
+      case "admin-access":
+        return "admin:@me";
       default:
-        return '';
+        return "";
     }
   };
 
   const sortOptions = [
-    { value: 'relevance', label: 'Relevance', icon: Users },
-    { value: 'last-pushed', label: 'Last pushed', icon: ArrowUpDown },
-    { value: 'name', label: 'Name', icon: BookOpen },
-    { value: 'stars', label: 'Stars', icon: Users },
+    { value: "relevance", label: "Relevance", icon: Users },
+    { value: "last-pushed", label: "Last pushed", icon: ArrowUpDown },
+    { value: "name", label: "Name", icon: BookOpen },
+    { value: "stars", label: "Stars", icon: Users },
   ];
 
   // Sample repository data
   const repositories = [
     {
-      name: 'momanamjad/Github',
+      name: "momanamjad/Github",
       private: true,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated 13 hours ago',
-      description: '',
+      updated: "Updated 13 hours ago",
+      description: "",
     },
     {
-      name: 'momanamjad/Employ',
+      name: "momanamjad/Employ",
       private: false,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated on Jan 12',
-      description: '',
+      updated: "Updated on Jan 12",
+      description: "",
     },
     {
-      name: 'momanamjad/K_72-Clone-in-react-GSAP',
+      name: "momanamjad/K_72-Clone-in-react-GSAP",
       private: true,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated 2 days ago',
-      description: '',
+      updated: "Updated 2 days ago",
+      description: "",
     },
     {
-      name: 'momanamjad/theater-web-in-react',
+      name: "momanamjad/theater-web-in-react",
       private: true,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated on Dec 18, 2025',
-      description: '',
+      updated: "Updated on Dec 18, 2025",
+      description: "",
     },
     {
-      name: 'momanamjad/Todo-list',
+      name: "momanamjad/Todo-list",
       private: true,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated on Dec 22, 2025',
-      description: '',
+      updated: "Updated on Dec 22, 2025",
+      description: "",
     },
     {
-      name: 'momanamjad/practice-react',
+      name: "momanamjad/practice-react",
       private: true,
-      language: '',
+      language: "",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated on Jan 13',
-      description: 'just fun',
+      updated: "Updated on Jan 13",
+      description: "just fun",
     },
     {
-      name: 'momanamjad/Real-Estate-',
+      name: "momanamjad/Real-Estate-",
       private: false,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 2,
-      updated: 'Updated on Oct 20, 2025',
-      description: 'web build with react js',
+      updated: "Updated on Oct 20, 2025",
+      description: "web build with react js",
     },
     {
-      name: 'momanamjad/Countries-',
+      name: "momanamjad/Countries-",
       private: true,
-      language: 'JavaScript',
+      language: "JavaScript",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated on Nov 3, 2025',
-      description: 'A country proj with simple js using map,filter properties',
+      updated: "Updated on Nov 3, 2025",
+      description: "A country proj with simple js using map,filter properties",
     },
     {
-      name: 'momanamjad/Birthday',
+      name: "momanamjad/Birthday",
       private: false,
-      language: '',
+      language: "",
       forks: 0,
       stars: 0,
       issues: 0,
       pullRequests: 0,
-      updated: 'Updated last week',
-      description: '',
+      updated: "Updated last week",
+      description: "",
     },
   ];
 
   const getRepositoryCount = () => {
-    if (activeTab === 'my-forks') return 0;
+    if (activeTab === "my-forks") return 0;
     return repositories.length;
   };
 
@@ -152,11 +165,11 @@ export default function Repositories() {
             <nav className="space-y-1">
               {/* My contributions */}
               <button
-                onClick={() => setActiveTab('my-contributions')}
+                onClick={() => setActiveTab("my-contributions")}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'my-contributions'
-                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "my-contributions"
+                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <Users className="w-4 h-4" />
@@ -165,11 +178,11 @@ export default function Repositories() {
 
               {/* My repositories */}
               <button
-                onClick={() => setActiveTab('my-repositories')}
+                onClick={() => setActiveTab("my-repositories")}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'my-repositories'
-                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "my-repositories"
+                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
@@ -178,11 +191,11 @@ export default function Repositories() {
 
               {/* My forks */}
               <button
-                onClick={() => setActiveTab('my-forks')}
+                onClick={() => setActiveTab("my-forks")}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'my-forks'
-                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "my-forks"
+                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <GitFork className="w-4 h-4" />
@@ -191,11 +204,11 @@ export default function Repositories() {
 
               {/* Admin access */}
               <button
-                onClick={() => setActiveTab('admin-access')}
+                onClick={() => setActiveTab("admin-access")}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'admin-access'
-                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "admin-access"
+                    ? "bg-gray-100 text-gray-900 border-l-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <Settings className="w-4 h-4" />
@@ -205,7 +218,9 @@ export default function Repositories() {
               {/* Views Section */}
               <div className="pt-6">
                 <div className="flex items-center justify-between px-3 mb-2">
-                  <span className="text-sm font-medium text-gray-700">Views</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Views
+                  </span>
                   <button className="text-gray-400 hover:text-gray-600">
                     <Plus className="w-4 h-4" />
                   </button>
@@ -219,18 +234,16 @@ export default function Repositories() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-semibold text-gray-900">
-                {activeTab === 'my-contributions' && 'My contributions'}
-                {activeTab === 'my-repositories' && 'My repositories'}
-                {activeTab === 'my-forks' && 'My forks'}
-                {activeTab === 'admin-access' && 'Admin access'}
+                {activeTab === "my-contributions" && "My contributions"}
+                {activeTab === "my-repositories" && "My repositories"}
+                {activeTab === "my-forks" && "My forks"}
+                {activeTab === "admin-access" && "Admin access"}
               </h1>
               <div className="flex items-center gap-3">
                 <button className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   Preview
                 </button>
-                <button className="px-4 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
-                  New repository
-                </button>
+             <NewRepoBtn/>
               </div>
             </div>
 
@@ -269,9 +282,24 @@ export default function Repositories() {
                     className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                   >
                     <ArrowUpDown className="w-4 h-4" />
-                    <span>{sortOptions.find(opt => opt.value === selectedSort)?.label}</span>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <span>
+                      {
+                        sortOptions.find((opt) => opt.value === selectedSort)
+                          ?.label
+                      }
+                    </span>
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </button>
 
@@ -294,7 +322,13 @@ export default function Repositories() {
                             <span className="w-4 h-4"></span>
                           )}
                           <option.icon className="w-4 h-4 text-gray-600" />
-                          <span className={selectedSort === option.value ? 'font-medium text-gray-900' : 'text-gray-700'}>
+                          <span
+                            className={
+                              selectedSort === option.value
+                                ? "font-medium text-gray-900"
+                                : "text-gray-700"
+                            }
+                          >
                             {option.label}
                           </span>
                         </button>
@@ -306,21 +340,21 @@ export default function Repositories() {
                 {/* View Mode Buttons */}
                 <div className="flex border border-gray-300 rounded-md overflow-hidden">
                   <button
-                    onClick={() => setViewMode('list')}
+                    onClick={() => setViewMode("list")}
                     className={`p-1.5 ${
-                      viewMode === 'list'
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                      viewMode === "list"
+                        ? "bg-gray-100 text-gray-900"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
                     }`}
                   >
                     <List className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setViewMode('grid')}
+                    onClick={() => setViewMode("grid")}
                     className={`p-1.5 border-l border-gray-300 ${
-                      viewMode === 'grid'
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                      viewMode === "grid"
+                        ? "bg-gray-100 text-gray-900"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
                     }`}
                   >
                     <LayoutGrid className="w-4 h-4" />
@@ -330,18 +364,24 @@ export default function Repositories() {
             </div>
 
             {/* Repositories List */}
-            {activeTab !== 'my-forks' ? (
+            {activeTab !== "my-forks" ? (
               <div className="space-y-4">
                 {repositories.map((repo, index) => (
-                  <div key={index} className="border border-gray-200 rounded-md hover:border-gray-300 transition-colors">
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-md hover:border-gray-300 transition-colors"
+                  >
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <a href="#" className="text-blue-600 hover:underline font-semibold">
+                          <a
+                            href="#"
+                            className="text-blue-600 hover:underline font-semibold"
+                          >
                             {repo.name}
                           </a>
                           <span className="px-2 py-0.5 text-xs font-medium border border-gray-300 rounded-full text-gray-600">
-                            {repo.private ? 'Private' : 'Public'}
+                            {repo.private ? "Private" : "Public"}
                           </span>
                         </div>
                         <div className="w-16 h-8">
@@ -356,11 +396,13 @@ export default function Repositories() {
                           </svg>
                         </div>
                       </div>
-                      
+
                       {repo.description && (
-                        <p className="text-sm text-gray-600 mb-3">{repo.description}</p>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {repo.description}
+                        </p>
                       )}
-                      
+
                       <div className="flex items-center gap-4 text-xs text-gray-600">
                         {repo.language && (
                           <div className="flex items-center gap-1">
@@ -373,20 +415,32 @@ export default function Repositories() {
                           <span>{repo.forks}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 16 16"
+                          >
                             <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z" />
                           </svg>
                           <span>{repo.stars}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 16 16"
+                          >
                             <path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
                             <path d="M8 0a8 8 0 110 16A8 8 0 018 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z" />
                           </svg>
                           <span>{repo.issues}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 16 16"
+                          >
                             <path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z" />
                           </svg>
                           <span>{repo.pullRequests}</span>

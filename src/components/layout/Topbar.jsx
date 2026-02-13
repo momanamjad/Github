@@ -7,9 +7,11 @@ import {
   TriangleDownIcon,
 } from "@primer/octicons-react";
 import CreateNewIssue from "@features/CreateNew";
+import { useNavigate } from "react-router-dom";
 
-const IconButton = ({ children, label }) => (
+const IconButton = ({ children, label, onClick }) => (
   <button
+    onClick={onClick}
     aria-label={label}
     className="
       flex items-center justify-center
@@ -31,24 +33,25 @@ const IconButton = ({ children, label }) => (
 const Divider = () => <div className="w-px h-6 bg-[#d1d9e0] mx-2" />;
 
 const TopBarActions = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="hidden lg:flex items-center gap-2.5">
       <Divider />
 
-      {/* <IconButton   label="Create new issue">
-        <PlusIcon size={16} />  
-        <TriangleDownIcon size={16} className=" " />
-      </IconButton> */}
       <CreateNewIssue />
-      <IconButton label="Issues">
+
+      <IconButton label="Issues" onClick={() => navigate("/issues")}>
         <IssueOpenedIcon size={16} />
       </IconButton>
-
-      <IconButton label="Pull requests">
+      <IconButton label="Pull requests"
+      onClick={()=>navigate("/pull-requests")}>
         <GitPullRequestIcon size={16} />
       </IconButton>
 
-      <IconButton label="Repositories">
+      <IconButton label="Repositories"
+      onClick={()=>navigate("/repositories")}
+      >
         <RepoIcon size={16} />
       </IconButton>
     </div>

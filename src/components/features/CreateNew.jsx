@@ -2,6 +2,7 @@ import React from "react";
 import { PlusIcon, TriangleDownIcon } from "@primer/octicons-react";
 import OpenIssueModal from "./OpenIssueModal";
 import NewRepoPage from "./NewRepoPage";
+import { useNavigate } from "react-router-dom";
 const IconButton = React.forwardRef(({ children, label, onClick }, ref) => (
   <button
     ref={ref}
@@ -21,9 +22,9 @@ const CreateNew = () => {
   const buttonRef = React.useRef(null);
   const itemRefs = React.useRef([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const navigate = useNavigate(); 
   const handleNewRepoClick = () => {
-    setShowDropdown(false);
-    onNavigateToNewRepo();
+    navigate("/new");
   };
   React.useEffect(() => {
     const handler = (e) => {
@@ -80,7 +81,12 @@ const CreateNew = () => {
   return (
     <>
       <div className="relative  " ref={menuRef}>
-        <div label=" " onClick={toggleMenu} ref={buttonRef} className="border rounded-md pt-1 cursor-pointer">
+        <div
+          label=" "
+          onClick={toggleMenu}
+          ref={buttonRef}
+          className="border rounded-md pt-1 cursor-pointer"
+        >
           <button className="">
             <svg
               viewBox="0 0 48 24"
@@ -123,7 +129,6 @@ const CreateNew = () => {
               icon={icons.NewRepo}
               label="New repository"
               onClick={handleNewRepoClick}
-              // onNavigateToNewRepo={() => setCurrentPage('new-repo')}
             />
             <MenuItem
               ref={(el) => (itemRefs.current[2] = el)}
