@@ -1,93 +1,263 @@
 import React, { useState } from 'react';
-import { Table2, Search, ChevronDown, Plus } from 'lucide-react';
+import { Search, X, Clock, User, ChevronDown } from 'lucide-react';
 
-const Projects = () => {
+export default function Projects() {
+  const [activeTab, setActiveTab] = useState('recently-viewed');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Organize and track your work with project boards
-            </p>
-          </div>
-          <button className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 self-start sm:self-auto">
-            <Plus className="w-4 h-4 mr-2" />
-            New project
-          </button>
-        </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Sidebar */}
+          <div className="w-full lg:w-64 flex-shrink-0">
+            <nav className="space-y-1">
+              {/* Recently Viewed Button */}
+              <button
+                onClick={() => setActiveTab('recently-viewed')}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'recently-viewed'
+                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                <span>Recently viewed</span>
+              </button>
 
-        {/* Search and Filters */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+              {/* Created by Me Button */}
+              <button
+                onClick={() => setActiveTab('created-by-me')}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'created-by-me'
+                    ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span>Created by me</span>
+              </button>
+            </nav>
           </div>
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            Sort
-            <ChevronDown className="w-4 h-4 ml-2" />
-          </button>
-        </div>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((item) => (
-            <div
-              key={item}
-              className="border border-gray-300 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Table2 className="w-5 h-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-900 hover:text-blue-600">
-                    Project Board {item}
+          {/* Main Content Area */}
+          <div className="flex-1">
+            {/* Recently Viewed Tab */}
+            {activeTab === 'recently-viewed' && (
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                  Recently viewed
+                </h1>
+
+                {/* Search Bar */}
+                <div className="relative mb-6">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="is:open"
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Results Count */}
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600">0 recently viewed</p>
+                </div>
+
+                {/* Empty State */}
+                <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                    <svg
+                      className="w-12 h-12 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <line
+                        x1="9"
+                        y1="3"
+                        x2="9"
+                        y2="21"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1="3"
+                        y1="9"
+                        x2="21"
+                        y2="9"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No open projects
                   </h3>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                Track and manage issues, pull requests, and notes for this project
-              </p>
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Updated 3 days ago</span>
-                <div className="flex items-center gap-3">
-                  <span>12 items</span>
-                  <span className="inline-flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                    Active
-                  </span>
+            )}
+
+            {/* Created by Me Tab */}
+            {activeTab === 'created-by-me' && (
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                  Created by me
+                </h1>
+
+                {/* Search Bar */}
+                <div className="relative mb-6">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="is:open creator:@me"
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Tabs and Sort */}
+                <div className="flex items-center justify-between mb-6 border-b border-gray-200">
+                  <div className="flex gap-6">
+                    <button className="pb-3 px-1 border-b-2 border-gray-900 font-medium text-sm text-gray-900">
+                      Open <span className="ml-1 text-gray-600">0</span>
+                    </button>
+                    <button className="pb-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-600 hover:text-gray-900 hover:border-gray-300">
+                      Closed <span className="ml-1">1</span>
+                    </button>
+                  </div>
+                  <button className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900">
+                    Sort
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Empty State */}
+                <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                    <svg
+                      className="w-12 h-12 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <line
+                        x1="9"
+                        y1="3"
+                        x2="9"
+                        y2="21"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1="3"
+                        y1="9"
+                        x2="21"
+                        y2="9"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No open projects
+                  </h3>
                 </div>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
         </div>
-
-        {/* Empty State (if no projects) */}
-        {/* <div className="border border-gray-300 rounded-lg p-12 text-center">
-          <Table2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            You don't have any projects yet
-          </h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Create a new project to organize your issues and pull requests with custom boards
-          </p>
-          <button className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Create your first project
-          </button>
-        </div> */}
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  fillRule="evenodd"
+                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>© 2026 GitHub, Inc.</span>
+            </div>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Terms
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Security
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Status
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Docs
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Contact
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Manage cookies
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Do not share my personal information
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default Projects;
+}

@@ -1,158 +1,380 @@
 import React, { useState } from 'react';
-import { MessageSquare, ThumbsUp, MessageCircle, Search, Filter } from 'lucide-react';
+import { Search, X, Clock, User, ChevronDown, MessageSquare } from 'lucide-react';
 
-const Discussions = () => {
-  const [activeTab, setActiveTab] = useState('all');
+export default function GitHubClone() {
+  const [mainSection, setMainSection] = useState('projects');  
+  const [projectTab, setProjectTab] = useState('recently-viewed');  
+  const [discussionTab, setDiscussionTab] = useState('created'); 
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const tabs = [
-    { id: 'all', label: 'All' },
-    { id: 'unanswered', label: 'Unanswered' },
-    { id: 'answered', label: 'Answered' }
-  ];
-
-  const categories = [
-    { name: 'General', icon: '💬', count: 45 },
-    { name: 'Q&A', icon: '❓', count: 32 },
-    { name: 'Ideas', icon: '💡', count: 18 },
-    { name: 'Show and tell', icon: '🙌', count: 23 }
-  ];
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Discussions</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Community discussions and Q&A
-            </p>
-          </div>
-          <button className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 self-start sm:self-auto">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            New discussion
-          </button>
-        </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Sidebar */}
+          <div className="w-full lg:w-64 flex-shrink-0">
+            <nav className="space-y-1">
+              {/* Projects Section */}
+              <div className="mb-4">
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Projects
+                </h3>
+                <button
+                  onClick={() => {
+                    setMainSection('projects');
+                    setProjectTab('recently-viewed');
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    mainSection === 'projects' && projectTab === 'recently-viewed'
+                      ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>Recently viewed</span>
+                </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Search and Filter */}
-            <div className="mb-4 flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search discussions..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <button
+                  onClick={() => {
+                    setMainSection('projects');
+                    setProjectTab('created-by-me');
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    mainSection === 'projects' && projectTab === 'created-by-me'
+                      ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Created by me</span>
+                </button>
               </div>
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </button>
-            </div>
 
-            {/* Tabs */}
-            <div className="border-b border-gray-300 mb-4">
-              <nav className="flex space-x-8">
-                {tabs.map((tab) => (
+              {/* Discussions Section */}
+              <div>
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Discussions
+                </h3>
+                <button
+                  onClick={() => {
+                    setMainSection('discussions');
+                    setDiscussionTab('created');
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    mainSection === 'discussions'
+                      ? 'bg-gray-100 text-gray-900 border-l-2 border-blue-600'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Discussions</span>
+                </button>
+              </div>
+            </nav>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1">
+            {/* PROJECTS SECTION */}
+            {mainSection === 'projects' && (
+              <>
+                {/* Recently Viewed Projects */}
+                {projectTab === 'recently-viewed' && (
+                  <div>
+                    <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                      Recently viewed
+                    </h1>
+
+                    {/* Search Bar */}
+                    <div className="relative mb-6">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="is:open"
+                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={clearSearch}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Results Count */}
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600">0 recently viewed</p>
+                    </div>
+
+                    {/* Empty State */}
+                    <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
+                      <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                        <svg
+                          className="w-12 h-12 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <line
+                            x1="9"
+                            y1="3"
+                            x2="9"
+                            y2="21"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                          <line
+                            x1="3"
+                            y1="9"
+                            x2="21"
+                            y2="9"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        No open projects
+                      </h3>
+                    </div>
+                  </div>
+                )}
+
+                {/* Created by Me Projects */}
+                {projectTab === 'created-by-me' && (
+                  <div>
+                    <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+                      Created by me
+                    </h1>
+
+                    {/* Search Bar */}
+                    <div className="relative mb-6">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="is:open creator:@me"
+                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={clearSearch}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Tabs and Sort */}
+                    <div className="flex items-center justify-between mb-6 border-b border-gray-200">
+                      <div className="flex gap-6">
+                        <button className="pb-3 px-1 border-b-2 border-gray-900 font-medium text-sm text-gray-900">
+                          Open <span className="ml-1 text-gray-600">0</span>
+                        </button>
+                        <button className="pb-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-600 hover:text-gray-900 hover:border-gray-300">
+                          Closed <span className="ml-1">1</span>
+                        </button>
+                      </div>
+                      <button className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        Sort
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Empty State */}
+                    <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
+                      <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                        <svg
+                          className="w-12 h-12 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <line
+                            x1="9"
+                            y1="3"
+                            x2="9"
+                            y2="21"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                          <line
+                            x1="3"
+                            y1="9"
+                            x2="21"
+                            y2="9"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        No open projects
+                      </h3>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* DISCUSSIONS SECTION */}
+            {mainSection === 'discussions' && (
+              <div>
+                {/* Created/Commented Filter Tabs */}
+                <div className="flex items-center gap-4 mb-6">
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab.id
-                        ? 'border-orange-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    onClick={() => setDiscussionTab('created')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      discussionTab === 'created'
+                        ? 'border-gray-900 text-gray-900'
+                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                     }`}
                   >
-                    {tab.label}
+                    Created
                   </button>
-                ))}
-              </nav>
-            </div>
+                  <button
+                    onClick={() => setDiscussionTab('commented')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      discussionTab === 'commented'
+                        ? 'border-gray-900 text-gray-900'
+                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                    }`}
+                  >
+                    Commented
+                  </button>
 
-            {/* Discussions List */}
-            <div className="border border-gray-300 rounded-lg divide-y divide-gray-200">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <div key={item} className="p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start space-x-3">
-                    <MessageSquare className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-base font-semibold text-gray-900 hover:text-blue-600 cursor-pointer">
-                          Discussion title goes here
-                        </h3>
-                        {item % 2 === 0 && (
-                          <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Answered ✓
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-600">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                          💬 General
-                        </span>
-                        <span>Started 2 hours ago by username</span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                        <span className="flex items-center">
-                          <ThumbsUp className="w-3 h-3 mr-1" />
-                          12 upvotes
-                        </span>
-                        <span className="flex items-center">
-                          <MessageCircle className="w-3 h-3 mr-1" />
-                          5 comments
-                        </span>
-                      </div>
+                  {/* Search Bar */}
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-400" />
                     </div>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={discussionTab === 'created' ? 'author:momanamjad' : 'commenter:momanamjad'}
+                      className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={clearSearch}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Sidebar - Categories */}
-          <div className="lg:col-span-1">
-            <div className="border border-gray-300 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Categories</h3>
-              <div className="space-y-2">
-                {categories.map((category, index) => (
-                  <button
-                    key={index}
-                    className="w-full flex items-center justify-between p-2 rounded hover:bg-gray-100 transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{category.icon}</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {category.name}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500">{category.count}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Most helpful */}
-            <div className="border border-gray-300 rounded-lg p-4 mt-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Most helpful</h3>
-              <div className="space-y-3">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="text-sm">
-                    <p className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer line-clamp-2">
-                      How to contribute to open source?
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">24 upvotes</p>
+                {/* Empty State for Discussions */}
+                <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                    <svg
+                      className="w-12 h-12 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                      />
+                    </svg>
                   </div>
-                ))}
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No discussions match the selected filters.
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Discussions are used to ask questions and have open-ended conversations.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  fillRule="evenodd"
+                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>© 2026 GitHub, Inc.</span>
+            </div>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Terms
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Security
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Status
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Community
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Docs
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Contact
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Manage cookies
+            </a>
+            <a href="#" className="hover:text-blue-600 hover:underline">
+              Do not share my personal information
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default Discussions;
+}
