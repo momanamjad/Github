@@ -481,6 +481,7 @@ const generateStarredReposForUser = (username) => {
       forks_count: 41000,
       archived: false,
       visibility: "public",
+      updated_at: "2025-01-15T10:30:00Z",
     },
     {
       id: 102,
@@ -498,6 +499,7 @@ const generateStarredReposForUser = (username) => {
       forks_count: 33000,
       archived: false,
       visibility: "public",
+      updated_at: "2025-01-14T08:20:00Z",
     },
     {
       id: 103,
@@ -515,6 +517,7 @@ const generateStarredReposForUser = (username) => {
       forks_count: 24000,
       archived: false,
       visibility: "public",
+      updated_at: "2025-01-13T15:45:00Z",
     },
   ];
 };

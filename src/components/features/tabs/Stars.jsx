@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
+import { getStaticStarredRepos } from '@services/staticData';
+import { useParams } from 'react-router-dom';
 
 const Stars = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [repos, setRepos] = useState([]);
   
   // Filter states
   const [typeFilter, setTypeFilter] = useState('all');
@@ -26,36 +29,13 @@ const Stars = () => {
     { id: 1, name: 'Future ideas', emoji: '💡' }
   ]);
 
-  // Static repository data
-  const repos = [
-    {
-      id: 1,
-      full_name: 'facebook/react',
-      description: 'A JavaScript library for building user interfaces',
-      html_url: 'https://github.com/facebook/react',
-      language: 'JavaScript',
-      stargazers_count: 200000,
-      updated_at: '2025-01-15T10:30:00Z',
-    },
-    {
-      id: 2,
-      full_name: 'vuejs/vue',
-      description: 'The Progressive JavaScript Framework',
-      html_url: 'https://github.com/vuejs/vue',
-      language: 'JavaScript',
-      stargazers_count: 205000,
-      updated_at: '2025-01-14T08:20:00Z',
-    },
-    {
-      id: 3,
-      full_name: 'nodejs/node',
-      description: 'Node.js JavaScript runtime',
-      html_url: 'https://github.com/nodejs/node',
-      language: 'C++',
-      stargazers_count: 95000,
-      updated_at: '2025-01-13T15:45:00Z',
-    },
-  ];
+  // Load static data on component mount (use username from URL when available)
+  const params = useParams();
+  useEffect(() => {
+    const username = params?.username || 'momanamjad';
+    const starredRepos = getStaticStarredRepos(username);
+    setRepos(starredRepos);
+  }, [params?.username]);
 
   const clearSearch = () => {
     setSearchQuery('');

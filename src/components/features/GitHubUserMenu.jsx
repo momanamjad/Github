@@ -31,6 +31,8 @@ const navigate=useNavigate();
     setIsOpen(!isOpen);
   };
 
+  const username = 'momanamjad';
+
   return (
     <div className="relative cursor-pointer">
       {/* User Menu Button */}
@@ -92,8 +94,8 @@ const navigate=useNavigate();
           {/* Menu Section 1 */}
           <div className="py-2 border-b border-github-border">
             <MenuItem icon={<ProfileIcon />} text="Profile" path="/profile" />
-            <MenuItem icon={<RepositoriesIcon />} text="Repositories" path="repositories" />
-            <MenuItem icon={<StarsIcon />} text="Stars" path ="/stars" />
+            <MenuItem icon={<RepositoriesIcon />} text="Repositories" path="/momanamjad/repositories" />
+            <MenuItem icon={<StarsIcon />} text="Stars" path ={"/" + username + "/stars"} />
             <MenuItem icon={<GistsIcon />} text="Gists" path ="gists"/>
             <MenuItem icon={<OrganizationsIcon />} text="Organizations"path="orgainnzation" />
             <MenuItem icon={<EnterprisesIcon />} text="Enterprises"  path="enterprises"/>

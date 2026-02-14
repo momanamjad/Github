@@ -27,12 +27,16 @@ const App = () => {
             <Route path="/marketplace" element={<Pages.Marketplace />} />
             <Route path="/mcp-registry" element={<Pages.MCPRegistry />} />
             <Route path="/new" element={<NewRepoPage />} />
-            <Route path="/stars" element={<Stars />} />
+            <Route path="/profile/stars" element={<Stars />} />
+            {/* Redirect plain /stars to the profile stars route to avoid it being
+                captured by the dynamic /:username route. */}
+            <Route path="/stars" element={<Navigate to="/momanamjad/stars" replace />} />
           </Route>
           <Route path="/new" element={<NewRepoPage />} />
           <Route path="/:username" element={<ProfileLayout />}>
             <Route index element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
+            <Route path="stars" element={<Stars />} />
             <Route path="/:username/:repo" element={<RepoDetails />} />
           </Route>
         </Routes>

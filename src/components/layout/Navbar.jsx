@@ -27,6 +27,7 @@ const Navbar = () => {
     "Pull requests": "/pull-requests",
     Repositories: "/repositories",
     Projects: "/projects",
+    Stars: "/momanamjad/stars",
     Discussions: "/discussions",
     Codespaces: "/codespaces",
     Copilot: "/copilot",
