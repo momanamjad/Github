@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon, StarsIcon } from "@ui/Icons";
+import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon } from "@ui/Icons";
 import LoadingBar from 'react-top-loading-bar';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from "react";
@@ -53,7 +53,7 @@ const [progress, setProgress] = useState(0);
             icon={PackageIcon}
             label="Packages"
           />
-          <Tab to={`/${username}/stars`} icon={StarsIcon} label="Stars" />
+          <Tab to={`/${username}/stars`} label="Stars" />
         </nav>
       </div>
     </div>
@@ -75,7 +75,7 @@ const Tab = ({ to, icon: Icon, label, end }) => {
         }`
       }
     >
-      <Icon size={16} />
+      {Icon && <Icon size={16} />}
       <span>{label}</span>
     </NavLink>
   );

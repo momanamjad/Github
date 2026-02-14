@@ -488,5 +488,5 @@ const Stars = () => {
   );
 };
 
-export default Star
+export default Stars;
   
