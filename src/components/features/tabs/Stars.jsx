@@ -101,7 +101,7 @@ const Stars = () => {
             Lists <span className="text-gray-500 font-normal">({lists.length})</span>
           </h2>
           <div className="flex items-center gap-2">
-            <div className="relative">
+            <div className="relative"> 
               <button
                 onClick={() => setIsListSortOpen(!isListSortOpen)}
                 className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2"
