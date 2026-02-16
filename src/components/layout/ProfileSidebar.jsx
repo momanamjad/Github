@@ -701,7 +701,6 @@ const ProfileSidebar = ({
                 </label>
               </div>
 
-              {/* Expiration */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#1F2328] mb-2">
                   Expiration
@@ -740,7 +739,6 @@ const ProfileSidebar = ({
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={clearStatus}

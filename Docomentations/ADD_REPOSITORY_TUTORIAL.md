@@ -164,7 +164,7 @@ const NewRepoPage = () => {
       private: formData.visibility === "private",        // false for public
       description: formData.description || null,         // "My awesome app"
       // ... other properties
-    };
+    };            
     
     // Step 3: Save to localStorage
     addRepository(newRepo);
@@ -209,7 +209,7 @@ export const initializeStorage = async () => {
 
 // Add a new repository to localStorage
 export const addRepository = (newRepo) => {
-  // Step 1: Get all existing repositories
+  // Step 1: Get all existing repositories  
   const repos = getStoredRepositories();
   
   // Step 2: Generate a unique ID
