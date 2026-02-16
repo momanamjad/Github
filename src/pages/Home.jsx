@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Plus,
   Search,
@@ -12,20 +12,33 @@ import {
 } from "lucide-react";
 import { NewRepoPage } from "@/components/features";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
+import { getRepos } from "@services/GithubApi.jsx";
 import FilterModal from "@/components/FilterModal";
 import StarsIcon from "../../public/customIcons/StarsIcon";
 const Home = () => {
-  const repositories = [
-    "momanamjad/Employ",
-    "momanamjad/Github",
-    "momanamjad/k_77-Clone-in-react-GSAP",
-    "momanamjad/theater-web-in-react",
-    "momanamjad/Todo-list",
-    "momanamjad/practice-react",
-    "momanamjad/Real-Estate",
-  ];
+  const [sidebarRepos, setSidebarRepos] = useState([]);
   const [filterOpen, setFilterOpen] = useState();
   const [filterValue, setFilterValue] = useState();
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const repos = await getRepos("momanamjad");
+        if (!mounted) return;
+        // map to display string
+        const list = (repos || []).map((r) => r.full_name || `${r.owner?.login}/${r.name}`);
+        setSidebarRepos(list);
+      } catch (err) {
+        console.error("Failed to load sidebar repos:", err);
+        if (mounted) setSidebarRepos([]);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-[#ffffff] font-sans text-[#1f2328]">
@@ -45,7 +58,7 @@ const Home = () => {
           />
         </div>
         <ul className="space-y-2">
-          {repositories.map((repo) => (
+          {sidebarRepos.map((repo) => (
             <li
               key={repo}
               className="flex items-center gap-2 text-sm hover:underline cursor-pointer"

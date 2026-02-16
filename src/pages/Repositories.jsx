@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Search,
   X,
@@ -13,6 +13,7 @@ import {
   Check,
 } from "lucide-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
+import { getRepos } from "@services/GithubApi.jsx";
 
 export default function Repositories() {
   const [activeTab, setActiveTab] = useState("my-contributions");
@@ -47,112 +48,28 @@ export default function Repositories() {
     { value: "stars", label: "Stars", icon: Users },
   ];
 
-  // Sample repository data
-  const repositories = [
-    {
-      name: "momanamjad/Github",
-      private: true,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated 13 hours ago",
-      description: "",
-    },
-    {
-      name: "momanamjad/Employ",
-      private: false,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated on Jan 12",
-      description: "",
-    },
-    {
-      name: "momanamjad/K_72-Clone-in-react-GSAP",
-      private: true,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated 2 days ago",
-      description: "",
-    },
-    {
-      name: "momanamjad/theater-web-in-react",
-      private: true,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated on Dec 18, 2025",
-      description: "",
-    },
-    {
-      name: "momanamjad/Todo-list",
-      private: true,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated on Dec 22, 2025",
-      description: "",
-    },
-    {
-      name: "momanamjad/practice-react",
-      private: true,
-      language: "",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated on Jan 13",
-      description: "just fun",
-    },
-    {
-      name: "momanamjad/Real-Estate-",
-      private: false,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 2,
-      updated: "Updated on Oct 20, 2025",
-      description: "web build with react js",
-    },
-    {
-      name: "momanamjad/Countries-",
-      private: true,
-      language: "JavaScript",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated on Nov 3, 2025",
-      description: "A country proj with simple js using map,filter properties",
-    },
-    {
-      name: "momanamjad/Birthday",
-      private: false,
-      language: "",
-      forks: 0,
-      stars: 0,
-      issues: 0,
-      pullRequests: 0,
-      updated: "Updated last week",
-      description: "",
-    },
-  ];
+  const [repositories, setRepositories] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const repos = await getRepos("momanamjad");
+        if (mounted) setRepositories(repos);
+      } catch (err) {
+        console.error("Failed to load repositories:", err);
+        if (mounted) setRepositories([]);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const getRepositoryCount = () => {
     if (activeTab === "my-forks") return 0;
-    return repositories.length;
+    return repositories ? repositories.length : 0;
   };
 
   return (
@@ -373,19 +290,19 @@ export default function Repositories() {
             {/* Repositories List */}
             {activeTab !== "my-forks" ? (
               <div className="space-y-4">
-                {repositories.map((repo, index) => (
+                {repositories.map((repo) => (
                   <div
-                    key={index}
+                    key={repo.id || repo.name}
                     className="border border-gray-200 rounded-md hover:border-gray-300 transition-colors"
                   >
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <a
-                            href="#"
+                            href={repo.html_url || '#'}
                             className="text-blue-600 hover:underline font-semibold"
                           >
-                            {repo.name}
+                            {repo.full_name || `${repo.owner?.login}/${repo.name}`}
                           </a>
                           <span className="px-2 py-0.5 text-xs font-medium border border-gray-300 rounded-full text-gray-600">
                             {repo.private ? "Private" : "Public"}
