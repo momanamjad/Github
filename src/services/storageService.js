@@ -14,14 +14,11 @@ const STORAGE_KEYS = {
  */
 export const initializeStorage = async () => {
   try {
-    // Check if data already exists in localStorage
     const existingUser = localStorage.getItem(STORAGE_KEYS.USER);
     
     if (!existingUser) {
-      // Import the JSON data
       const userData = await import('./userData.json');
       
-      // Store each data type in localStorage
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData.user));
       localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(userData.repositories));
       localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(userData.pinnedRepositories));
@@ -79,7 +76,7 @@ export const getStoredRepositories = () => {
   } catch (error) {
     console.error('Error retrieving repositories from storage:', error);
     return [];
-  }
+  }   
 };
 
 /**
