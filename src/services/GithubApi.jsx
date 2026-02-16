@@ -1,11 +1,13 @@
 import {
-  STATIC_USERS,
-  STATIC_REPOS,
   STATIC_REPO_CONTENTS,
-  getStaticRepos,
-  getStaticPinnedRepos,
-  getStaticStarredRepos,
 } from "./staticData.js";
+import {
+  getStoredUser,
+  getStoredRepositories,
+  getStoredStarredRepos,
+  getStoredPinnedRepos,
+  initializeStorage,
+} from "./storageService.js";
 
 // Simulated delay to mimic API calls
 const simulateDelay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -13,7 +15,13 @@ const simulateDelay = (ms = 300) => new Promise((resolve) => setTimeout(resolve,
 //  get user github profile from baseurl
 export const getUser = async (username) => {
   await simulateDelay();
-  const user = STATIC_USERS[username];
+  
+  // Initialize storage if not already done
+  await initializeStorage();
+  
+  // Get user from localStorage
+  const user = getStoredUser();
+  
   if (!user) {
     // Create a default user for any username if not found
     return {
@@ -40,10 +48,14 @@ export const getUser = async (username) => {
   return user;
 };
 
-// Getting the  user repositories from api
+// Getting the  user repositories from localStorage
 export const getRepos = async (username) => {
   await simulateDelay();
-  const repos = getStaticRepos(username);
+  
+  // Initialize storage if not already done
+  await initializeStorage();
+  
+  const repos = getStoredRepositories();
   if (!repos || repos.length === 0) {
     throw new Error("Repositories not found");
   }
@@ -52,7 +64,11 @@ export const getRepos = async (username) => {
 
 export const getStarredRepos = async (username) => {
   await simulateDelay();
-  const starredRepos = getStaticStarredRepos(username);
+  
+  // Initialize storage if not already done
+  await initializeStorage();
+  
+  const starredRepos = getStoredStarredRepos();
   if (!starredRepos || starredRepos.length === 0) {
     throw new Error("Starred repos not found");
   }
@@ -62,7 +78,11 @@ export const getStarredRepos = async (username) => {
 // for repository details on clicking repo
 export const getRepo = async (username, repo) => {
   await simulateDelay();
-  const repos = getStaticRepos(username);
+  
+  // Initialize storage if not already done
+  await initializeStorage();
+  
+  const repos = getStoredRepositories();
   if (!repos || repos.length === 0) {
     throw new Error("Repo not found");
   }
@@ -107,5 +127,9 @@ export const getRepoContents = async (user, repo, path = "") => {
 // Export function to get pinned repos
 export const getPinnedRepos = async (username) => {
   await simulateDelay();
-  return getStaticPinnedRepos(username);
+  
+  // Initialize storage if not already done
+  await initializeStorage();
+  
+  return getStoredPinnedRepos();
 };

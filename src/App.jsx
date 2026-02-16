@@ -8,8 +8,15 @@ import RepoDetails from "@features/RepoDetails";
 import NewRepoPage from "@features/NewRepoPage";
 import * as Pages from "./pages";
 import OpenMenuLayout from "./layout/OpenMenuLayout";
+import { useEffect } from "react";
+import { initializeStorage } from "@services/storageService.js";
 
 const App = () => {
+  useEffect(() => {
+    // Initialize localStorage with default data when app loads
+    initializeStorage();
+  }, []);
+
   return (
     <>
       <div className="min-h-screen bg-github-bg text-github-text text-[14px] leading-normal">

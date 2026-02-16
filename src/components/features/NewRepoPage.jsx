@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { addRepository, getStoredUser } from "@services/storageService.js";
 
 const NewRepoPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     owner: "momanamjad",
     repoName: "",
@@ -15,6 +18,7 @@ const NewRepoPage = () => {
   const [showGitignoreDropdown, setShowGitignoreDropdown] = useState(false);
   const [showLicenseDropdown, setShowLicenseDropdown] = useState(false);
   const [visibilityOpen, setVisibilityOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const visibilityRef = useRef(null);
   const gitignoreTemplates = [
     "None",
@@ -54,10 +58,58 @@ const NewRepoPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Repository created:", formData);
-    alert(
-      `Repository "${formData.owner}/${formData.repoName}" created successfully!`,
-    );
+    
+    // Validate repository name
+    if (!formData.repoName.trim()) {
+      alert("Repository name is required");
+      return;
+    }
+    
+    // Create repository object for localStorage
+    const newRepo = {
+      name: formData.repoName,
+      full_name: `${formData.owner}/${formData.repoName}`,
+      private: formData.visibility === "private",
+      html_url: `https://github.com/${formData.owner}/${formData.repoName}`,
+      description: formData.description || null,
+      fork: false,
+      language: null,
+      has_issues: true,
+      has_projects: true,
+      has_downloads: true,
+      has_wiki: true,
+      has_pages: false,
+      archived: false,
+      disabled: false,
+      forks_count: 0,
+      open_issues_count: 0,
+      stargazers_count: 0,
+      watchers_count: 0,
+      license: formData.license !== "none" ? { name: formData.license } : null,
+      topics: [],
+    };
+    
+    // Add to localStorage
+    addRepository(newRepo);
+    
+    // Show success message
+    setSuccessMessage(`✅ Repository "${formData.repoName}" created successfully!`);
+    
+    // Reset form
+    setFormData({
+      owner: "momanamjad",
+      repoName: "",
+      description: "",
+      visibility: "public",
+      addReadme: false,
+      gitignoreTemplate: "none",
+      license: "none",
+    });
+    
+    // Redirect to repositories page after 2 seconds
+    setTimeout(() => {
+      navigate("/repositories");
+    }, 2000);
   };
 
   const suggestRepoName = () => {
@@ -75,6 +127,11 @@ const NewRepoPage = () => {
   return (
     <div className="min-h-screen bg-[white] py-8 px-4">
       <div className="max-w-[1012px] mx-auto">
+        {successMessage && (
+          <div className="mb-6 ml-20 p-4 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-green-800">{successMessage}</p>
+          </div>
+        )}
         <header className="mb-6 ml-20 flex flex-col ">
           <h1 className="text-xl font-semibold text-[black] mb-2">
             Create a new repository
