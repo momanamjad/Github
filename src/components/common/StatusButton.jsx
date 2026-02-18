@@ -11,7 +11,6 @@ const StatusButton = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef(null);
 
-  // Emoji list for the picker
   const emojis = [
     { emoji: '😊', name: 'smile' },
     { emoji: '😄', name: 'grin' },
@@ -105,7 +104,6 @@ const StatusButton = () => {
     { emoji: '🎵', name: 'music' },
   ];
 
-  // Preset status options
   const presetStatuses = [
     { emoji: '🏝️', text: 'On vacation', label: '🏝️ On vacation' },
     { emoji: '🤒', text: 'Out sick', label: '🤒 Out sick' },
@@ -113,7 +111,6 @@ const StatusButton = () => {
     { emoji: '💻', text: 'Focusing', label: '💻 Focusing' },
   ];
 
-  // Check expiration
   useEffect(() => {
     if (!expirationTime) return;
 
@@ -126,7 +123,6 @@ const StatusButton = () => {
     return () => clearInterval(checkExpiration);
   }, [expirationTime]);
 
-  // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -211,16 +207,34 @@ const StatusButton = () => {
     setIsModalOpen(false);
     setShowEmojiPicker(false);
   };
+   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   const hasStatus = selectedEmoji || statusText;
 
   return (
     <>
-      {/* Status Button */}
       <button
         onClick={openModal}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+
         className={`relative flex items-center justify-center transition-all duration-200 rounded-full ${
           isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
         } ${
@@ -241,11 +255,9 @@ const StatusButton = () => {
         )}
       </button>
 
-      {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg">
-            {/* Close button for mobile */}
+        <div   onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#e9edf0]/50 backdrop:blur-3xl bg-opacity-50">
+          <div     onClick={(e) => e.stopPropagation()} className=" relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg">
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-[#59636E] hover:text-[#1F2328] lg:hidden"
@@ -265,17 +277,15 @@ const StatusButton = () => {
               </svg>
             </button>
 
-            {/* Modal Content */}
             <div className="p-6">
               <h2 className="text-xl font-semibold text-[#1F2328] mb-4">
                 Edit status
               </h2>
 
-              {/* What's happening section */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#1F2328] mb-2">
-                  What's happening
-                </label>
+                  What's happening 
+                </label> 
                 <div className="relative">
                   <div className="flex gap-2">
                     <button
@@ -336,7 +346,6 @@ const StatusButton = () => {
                   )}
                 </div>
 
-                {/* Preset Status Buttons */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {presetStatuses.map((preset, index) => (
                     <button
@@ -350,7 +359,6 @@ const StatusButton = () => {
                 </div>
               </div>
 
-              {/* Busy Checkbox */}
               <div className="mb-4">
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
@@ -371,7 +379,6 @@ const StatusButton = () => {
                 </label>
               </div>
 
-              {/* Expiration */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#1F2328] mb-2">
                   Expiration
@@ -394,7 +401,6 @@ const StatusButton = () => {
                 </p>
               </div>
 
-              {/* Visible to */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-[#1F2328] mb-2">
                   Visible to
@@ -410,7 +416,6 @@ const StatusButton = () => {
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={clearStatus}
@@ -427,7 +432,6 @@ const StatusButton = () => {
               </div>
             </div>
 
-            {/* Close button for desktop */}
             <button
               onClick={closeModal}
               className="hidden lg:block absolute top-4 right-4 text-[#59636E] hover:text-[#1F2328]"

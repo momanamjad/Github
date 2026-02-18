@@ -10,7 +10,14 @@ const ContributionGraph = () => {
     { date: '2024-10-12', count: 1 },
     { date: '2024-10-13', count: 4 },
     { date: '2024-12-25', count: 12 },
-    { date: '2024-01-05', count: 7 },
+    { date: '2024-12-26', count: 5 },
+    { date: '2024-12-27', count: 4 },
+    { date: '2024-12-28', count: 1 },
+    { date: '2025-4-28', count: 1 },
+    { date: '2025-01-05', count: 7 },
+    { date: '2026-01-05', count: 7 },
+    { date: '2026-01-05', count: 7 },
+
   ];
 
   return (
