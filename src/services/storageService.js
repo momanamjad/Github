@@ -19,21 +19,21 @@ export const initializeStorage = async () => {
       localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(userData.pinnedRepositories));
       localStorage.setItem(STORAGE_KEYS.STARRED_REPOS, JSON.stringify(userData.starredRepositories));
       
-      console.log('✅ localStorage initialized with default data');
+      console.log(' localStorage initialized with default data');
       return true;
     }
     
-    console.log('✅ localStorage already contains data');
+    console.log(' localStorage already contains data');
     return true;
   } catch (error) {
-    console.error('❌ Error initializing localStorage:', error);
+    console.error(' Error initializing localStorage:', error);
     return false;
   }
 };
 
 /**
  * Get user profile from localStorage
- * @returns {Object} User profile object
+ * @returns {Object} User profile object 
  */
 export const getStoredUser = () => {
   try {
@@ -52,7 +52,7 @@ export const getStoredUser = () => {
 export const updateStoredUser = (userData) => {
   try {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-    console.log('✅ User data updated in localStorage');
+    console.log(' User data updated in localStorage');
     return true;
   } catch (error) {
     console.error('Error updating user in storage:', error);

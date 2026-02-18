@@ -25,6 +25,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
+    "react-calendar-heatmap": "^1.10.0",
     "react-dom": "^19.2.0",
     "react-github-calendar": "^5.0.4",
     "react-icons": "^5.5.0",

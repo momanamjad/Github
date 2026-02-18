@@ -1,0 +1,141 @@
+.gh-contribution-wrapper {
+  display: flex;
+  gap: 32px;
+  padding: 20px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.gh-main-content {
+  flex: 1;
+}
+
+.gh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #1f2328;
+}
+
+.gh-settings-btn {
+  background: none;
+  border: none;
+  color: #636c76;
+  font-size: 12px;
+  cursor: pointer;
+}
+.react-calendar-heatmap text {
+  font-size: 10px;
+  fill: #1f2328;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.react-calendar-heatmap-month-label {
+  font-size: 10px;
+  fill: #636c76;
+}
+
+.gh-calendar-card {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.react-calendar-heatmap rect {
+  rx: 2;
+  ry: 2;
+}
+
+.react-calendar-heatmap .lvl-0 {
+  fill: #ebedf0;
+}
+.react-calendar-heatmap .lvl-1 {
+  fill: #9be9a8;
+}
+.react-calendar-heatmap .lvl-2 {
+  fill: #40c463;
+}
+.react-calendar-heatmap .lvl-3 {
+  fill: #30a14e;
+}
+.react-calendar-heatmap .lvl-4 {
+  fill: #216e39;
+}
+
+.gh-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #636c76;
+}
+
+.gh-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #636c76;
+}
+
+.gh-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.gh-year-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 120px;
+}
+.legend-box.lvl-0 {
+  background-color: #ebedf0;
+}
+.legend-box.lvl-1 {
+  background-color: #9be9a8;
+}
+.legend-box.lvl-2 {
+  background-color: #40c463;
+}
+.legend-box.lvl-3 {
+  background-color: #30a14e;
+}
+.legend-box.lvl-4 {
+  background-color: #216e39;
+}
+
+.year-btn {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  color: #636c76;
+  margin-bottom: 2px;
+}
+
+.year-btn.active {
+  background-color: #0969da;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.year-btn:hover:not(.active) {
+  background-color: #f3f4f6;
+}

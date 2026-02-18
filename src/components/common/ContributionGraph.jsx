@@ -1,161 +1,65 @@
-import { useEffect, useState } from "react";
-import { GitHubCalendar } from "react-github-calendar";
+import React, { useState } from 'react';
+import CalendarHeatmap from 'react-calendar-heatmap';
+import './ContributionGraph.css';
 
-const ContributionGraph = ({ username = "momanamjad" }) => {
-  const [allContributions, setAllContributions] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(null);
-  const [availableYears, setAvailableYears] = useState([]);
-  const [loading, setLoading] = useState(true);
+const ContributionGraph = () => {
+  const [selectedYear, setSelectedYear] = useState(2024);
+  const years = [2026, 2025, 2024];
 
-  useEffect(() => {
-    if (!username) return;
-
-    setLoading(true);
-
- fetch(`https://github-contributions-api.deno.dev/${username}.json`)
-
-
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data?.contributions) {
-          setLoading(false);
-          return;
-        }
-
-        setAllContributions(data.contributions);
-
-        const years = new Set(
-          data.contributions.map((item) => new Date(item.date).getFullYear()),
-        );
-
-        const sortedYears = Array.from(years).sort((a, b) => b - a);
-
-        setAvailableYears(sortedYears);
-        setSelectedYear(sortedYears[0]);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching contributions:", err);
-        setLoading(false);
-      });
-  }, [username]);
-
-  const filterDataBySelectedYear = (contributions) => {
-    if (!selectedYear) return contributions;
-
-    return contributions.filter(
-      (activity) => new Date(activity.date).getFullYear() === selectedYear,
-    );
-  };
-
-  if (loading) {
-    return <div style={{ padding: 16 }}>Loading contributions…</div>;
-  }
-  const getTotalContributionsForYear = (data) => {
-    return filterDataBySelectedYear(data).reduce(
-      (sum, day) => sum + (day.contributionCount || 0),
-      0,
-    );
-  };
+  const customData = [
+    { date: '2024-10-12', count: 1 },
+    { date: '2024-10-13', count: 4 },
+    { date: '2024-12-25', count: 12 },
+    { date: '2024-01-05', count: 7 },
+  ];
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 72px",
-        gap: "24px",
-        padding: "16px 0",
-        fontFamily:
-          '-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
-      }}
-    >
-      <section>
-        {/* <h2
-          style={{
-            fontSize: "16px",
-            fontWeight: 400,
-            marginBottom: "8px",
-            color: "#24292f",
-          }}
-        >
-          {filterDataBySelectedYear(allContributions).length} contributions in{" "}
-          {selectedYear}
-        </h2> */}
-        <h2
-          style={{
-            fontSize: "16px",
-            fontWeight: 400,
-            marginBottom: "8px",
-            color: "#24292f",
-          }}
-        >
-          {getTotalContributionsForYear(allContributions)} contributions in 
-          {selectedYear}
-        </h2>
-        <div
-          style={{
-            border: "1px solid #d0d7de",
-            borderRadius: "6px",
-            padding: "16px",
-            background: "#ffffff",
-          }}
-        >
-          <GitHubCalendar
-            username={username}
-            transformData={filterDataBySelectedYear}
-            showColorLegend
-            blockSize={10}
-            blockMargin={4}
-            blockRadius={2}
-            fontSize={12}
-            tooltips
-            theme={{
-              light: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
-              dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
-            }}
-            labels={{
-              totalCount: "{{count}} contributions in {{year}}",
+    <div className="gh-contribution-wrapper">
+      <div className="gh-main-content">
+        <div className="gh-header">
+          <span>{customData.length * 52} contributions in the last year</span>
+          {/* <button className="gh-settings-btn">Contribution settings ▼</button> */}
+        </div>
+
+        <div className="gh-calendar-card">
+          <CalendarHeatmap
+            startDate={new Date(`${selectedYear}-01-01`)}
+            endDate={new Date(`${selectedYear}-12-31`)}
+            values={customData}
+            classForValue={(value) => {
+              if (!value || value.count === 0) return 'lvl-0';
+              if (value.count < 3) return 'lvl-1';
+              if (value.count < 6) return 'lvl-2';
+              if (value.count < 9) return 'lvl-3';
+              return 'lvl-4';
             }}
           />
-         
+         <div className="gh-footer">
+  <a href="#">Learn how we count contributions</a>
+  <div className="gh-legend">
+    <span>Less</span>
+    <div className="legend-box lvl-0"></div>
+    <div className="legend-box lvl-1"></div>
+    <div className="legend-box lvl-2"></div>
+    <div className="legend-box lvl-3"></div>
+    <div className="legend-box lvl-4"></div>
+    <span>More</span>
+  </div>
+</div>
+
         </div>
-      </section>
+      </div>
 
-      <aside>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {availableYears.map((year) => {
-            const active = year === selectedYear;
-
-            return (
-              <li key={year} style={{ marginBottom: "4px" }}>
-                <button
-                  onClick={() => setSelectedYear(year)}
-                  style={{
-                    width: "100%",
-                    padding: "4px 8px",
-                    fontSize: "12px",
-                    borderRadius: "6px",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    backgroundColor: active ? "#ddf4ff" : "transparent",
-                    color: active ? "#0969da" : "#57606a",
-                    fontWeight: active ? 600 : 400,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!active) e.currentTarget.style.background = "#f6f8fa";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active)
-                      e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  {year}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+      <aside className="gh-year-sidebar">
+        {years.map((year) => (
+          <button
+            key={year}
+            onClick={() => setSelectedYear(year)}
+            className={`year-btn ${year === selectedYear ? 'active' : ''}`}
+          >
+            {year}
+          </button>
+        ))}
       </aside>
     </div>
   );

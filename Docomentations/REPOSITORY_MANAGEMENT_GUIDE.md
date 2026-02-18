@@ -272,7 +272,7 @@ Real GitHub sync: No
 1. Convert your React app to Electron
 2. Get access to user's file system
 3. User selects a local folder
-4. App reads all files in that folder
+4. App reads all files in that folder 
 5. Shows file tree in the UI
 6. Can commit changes to localStorage
 7. Future: Sync to GitHub via API
