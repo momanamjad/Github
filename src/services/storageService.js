@@ -1,6 +1,4 @@
-// localStorage Service for managing user data
-// This service handles all localStorage operations for the GitHub Clone app
-
+ 
 const STORAGE_KEYS = {
   USER: 'github_user',
   REPOSITORIES: 'github_repositories',
@@ -8,10 +6,7 @@ const STORAGE_KEYS = {
   STARRED_REPOS: 'github_starred_repositories',
 };
 
-/**
- * Initialize localStorage with default user data
- * This should be called once when the app loads
- */
+
 export const initializeStorage = async () => {
   try {
     const existingUser = localStorage.getItem(STORAGE_KEYS.USER);
