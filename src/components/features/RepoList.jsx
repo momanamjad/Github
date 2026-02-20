@@ -12,9 +12,6 @@ const RepoList = ({ repos }) => {
               // to={`/${repo.owner.login}/${repo.name}`}
               className="text-[#0969DA] text-[22px] font-semibold   hover:underline"
             >
-
-
-              s
               {repo.name}
             </Link>
 
