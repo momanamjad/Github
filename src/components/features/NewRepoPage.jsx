@@ -60,17 +60,25 @@ const NewRepoPage = () => {
     e.preventDefault();
     
     // Validate repository name
-    if (!formData.repoName.trim()) {
+    const cleanedName = formData.repoName.trim();
+    if (!cleanedName) {
       alert("Repository name is required");
       return;
     }
+    if (/\n/.test(cleanedName) || cleanedName.includes(' ')) {
+      // GitHub repo names cannot contain spaces; replace them or show error
+      alert("Repository name cannot contain spaces or newlines.");
+      return;
+    }
+    formData.repoName = cleanedName;
     
     // Create repository object for localStorage
+    const repoName = cleanedName; // sanitized earlier
     const newRepo = {
-      name: formData.repoName,
-      full_name: `${formData.owner}/${formData.repoName}`,
+      name: repoName,
+      full_name: `${formData.owner}/${repoName}`,
       private: formData.visibility === "private",
-      html_url: `https://github.com/${formData.owner}/${formData.repoName}`,
+      html_url: `https://github.com/${formData.owner}/${repoName}`,
       description: formData.description || null,
       fork: false,
       language: null,

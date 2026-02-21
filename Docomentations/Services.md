@@ -120,18 +120,6 @@ Other Components
 
 ---
 
-
-### **8. Working with a repository's file tree**
-```javascript
-import { getTree, addNode, updateNode } from "@services/fileSystemService.js";
-
-const tree = getTree(repoId);
-// tree is always an array; a fresh repo starts with src/ and README.md
-
-addNode(repoId, "", { type: 'file', name: 'LICENSE', path: 'LICENSE', content: 'MIT' });
-updateNode(repoId, 'README.md', { content: '# Updated' });
-```
-
 ## 🔍 Debug Tips
 
 **Check what's in storage:**

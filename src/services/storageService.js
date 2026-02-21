@@ -15,7 +15,15 @@ export const initializeStorage = async () => {
       const userData = await import('./userData.json');
       
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData.user));
-      localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(userData.repositories));
+      // ensure each seeded repo includes a minimal fileTree so components can safely read it
+      const reposWithTree = userData.repositories.map(repo => ({
+        ...repo,
+        fileTree: repo.fileTree || [
+          { type: 'dir', name: 'src', path: 'src', children: [] },
+          { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
+        ]
+      }));
+      localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(reposWithTree));
       localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(userData.pinnedRepositories));
       localStorage.setItem(STORAGE_KEYS.STARRED_REPOS, JSON.stringify(userData.starredRepositories));
       
@@ -85,6 +93,12 @@ export const addRepository = (newRepo) => {
     
     // Generate unique ID for the new repo
     const newId = repos.length > 0 ? Math.max(...repos.map(r => r.id)) + 1 : 1;
+
+    // default filesystem structure for a fresh repository
+    const initialTree = [
+      { type: 'dir', name: 'src', path: 'src', children: [] },
+      { type: 'file', name: 'README.md', path: 'README.md', content: `# ${newRepo.name}\n` }
+    ];
     
     const repoWithId = {
       ...newRepo,
@@ -100,6 +114,8 @@ export const addRepository = (newRepo) => {
       updated_at: new Date().toISOString(),
       pushed_at: new Date().toISOString(),
       visibility: 'public',
+      // attach a basic file tree so UI can operate on it immediately
+      fileTree: initialTree
     };
     
     repos.push(repoWithId);
@@ -111,6 +127,7 @@ export const addRepository = (newRepo) => {
     console.error('Error adding repository to storage:', error);
     return getStoredRepositories();
   }
+  
 };
 
 /**

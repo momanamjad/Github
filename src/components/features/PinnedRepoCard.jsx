@@ -1,6 +1,8 @@
-const PinnedRepoCard = ({
-  stars,
+import { Link } from "react-router-dom";
 
+const PinnedRepoCard = ({
+  repo,
+  stars,
   dragHandleProps,
   style,
 }) => {
@@ -15,14 +17,13 @@ const PinnedRepoCard = ({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <Reposvg />
-            <a
-              href="*"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#0969DA] font-semibold text-[14px] hover:underline break-all"
-            >
-              Repository
-            </a>
+            {/* use internal routing instead of external href */}
+          <Link
+            to={`/${repo.author}/${encodeURIComponent(repo.name)}`}
+            className="text-[#0969DA] font-semibold text-[14px] hover:underline break-all"
+          >
+            {repo.name || "Repository"}
+          </Link>
           </div>
 
           {/* Drag handle (six dots) */}

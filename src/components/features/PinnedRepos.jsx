@@ -82,7 +82,7 @@ const PinnedRepos = ({ username }) => {
             {repos.map((repo) => {
               const id = repo.name || repo.id || `${repo.author}/${repo.name}`;
               return (
-                <SortableItem key={id} id={id} repo={repo} repoUrl={`https://github.com/${repo.author}/${repo.name}`} />
+                <SortableItem key={id} id={id} repo={repo} />
               );
             })}
           </div>
@@ -92,7 +92,7 @@ const PinnedRepos = ({ username }) => {
   );
 };
 
-function SortableItem({ id, repo, repoUrl }) {
+function SortableItem({ id, repo }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -104,17 +104,13 @@ function SortableItem({ id, repo, repoUrl }) {
   return (
     <div>
       <PinnedRepoCard
-        id={id}
-        name={repo.name}
-        desc={repo.description}
+        repo={repo}
         stars={repo.stars}
         language={repo.language}
-        repoUrl={repoUrl}
         languageColor={repo.languageColor}
         visibility={repo.visibility}
         dragHandleProps={{ attributes, listeners, ref: setNodeRef }}
         style={style}
-        
       />
     </div>
   );

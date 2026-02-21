@@ -1,226 +1,248 @@
 ﻿# GitHub Clone (React + Vite)
 
-This repository is a front‑end simulation of GitHub built with React and Vite. It already contains:
+**GitHub Clone** is a front‑end prototype of the GitHub web interface built using React and Vite. It’s intended as a learning project and a sandbox where you can:
 
-- UI components for browsing a user's repositories, viewing details, and listing files.
-- A storageService that saves user and repo metadata in localStorage.
-- A userData.json file with default data to populate storage.
-- A " New Repository\ page (NewRepoPage.jsx) where users can add a repo object.
-- Integration with the real GitHub REST API for repo details and contents when a live GitHub username is provided.
+- browse user profiles,
+- list repositories,
+- create and modify repositories,
+- pin/star repos,
+- view repo details and file listings,
+- simulate local storage of data without a backend,
+- and progressively add features until it behaves like a miniature GitHub.
 
----
+> This README covers the current state, how to run the project, architectural notes, a detailed plan for persisting repository file/folder trees, and guidance for turning it into a full‑featured platform.
 
-## 🔧 Where the project stands today
+## 🧩 What’s in the repository today
 
-- Repositories are stored in localStorage under the key github_repositories.
-- New repos pushed from the UI are appended to that list, but they contain only metadata (name, description, etc.).
-- When viewing a repo, the app currently fetches getRepoContents from GitHub, not from local data.
-- There is **no file/folder tree persisted for the repos you create locally**.
+- **React components** under src/components (features, common UI pieces, layout).
+- **Routing** configured in App.jsx via 
+eact-router-dom.
+- **Local data store** (storageService.js) that uses localStorage keys:
+  - github_user
+  - github_repositories
+  - github_pinned_repositories
+  - github_starred_repositories
+- **Default data** seeded from src/services/userData.json.
+- **New repository flow** (NewRepoPage.jsx) for adding metadata to storage.
+- **Partial API integration**: repo metadata and contents are fetched from GitHub when viewing a real username.
+- **Pinned/starred repos** feature.
+- **Familiar pages**: Home, Explore, Issues, Pull Requests, etc. (static placeholders).
+- **File listing** is currently pulled from GitHub for all repos; local repo contents are not stored.
 
-The sections below describe how to take the next steps toward a more complete, GitHub‑like experience.
+## ✅ Existing capabilities
 
----
+- Add, delete, and edit repository metadata in localStorage.
+- Pin or star repositories.
+- Browse a static sidebar menu with GitHub-like sections.
+- View repository details including readme rendered via GitHub API.
+- Create a new repository via a form with options (visibility, license, etc.).
+- When looking at someone else’s real GitHub repos, the app uses the public API.
 
-## 🗂️ After a new repository is created
+## 🔧 Next-step roadmap (to make it “perfect”)
 
-To make the \New Repository\ flow feel like a real GitHub platform you need to:
+To evolve this into a close approximation of https://github.com, focus on the following layers:
 
-1. **Extend the repository model** to include a file system tree.
-"""
-# GitHub Clone — File System & New Repository Flow (Step-by-step)
+1. **Local file system & commits**
+   - Persist folders/files for every local repo.
+   - Add simple commit modelling and history.
+   - Render a tree explorer and a markdown editor.
 
-This guide explains how to add a simulated repository file system so repositories created in the app behave like real GitHub repos (files, folders, create/edit/delete, and a persistence layer).
+2. **Branches & cloning**
+   - Allow creating/renaming branches and switching between them.
+   - Support a “clone” / “fork” operation (duplicate repo with separate tree).
 
-Goal: when a user creates a new repository in the app, the repo gets an editable file/folder tree that persists and is used by the UI instead of calling GitHub for contents.
+3. **Issue tracker & pull requests**
+   - Implement a basic issues database (stored in localStorage or backend).
+   - Enable creating, labeling, and commenting on issues.
+   - Simulate pull requests with diff view and approval workflow.
 
-Prerequisites
-- Node + npm (project already uses Vite).
-- Familiarity with React components in `src/components` and the current `storageService.js` and `userData.json` files.
+4. **Authentication & multiple users**
+   - Add a login screen (mock or OAuth with GitHub).
+   - Separate data per user; enforce permissions.
+   - Support user profiles, followers, and stars.
 
-Overview — high level steps
-1. Extend the repository model to include a `fileTree` (or `contents`) property.
-2. Implement a `fileSystemService` with recursive helpers for tree operations.
-3. Persist the tree in `localStorage` (or separate keys) and wire it into `storageService`.
-4. Update the UI (NewRepoPage, RepoDetails, file explorer, file editor) to use the simulated tree.
-5. Add tests and documentation.
+5. **Backend & persistent storage**
+   - Move away from localStorage → use Node/Express + MongoDB/PostgreSQL.
+   - Expose REST endpoints or GraphQL for all data.
+   - Consider Git server integration (e.g. the isomorphic-git library) for real git operations.
 
-Detailed plan and examples
+6. **Notifications, activity feed, search**
+   - Add notifications for issues/PRs.
+   - Provide global repo search and user search.
 
-1) Schema: extend repository objects
+7. **UI polish & performance**
+   - Add pagination, lazy loading, and responsive design.
+   - Add error states and loaders.
+   - Write comprehensive unit/integration tests with Jest/React Testing Library.
 
-Add a `fileTree` key to every repo created locally. Example minimal structure:
+## 📁 Persisting file/folder tree for local repos
 
-```json
+To make repositories behave like real GitHub projects, each local repo needs a searchable/editable tree of files that is saved across page reloads:
+
+### Step-by-step implementation
+
+1. **Extend the data model**
+   - When ddRepository() runs (in storageService.js), attach a ileTree property:
+     `js
+     const initialTree = [
+       { type: 'file', name: 'README.md', path: 'README.md', content: # \n },
+       { type: 'dir', name: 'src', path: 'src', children: [] }
+     ];
+     repoWithId.fileTree = initialTree;
+     `
+   - ileTree is an array of nodes. Node schema:
+     `	s
+     interface FileNode { type: 'file'; name: string; path: string; content: string; }
+     interface DirNode { type: 'dir'; name: string; path: string; children: FileSystemNode[]; }
+     type FileSystemNode = FileNode | DirNode;
+     `
+
+2. **Create ileSystemService.js**
+   - Located in src/services.
+   - Responsible for reading/writing the tree and providing helper functions:
+     - getTree(repoId), saveTree(repoId, tree)
+     - ddNode(repoId, parentPath, node)
+     - updateNode(repoId, path, changes) (rename/file edit)
+     - deleteNode(repoId, path) and moveNode(repoId, fromPath, toPath)
+   - Use recursive helpers:
+     `js
+     function addNodeToTree(tree, parentPath, newNode) { /*...*/ }
+     function deleteNodeFromTree(tree, targetPath) { /*...*/ }
+     function findNode(tree, targetPath) { /*...*/ }
+     `
+   - Optionally implement a separate storage key (github_fs_{repoId}) for large repos.
+
+3. **Update UI components**
+   - NewRepoPage.jsx: nothing extra besides ensuring the new repo includes ileTree (handled by service).
+   - RepoDetails.jsx: detect owned local repo → call getTree(repo.id) instead of GitHub API.
+   - RepoFileList.jsx: render nested lists and open directories. Add buttons for create/rename/delete.
+   - Additional components:
+     - FileExplorer.jsx: tree view with expand/collapse.
+     - FileEditor.jsx: textarea or markdown preview to edit file content.
+     - CreateFileModal.jsx, RenameModal.jsx, etc.
+
+4. **Persistence & behavior**
+   - All tree modifications should update storage via ileSystemService and cause state updates.
+   - When deleting a folder, remove children recursively.
+   - Prevent duplicate paths and show warnings.
+
+5. **Testing**
+   - Unit tests for recursive helpers and service functions.
+   - Integration tests simulating user flows: create repo → add file → edit → reload.
+
+6. **Documentation**
+   - Update Docomentations/ with a FILESYSTEM.md explaining the model and APIs.
+   - Add examples of JSON stored in localStorage.
+
+### Example of ileSystemService.js structure
+
+`js
+import { getStoredRepositories, updateRepository } from './storageService';
+
+export const getTree = (repoId) => {
+  const repos = getStoredRepositories();
+  const repo = repos.find(r => r.id === repoId);
+  return repo?.fileTree || [];
+};
+
+export const saveTree = (repoId, tree) => {
+  const repos = getStoredRepositories();
+  const updated = repos.map(r => 
+    r.id === repoId ? { ...r, fileTree: tree } : r
+  );
+  localStorage.setItem('github_repositories', JSON.stringify(updated));
+  return tree;
+};
+
+// ...addNode, updateNode, deleteNode functions using recursive helpers
+`
+
+### File/folder example
+
+`
+/
+├── README.md
+└── src/
+    ├── index.js
+    └── components/
+        └── App.jsx
+`
+
+## 📦 Project setup
+
+`ash
+git clone <this-repo>
+cd github
+npm install
+npm run dev
+`
+
+Open http://localhost:5173 in your browser. The app will automatically populate localStorage on first load.
+
+## 🗂 Folder structure
+
+`
+src/
+  components/        # React UI + feature modules
+  contexts/
+  hooks/
+  layout/
+  lib/               # utilities
+  pages/
+  services/          # localStorage API, future backend client
+  utils/
+  assets/
+`
+
+When you create a repository via the UI, its metadata and ileTree are saved under github_repositories in localStorage. A typical entry:
+
+`json
 {
-	"id": 10,
-	"name": "my-new-repo",
-	"description": "...",
-	"owner": { "login": "localUser", "id": 1 },
-	"default_branch": "main",
-	"fileTree": [
-		{
-			"type": "dir",
-			"name": "src",
-			"path": "src",
-			"children": []
-		},
-		{
-			"type": "file",
-			"name": "README.md",
-			"path": "README.md",
-			"content": "# My repo\n"
-		}
-	]
+  "id": 3,
+  "name": "awesome-project",
+  "owner": { "login": "momanamjad" },
+  // ...
+  "fileTree": [
+    {
+      "type": "dir",
+      "name": "src",
+      "path": "src",
+      "children": []
+    },
+    {
+      "type": "file",
+      "name": "README.md",
+      "path": "README.md",
+      "content": "# awesome-project"
+    }
+  ]
 }
-```
+`
 
-Notes:
-- `path` is the full path relative to repo root.
-- `children` exists only for directories.
-- `content` is a plain string for files (later you can add metadata: encoding, size, lastModified).
+(See Docomentations/FILESYSTEM.md for more details — create this file as part of the next step.)
 
-2) fileSystemService — responsibilities and APIs
+## ⚡ Roadmap
 
-Create `src/services/fileSystemService.js` exporting pure functions that operate on a tree and persist changes.
+1. Implement file system service and UI.
+2. Add basic commit/branch simulation.
+3. Integrate a lightweight backend.
+4. Add issues/PRs and notifications.
+5. Add authentication and multi-user support.
+6. Perform performance tuning (pagination, lazy load).
+7. Polish UI and add tests.
 
-Essential functions:
-- `initRepoTree(repoId, initialTree)` — create and persist an empty or starter tree.
-- `getTree(repoId)` — load tree from storage.
-- `addNode(repoId, parentPath, node)` — add file or directory.
-- `updateNode(repoId, path, changes)` — rename or change file content.
-- `deleteNode(repoId, path)` — remove file or directory (recursively).
-- `moveNode(repoId, fromPath, toParentPath)` — move node.
+> The existing README already contains earlier notes. Continue iterating by following the checklist above and updating documentation accordingly.
 
-Recursive helpers (in-file examples)
+## 🤝 Contributing
 
-addNode helper (returns true if added):
+1. Fork the repository and create a branch.
+2. Run 
+pm install and 
+pm run dev to test changes.
+3. Add/modify tests; run 
+pm run test once available.
+4. Submit a pull request with detailed description and screenshots.
 
-```js
-function addNodeToTree(tree, parentPath, newNode) {
-	for (const node of tree) {
-		if (node.path === parentPath && node.type === 'dir') {
-			node.children = node.children || [];
-			node.children.push(newNode);
-			return true;
-		}
-		if (node.type === 'dir' && node.children) {
-			const added = addNodeToTree(node.children, parentPath, newNode);
-			if (added) return true;
-		}
-	}
-	return false;
-}
-```
+## 📜 License
 
-deleteNode helper (returns new filtered tree):
-
-```js
-function deleteNodeFromTree(tree, targetPath) {
-	return tree.filter(node => {
-		if (node.path === targetPath) return false;
-		if (node.type === 'dir' && node.children) {
-			node.children = deleteNodeFromTree(node.children, targetPath);
-		}
-		return true;
-	});
-}
-```
-
-findNode helper (returns node or null):
-
-```js
-function findNode(tree, targetPath) {
-	for (const node of tree) {
-		if (node.path === targetPath) return node;
-		if (node.type === 'dir' && node.children) {
-			const found = findNode(node.children, targetPath);
-			if (found) return found;
-		}
-	}
-	return null;
-}
-```
-
-3) Persistence: where and how to store trees
-
-Options:
-- Embed `fileTree` inside the repo object stored under `github_repositories` (simpler).
-- Store tree separately under `github_fs_${repoId}` (better for snapshotting and commits).
-
-Recommendation: start by embedding the tree inside the repository object to minimize refactors. If you plan to support commits/snapshots, switch to separate keys later.
-
-How to wire into `storageService.js`:
-- When `addRepository()` creates a new repo, set `fileTree` to an initial array (empty or with README and src).
-- Provide `getRepoTree(repoId)` and `saveRepoTree(repoId, tree)` helper wrappers in `storageService` (or delegate to `fileSystemService`).
-
-Example: initialize in `addRepository`:
-
-```js
-const initialTree = [
-	{ type: 'file', name: 'README.md', path: 'README.md', content: `# ${newRepo.name}\n` },
-	{ type: 'dir', name: 'src', path: 'src', children: [] }
-];
-repoWithId.fileTree = initialTree;
-```
-
-4) UI: reading and editing the tree
-
-Changes required:
-- `NewRepoPage.jsx`: after creating repo metadata, ensure the repo includes `fileTree` (use `addRepository`).
-- `RepoDetails.jsx`: when showing a repo that is owned by the local user, prefer `getRepoTree(repoId)` (or from repo object) instead of `getRepoContents` from the external API.
-- `RepoFileList.jsx`: update to render nested directories and expand/collapse children.
-- Add `FileExplorer` component to navigate directories and select files.
-- Add `FileEditor` or reuse existing editor component to view/edit `content`.
-- Add modals/components for: create file/folder, rename, move, delete, and commit (optional).
-
-Simple RepoDetails flow example:
-
-1. Load `repo` metadata via existing logic.
-2. If `repo.owner.login === localUser.login` OR repo has `fileTree`, call `getRepoTree(repo.id)` and pass it to `RepoFileList`.
-3. Wire file actions to `fileSystemService` which will persist changes and return updated tree.
-
-5) Example operation: creating a file
-
-- UI calls `fileSystemService.addNode(repoId, parentPath, { type: 'file', name, path, content })`.
-- Service loads tree, runs `addNodeToTree`, persists updated tree and returns it.
-- UI updates state and re-renders.
-
-6) Edge cases and behavior
-
-- Path collisions: prevent creating a file with the same `path`.
-- Moving directories: ensure children paths update to reflect new parent.
-- Deleting directories: delete recursively and confirm destructive actions in UI.
-- Large content: consider storing only summary in localStorage and full contents in separate DB when scaling.
-
-7) Tests and documentation
-
-- Unit test recursive helpers (`addNodeToTree`, `deleteNodeFromTree`, `findNode`) using Jest.
-- Integration tests for `fileSystemService` (simulate adding, renaming, moving).
-- Update `Docomentations/ADD_REPOSITORY_TUTORIAL.md` and add a new `Docomentations/FILESYSTEM.md` describing the model and APIs.
-
-8) Migration to a backend (optional future step)
-
-- Create an API (Node/Express) to store repo trees in a database (MongoDB or PostgreSQL).
-- Keep the same service API surface (`getTree`, `addNode`, `updateNode`) but call the backend for persistence.
-- Add authentication to prevent cross-user modifications.
-
-Performance & scaling notes
-- localStorage is limited (~5–10MB depending on the browser) — fine for demos, not for real projects.
-- For large trees, paginate directory listings and lazy-load file contents.
-- Normalize tree for large datasets (store nodes in a map and keep parent/child references) if you need performance.
-
-Security
-- Ensure only the repository owner (local user) can modify the embedded tree.
-- Sanitize file content if you ever render markdown/HTML to avoid XSS.
-
-Next steps checklist (concrete)
-1. Create `src/services/fileSystemService.js` with `getTree/addNode/updateNode/deleteNode/moveNode` and unit tests.
-2. Update `storageService.addRepository()` to initialize `fileTree` for new repos.
-3. Update `NewRepoPage.jsx` to include required fields and call `addRepository`.
-4. Modify `RepoDetails.jsx` to prefer local `fileTree` for owned repos.
-5. Implement `FileExplorer` and `FileEditor` components; wire actions to service APIs.
-6. Add docs in `Docomentations/FILESYSTEM.md` and example JSON samples.
-
-If you want, I can scaffold `src/services/fileSystemService.js` now and update `storageService.addRepository()` to initialize `fileTree` automatically. Which would you like me to do next?
-
-"""
+This project is available under the **MIT License**. Copy the contents of LICENSE or add one if missing.

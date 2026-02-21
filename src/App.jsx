@@ -44,7 +44,8 @@ const App = () => {
             <Route index element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
             <Route path="stars" element={<Stars />} />
-            <Route path="/:username/:repo" element={<RepoDetails />} />
+            {/* nested under /:username, so path should be relative */}
+          <Route path=":repo" element={<RepoDetails />} />
           </Route>
         </Routes>
       </div>
