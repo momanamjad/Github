@@ -123,13 +123,24 @@ Other Components
 
 ### **8. Working with a repository's file tree**
 ```javascript
-import { getTree, addNode, updateNode } from "@services/fileSystemService.js";
+import { getTree, addNode, updateNode, deleteNode, moveNode } from "@services/fileSystemService.js";
 
 const tree = getTree(repoId);
 // tree is always an array; a fresh repo starts with src/ and README.md
 
+// add a top‑level file or folder
 addNode(repoId, "", { type: 'file', name: 'LICENSE', path: 'LICENSE', content: 'MIT' });
-updateNode(repoId, 'README.md', { content: '# Updated' });
+addNode(repoId, "", { type: 'dir', name: 'lib', path: 'lib', children: [] });
+
+// rename/move an item
+moveNode(repoId, 'README.md', 'docs/README.md');
+
+// delete a node
+deleteNode(repoId, 'old-file.txt');
+
+// in the UI you'll usually use <FileExplorer> to render the tree and
+// <FileEditor> to open/edit a file. The components handle calling the
+// service behind the scenes.
 ```
 
 ## 🔍 Debug Tips

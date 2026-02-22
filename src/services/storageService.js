@@ -74,8 +74,27 @@ export const updateStoredUser = (userData) => {
  */
 export const getStoredRepositories = () => {
   try {
-    const repos = localStorage.getItem(STORAGE_KEYS.REPOSITORIES);
-    return repos ? JSON.parse(repos) : [];
+    const reposStr = localStorage.getItem(STORAGE_KEYS.REPOSITORIES);
+    let list = reposStr ? JSON.parse(reposStr) : [];
+    // ensure every repo has a fileTree; fill missing ones and persist
+    let patched = false;
+    list = list.map(repo => {
+      if (!repo.fileTree) {
+        patched = true;
+        return {
+          ...repo,
+          fileTree: [
+            { type: 'dir', name: 'src', path: 'src', children: [] },
+            { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
+          ]
+        };
+      }
+      return repo;
+    });
+    if (patched) {
+      localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(list));
+    }
+    return list;
   } catch (error) {
     console.error('Error retrieving repositories from storage:', error);
     return [];

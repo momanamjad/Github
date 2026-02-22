@@ -77,7 +77,7 @@ To evolve this into a close approximation of https://github.com, focus on the fo
 
 ## 📁 Persisting file/folder tree for local repos
 
-To make repositories behave like real GitHub projects, each local repo needs a searchable/editable tree of files that is saved across page reloads:
+To make repositories behave like real GitHub projects, each local repo needs a searchable/editable tree of files that is saved across page reloads.  Clicking any local repo now opens an in‑app file explorer instead of jumping to github.com:
 
 ### Step-by-step implementation
 
@@ -96,6 +96,12 @@ To make repositories behave like real GitHub projects, each local repo needs a s
      interface DirNode { type: 'dir'; name: string; path: string; children: FileSystemNode[]; }
      type FileSystemNode = FileNode | DirNode;
      `
+
+     The application now includes a **FileExplorer** component that renders
+     this tree with expand/collapse affordances and simple buttons for creating,
+     renaming, and deleting nodes. Clicking a file opens it in the
+     **FileEditor**, which lets you modify the `content` string and save
+     changes back to storage via the `fileSystemService`.
 
 2. **Create ileSystemService.js**
    - Located in src/services.
