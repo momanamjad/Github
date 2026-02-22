@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
 import { getStaticStarredRepos } from '@services/staticData';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 
 const Stars = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -349,14 +349,12 @@ const Stars = () => {
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2 flex-1">
-                      <a
-                        href={repo.html_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to={`/${repo.owner.login}/${encodeURIComponent(repo.name)}`}
                         className="text-blue-600 hover:underline font-semibold"
                       >
                         {repo.full_name}
-                      </a>
+                      </Link>
                     </div>
                     <button className="flex items-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
                       <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-400" />

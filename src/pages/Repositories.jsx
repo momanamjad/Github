@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
+import { Link } from "react-router-dom";
 
 export default function Repositories() {
   const [activeTab, setActiveTab] = useState("my-contributions");
@@ -298,12 +299,12 @@ export default function Repositories() {
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <a
-                            href={repo.html_url || '#'}
+                          <Link
+                            to={`/${repo.owner?.login}/${encodeURIComponent(repo.name)}`}
                             className="text-blue-600 hover:underline font-semibold"
                           >
                             {repo.full_name || `${repo.owner?.login}/${repo.name}`}
-                          </a>
+                          </Link>
                           <span className="px-2 py-0.5 text-xs font-medium border border-gray-300 rounded-full text-gray-600">
                             {repo.private ? "Private" : "Public"}
                           </span>
