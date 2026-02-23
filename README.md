@@ -240,6 +240,29 @@ When you create a repository via the UI, its metadata and ileTree are saved und
 
 > The existing README already contains earlier notes. Continue iterating by following the checklist above and updating documentation accordingly.
 
+### 🏗️ Immediate next operations
+
+With the file tree feature in place and edits being saved, the very next
+concrete tasks you can tackle are:
+
+- **Commit history** – capture snapshots of `fileTree` on every save and
+  display a basic log with messages and timestamps.
+- **Branch support** – add an array of branch objects and let users switch
+  between them; updating the tree to match the active branch.
+- **Replace `window.prompt` dialogs** in `FileExplorer` with proper modal
+  components (create/rename/delete) to improve UX.
+- **Breadcrumb navigation & Go‑to‑file** – show current path and allow
+  jumping around the tree quickly.
+- **Validation/duplicate prevention** – better error messages when paths
+  collide or names are invalid.
+- **Unit/integration tests** for `fileSystemService` and explorer/editor
+  components so future refactors stay safe.
+
+Working on these operations will solidify the virtual filesystem and set
+up the next larger layers (branches, commits, collaboration).  Pick a
+small piece and ship it; the underlying service stays the same, so UI
+can evolve independently.
+
 ## 🤝 Contributing
 
 1. Fork the repository and create a branch.
@@ -252,4 +275,4 @@ pm run test once available.
 
 ## 📜 License
 
-This project is available under the **MIT License**. Copy the contents of LICENSE or add one if missing.
+
