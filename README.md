@@ -77,8 +77,7 @@ To evolve this into a close approximation of https://github.com, focus on the fo
 
 ## 📁 Persisting file/folder tree for local repos
 
-To make repositories behave like real GitHub projects, each local repo needs a searchable/editable tree of files that is saved across page reloads.  Clicking any local repo now opens an in‑app file explorer instead of jumping to github.com:
-
+To make repositories behave like real GitHub projects, each local repo needs a searchable/editable tree of files that is saved across page reloads.  Clicking any local repo now opens an in‑app file explorer:
 ### Step-by-step implementation
 
 1. **Extend the data model**

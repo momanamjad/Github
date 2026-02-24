@@ -1,33 +1,49 @@
-import React, { useState } from "react";
-import { Folder, File as FileIcon, PlusSquare, Edit2, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  addNode,
-  moveNode,
-  deleteNode,
-} from "@services/fileSystemService.js";
+  Folder,
+  File as FileIcon,
+  PlusSquare,
+  Edit2,
+  Trash2,
+} from "lucide-react";
+import { addNode, moveNode, deleteNode } from "@services/fileSystemService.js";
 
 // simple tree view with expand/collapse and inline actions
 const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
   const [openDirs, setOpenDirs] = useState({});
+  // inline create { parentPath: string, type: 'file' | 'dir' }
+  const [inlineCreate, setInlineCreate] = useState(null);
+  const inputRef = useRef(null);
 
+  useEffect(() => {
+    if (inlineCreate && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select(); 
+    } 
+  }, [inlineCreate]);
+  
   const toggle = (path) =>
     setOpenDirs((prev) => ({ ...prev, [path]: !prev[path] }));
 
-  const createNode = (parentPath, isDir) => {
-    const promptText = isDir ? "Directory name" : "File name";
-    const name = window.prompt(promptText);
-    if (!name) return;
-    const clean = name.replace(/\s+/g, "-").trim();
-    if (!clean) return;
+  const commitCreate = (parentPath, isDir, rawName) => {
+    const clean = (rawName || "").replace(/\s+/g, "-").trim();
+    if (!clean) {
+      setInlineCreate(null);
+      return;
+    }
     const newPath = parentPath ? `${parentPath}/${clean}` : clean;
     const node = isDir
       ? { type: "dir", name: clean, path: newPath, children: [] }
       : { type: "file", name: clean, path: newPath, content: "" };
     try {
       addNode(repoId, parentPath, node);
+      setInlineCreate(null);
       refreshTree();
       if (!isDir) {
         onSelect && onSelect(node);
+      }
+      if (parentPath) {
+        setOpenDirs((prev) => ({ ...prev, [parentPath]: true }));
       }
     } catch (e) {
       alert(e.message);
@@ -83,14 +99,18 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
               </span>
               <button
                 title="add file"
-                onClick={() => createNode(fullPath, false)}
+                onClick={() =>
+                  setInlineCreate({ parentPath: fullPath, type: "file" })
+                }
                 className="ml-2 text-green-600 hover:text-green-800"
               >
                 <PlusSquare size={14} />
               </button>
               <button
                 title="add folder"
-                onClick={() => createNode(fullPath, true)}
+                onClick={() =>
+                  setInlineCreate({ parentPath: fullPath, type: "dir" })
+                }
                 className="ml-1 text-green-600 hover:text-green-800"
               >
                 <PlusSquare size={14} />
@@ -110,7 +130,44 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                 <Trash2 size={14} />
               </button>
             </div>
-            {isOpen && renderNodes(node.children, fullPath)}
+            {isOpen && (
+              <>
+                {renderNodes(node.children, fullPath)}
+                {inlineCreate && inlineCreate.parentPath === fullPath && (
+                  <div className="pl-6 py-1 flex items-center gap-2">
+                    {inlineCreate.type === "dir" ? (
+                      <Folder size={16} />
+                    ) : (
+                      <FileIcon size={16} />
+                    )}
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      placeholder={
+                        inlineCreate.type === "dir" ? "New folder" : "New file"
+                      }
+                      className="border px-2 py-0.5 text-sm rounded w-48"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                          commitCreate(
+                            fullPath,
+                            inlineCreate.type === "dir",
+                            e.currentTarget.value,
+                          );
+                        if (e.key === "Escape") setInlineCreate(null);
+                      }}
+                      onBlur={(e) =>
+                        commitCreate(
+                          fullPath,
+                          inlineCreate.type === "dir",
+                          e.currentTarget.value,
+                        )
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
       }
@@ -147,19 +204,54 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     <div>
       <div className="flex gap-2 mb-2">
         <button
-          onClick={() => createNode("", false)}
+          onClick={() => setInlineCreate({ parentPath: "", type: "file" })}
           className="text-green-600 hover:text-green-800 flex items-center gap-1"
         >
           <PlusSquare size={16} /> File
         </button>
         <button
-          onClick={() => createNode("", true)}
+          onClick={() => setInlineCreate({ parentPath: "", type: "dir" })}
           className="text-green-600 hover:text-green-800 flex items-center gap-1"
         >
           <PlusSquare size={16} /> Folder
         </button>
       </div>
+      {/* root-level nodes */}
       {renderNodes(tree)}
+      {/* inline creator at root */}
+      {inlineCreate && inlineCreate.parentPath === "" && (
+        <div className="pl-2 py-1 flex items-center gap-2">
+          {inlineCreate.type === "dir" ? (
+            <Folder size={16} />
+          ) : (
+            <FileIcon size={16} />
+          )}
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder={
+              inlineCreate.type === "dir" ? "New folder" : "New file"
+            }
+            className="border px-2 py-0.5 text-sm rounded w-48"
+            onKeyDown={(e) => {
+              if (e.key === "Enter")
+                commitCreate(
+                  "",
+                  inlineCreate.type === "dir",
+                  e.currentTarget.value,
+                );
+              if (e.key === "Escape") setInlineCreate(null);
+            }}
+            onBlur={(e) =>
+              commitCreate(
+                "",
+                inlineCreate.type === "dir",
+                e.currentTarget.value,
+              )
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };
