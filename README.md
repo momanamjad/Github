@@ -94,7 +94,7 @@ To make repositories behave like real GitHub projects, each local repo needs a s
      interface FileNode { type: 'file'; name: string; path: string; content: string; }
      interface DirNode { type: 'dir'; name: string; path: string; children: FileSystemNode[]; }
      type FileSystemNode = FileNode | DirNode;
-     `
+     `   
 
      The application now includes a **FileExplorer** component that renders
      this tree with expand/collapse affordances and simple buttons for creating,
@@ -104,7 +104,7 @@ To make repositories behave like real GitHub projects, each local repo needs a s
 
 2. **Create ileSystemService.js**
    - Located in src/services.
-   - Responsible for reading/writing the tree and providing helper functions:
+   - Responsible for reading/writing the tree and providing helper functions: 
    - Responsible for reading/writing the tree and providing helper functions:
      - getTree(repoId), saveTree(repoId, tree)
      - ddNode(repoId, parentPath, node)
