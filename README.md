@@ -162,7 +162,6 @@ export const saveTree = (repoId, tree) => {
 
 // ...addNode, updateNode, deleteNode functions using recursive helpers
 `
-
 ### File/folder example
 
 `
