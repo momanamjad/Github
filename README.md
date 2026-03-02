@@ -102,7 +102,7 @@ To make repositories behave like real GitHub projects, each local repo needs a s
      **FileEditor**, which lets you modify the `content` string and save
      changes back to storage via the `fileSystemService`.
 2. **Create ileSystemService.js**                               
-   - Located in src/services.
+   - Located in src/services.  
    - Responsible for reading/writing the tree and providing helper functions: 
    - Responsible for reading/writing the tree and providing helper functions:
      - getTree(repoId), saveTree(repoId, tree)
@@ -149,7 +149,7 @@ export const getTree = (repoId) => {
   const repo = repos.find(r => r.id === repoId);
   return repo?.fileTree || [];
 };
-
+          
 export const saveTree = (repoId, tree) => {
   const repos = getStoredRepositories();
   const updated = repos.map(r => 

@@ -4,7 +4,7 @@ const STORAGE_KEYS = {
   REPOSITORIES: 'github_repositories',
   PINNED_REPOS: 'github_pinned_repositories',
   STARRED_REPOS: 'github_starred_repositories',
-};
+};  
 
 
 export const initializeStorage = async () => {
@@ -140,7 +140,7 @@ export const addRepository = (newRepo) => {
     repos.push(repoWithId);
     localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(repos));
     
-    console.log(`✅ Repository "${newRepo.name}" added to localStorage`);
+    console.log(` Repository "${newRepo.name}" added to localStorage`);
     return repos;
   } catch (error) {
     console.error('Error adding repository to storage:', error);
@@ -188,7 +188,7 @@ export const updateRepository = (repoId, updatedData) => {
     );
     
     localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(updatedRepos));
-    console.log(`✅ Repository with ID ${repoId} updated in localStorage`);
+    console.log(` Repository with ID ${repoId} updated in localStorage`);
     
     return updatedRepos;
   } catch (error) {
@@ -232,14 +232,14 @@ export const pinRepository = (repo) => {
       description: repo.description,
       stars: repo.stargazers_count,
       language: repo.language,
-      languageColor: "#f1e05a", // Default color, can be updated
+      languageColor: "#f1e05a",
       visibility: repo.visibility,
       url: repo.html_url,
     };
     
     pinnedRepos.push(pinnedRepo);
     localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(pinnedRepos));
-    console.log(`✅ Repository "${repo.name}" pinned`);
+    console.log(` Repository "${repo.name}" pinned`);
     
     return pinnedRepos;
   } catch (error) {
@@ -259,7 +259,7 @@ export const unpinRepository = (repoName) => {
     const filteredRepos = pinnedRepos.filter(repo => repo.name !== repoName);
     
     localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(filteredRepos));
-    console.log(`✅ Repository "${repoName}" unpinned`);
+    console.log(` Repository "${repoName}" unpinned`);
     
     return filteredRepos;
   } catch (error) {
@@ -299,7 +299,7 @@ export const starRepository = (repo) => {
     
     starredRepos.push(repo);
     localStorage.setItem(STORAGE_KEYS.STARRED_REPOS, JSON.stringify(starredRepos));
-    console.log(`✅ Repository "${repo.name}" starred`);
+    console.log(` Repository "${repo.name}" starred`);
     
     return starredRepos;
   } catch (error) {
@@ -337,7 +337,7 @@ export const clearAllStorage = () => {
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
-    console.log('✅ All localStorage data cleared');
+    console.log(' All localStorage data cleared');
     return true;
   } catch (error) {
     console.error('Error clearing storage:', error);

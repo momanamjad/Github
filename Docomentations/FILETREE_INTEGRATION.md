@@ -42,7 +42,7 @@ didn't have a tree.
 Located at `src/services/fileSystemService.js`, this module exports helpers
 used by the UI components:
 
-* `getTree(repoId)` – returns the tree or `[]` if missing.
+* `getTree(repoId)` – returns the tree or `[]` if missing.                          
 * `saveTree(repoId, tree)` – replaces the repo's `fileTree` and persists it.
 * `addNode(repoId, parentPath, newNode)` – add a file or directory.
 * `updateNode(repoId, path, newValues)` – merge new fields onto a node.
