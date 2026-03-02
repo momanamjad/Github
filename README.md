@@ -101,7 +101,7 @@ To make repositories behave like real GitHub projects, each local repo needs a s
      renaming, and deleting nodes. Clicking a file opens it in the
      **FileEditor**, which lets you modify the `content` string and save
      changes back to storage via the `fileSystemService`.
-2. **Create ileSystemService.js**
+2. **Create ileSystemService.js**                               
    - Located in src/services.
    - Responsible for reading/writing the tree and providing helper functions: 
    - Responsible for reading/writing the tree and providing helper functions:
