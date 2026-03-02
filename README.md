@@ -88,7 +88,7 @@ To make repositories behave like real GitHub projects, each local repo needs a s
        { type: 'dir', name: 'src', path: 'src', children: [] }
      ];
      repoWithId.fileTree = initialTree;
-     `
+     ` 
    - ileTree is an array of nodes. Node schema:
      `	s
      interface FileNode { type: 'file'; name: string; path: string; content: string; }
