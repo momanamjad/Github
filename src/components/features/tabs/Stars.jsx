@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
 import { getStarredRepos } from "@services/GithubApi";
+import { starRepository, unstarRepository } from "@services/storageService.js";
 import { useParams, Link } from 'react-router-dom';
 
 const Stars = () => {
@@ -49,6 +50,81 @@ const Stars = () => {
     fetchStarred();
   }, [params?.username]);
 
+  const handleStarToggle = (repo) => {
+    const isCurrentlyStarred = repos.some(r => r.full_name === repo.full_name);
+    let updatedList;
+
+    if (isCurrentlyStarred) {
+      // Unstar: Remove from the displayed list in this tab
+      unstarRepository(repo.full_name);
+      updatedList = repos.filter(r => r.full_name !== repo.full_name);
+    } else {
+      // Star: Add back (unlikely to be used in 'Stars' tab but good for consistency)
+      starRepository(repo);
+      updatedList = [...repos, repo];
+    }
+
+    setRepos(updatedList);
+  };
+
+  // 1. DYNAMIC FILTERS & SORTING LOGIC
+  const filteredRepos = useMemo(() => {
+    let result = [...repos];
+
+    // Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(repo =>
+        repo.full_name.toLowerCase().includes(query) ||
+        (repo.description && repo.description.toLowerCase().includes(query))
+      );
+    }
+
+    // Type Filter
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'public') result = result.filter(repo => !repo.private);
+      if (typeFilter === 'private') result = result.filter(repo => repo.private);
+      if (typeFilter === 'forks') result = result.filter(repo => repo.fork);
+      if (typeFilter === 'sources') result = result.filter(repo => !repo.fork);
+      if (typeFilter === 'archived') result = result.filter(repo => repo.archived);
+    }
+
+    // Language Filter
+    if (languageFilter !== 'all') {
+      result = result.filter(repo => repo.language && repo.language.toLowerCase() === languageFilter.toLowerCase());
+    }
+
+    // Sorting
+    if (sortBy === 'most-stars') {
+      result.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
+    } else if (sortBy === 'recently-active') {
+      result.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    } else if (sortBy === 'recently-starred') {
+      // Default order returned by service (usually newest first)
+      // Since we don't have a 'starred_at' timestamp, we'll keep the list as is
+      // or sort by ID descending if they are mock IDs.
+      result.sort((a, b) => (b.id || 0) - (a.id || 0));
+    }
+
+    return result;
+  }, [repos, searchQuery, typeFilter, languageFilter, sortBy]);
+
+  // 2. DYNAMIC LANGUAGE LIST
+  const languageOptions = useMemo(() => {
+    const langs = new Set();
+    repos.forEach(repo => {
+      if (repo.language) langs.add(repo.language);
+    });
+
+    return [
+      { value: 'all', label: 'All languages' },
+      ...Array.from(langs).map(lang => ({
+        value: lang.toLowerCase(),
+        label: lang
+      }))
+    ];
+  }, [repos]);
+
   const clearSearch = () => {
     setSearchQuery('');
   };
@@ -62,11 +138,6 @@ const Stars = () => {
     { value: 'sponsored', label: 'Can be sponsored' },
     { value: 'mirrors', label: 'Mirrors' },
     { value: 'templates', label: 'Templates' },
-  ];
-
-  const languageOptions = [
-    { value: 'all', label: 'All languages' },
-    { value: 'javascript', label: 'JavaScript' },
   ];
 
   const sortOptions = [
@@ -284,7 +355,7 @@ const Stars = () => {
                   onClick={() => setIsLanguageOpen(false)}
                 />
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                  <div className="py-1">
+                  <div className="py-1 max-h-60 overflow-y-auto">
                     {languageOptions.map((option) => (
                       <button
                         key={option.value}
@@ -353,13 +424,27 @@ const Stars = () => {
         </div>
 
         {/* Repositories List */}
-        {repos.length === 0 ? (
-          <p className="text-gray-600 py-6">
-            This user hasn't starred any repositories yet.
-          </p>
+        {filteredRepos.length === 0 ? (
+          <div className="border border-gray-200 rounded-md p-8 text-center bg-gray-50 mt-4">
+            <p className="text-gray-600 font-medium">
+              No results found for your active filters.
+            </p>
+            {(searchQuery || typeFilter !== 'all' || languageFilter !== 'all') && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setTypeFilter('all');
+                  setLanguageFilter('all');
+                }}
+                className="mt-2 text-blue-600 hover:underline text-sm"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
         ) : (
           <div className="space-y-4">
-            {repos.map((repo) => (
+            {filteredRepos.map((repo) => (
               <div
                 key={repo.id}
                 className="border border-gray-200 rounded-md hover:border-gray-300 transition-colors"
@@ -374,7 +459,10 @@ const Stars = () => {
                         {repo.full_name}
                       </Link>
                     </div>
-                    <button className="flex items-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                    <button
+                      onClick={() => handleStarToggle(repo)}
+                      className="flex items-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-[#F6F8FA] transition-colors"
+                    >
                       <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-400" />
                       <span className="text-gray-700">Starred</span>
                       <ChevronDown className="w-3 h-3 text-gray-600" />
@@ -407,7 +495,7 @@ const Stars = () => {
 
       {/* Create List Modal */}
       {isCreateListOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-500/55 z-50  flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -437,7 +525,7 @@ const Stars = () => {
                   Name
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-yellow-500 text-lg">⭐</span>
+                  <span className="absolute left-3 top-2 text-yellow-500 text-lg">⭐</span>
                   <input
                     type="text"
                     value={listName}
