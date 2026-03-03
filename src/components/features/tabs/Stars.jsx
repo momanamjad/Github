@@ -1,40 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
-import { getStaticStarredRepos } from '@services/staticData';
+import { getStarredRepos } from "@services/GithubApi";
 import { useParams, Link } from 'react-router-dom';
 
 const Stars = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [repos, setRepos] = useState([]);
-  
+  const [loading, setLoading] = useState(true);
+
   // Filter states
   const [typeFilter, setTypeFilter] = useState('all');
   const [languageFilter, setLanguageFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recently-starred');
-  
+
   // Dropdown states
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isListSortOpen, setIsListSortOpen] = useState(false);
-  
+
   // Modal state
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [listName, setListName] = useState('');
   const [listDescription, setListDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
-  
+
   // Lists data
   const [lists, setLists] = useState([
     { id: 1, name: 'Future ideas', emoji: '💡' }
   ]);
 
-  // Load static data on component mount (use username from URL when available)
+  // Load data on component mount
   const params = useParams();
   useEffect(() => {
-    const username = params?.username || 'momanamjad';
-    const starredRepos = getStaticStarredRepos(username);
-    setRepos(starredRepos);
+    const fetchStarred = async () => {
+      const username = params?.username || 'momanamjad';
+      try {
+        setLoading(true);
+        const starredRepos = await getStarredRepos(username);
+        setRepos(starredRepos);
+      } catch (error) {
+        console.error("Error fetching starred repos:", error);
+        setRepos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStarred();
   }, [params?.username]);
 
   const clearSearch = () => {
@@ -81,7 +93,7 @@ const Stars = () => {
         isPrivate: isPrivate,
       };
       setLists([...lists, newList]);
-      
+
       // Reset form
       setListName('');
       setListDescription('');
@@ -92,6 +104,12 @@ const Stars = () => {
 
   const isCreateButtonDisabled = !listName.trim();
 
+  if (loading) return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <p className="text-[#8b949e]">Loading stars...</p>
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Lists Section */}
@@ -101,7 +119,7 @@ const Stars = () => {
             Lists <span className="text-gray-500 font-normal">({lists.length})</span>
           </h2>
           <div className="flex items-center gap-2">
-            <div className="relative"> 
+            <div className="relative">
               <button
                 onClick={() => setIsListSortOpen(!isListSortOpen)}
                 className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2"
@@ -109,17 +127,17 @@ const Stars = () => {
                 Sort
                 <ChevronDown className="w-4 h-4" />
               </button>
-              
+
               {isListSortOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
+                  <div
+                    className="fixed inset-0 z-10"
                     onClick={() => setIsListSortOpen(false)}
                   />
                   <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                     <div className="py-2 px-4 border-b border-gray-200 flex items-center justify-between">
                       <span className="text-sm font-semibold">Sort by</span>
-                      <button 
+                      <button
                         onClick={() => setIsListSortOpen(false)}
                         className="text-gray-400 hover:text-gray-600"
                       >
@@ -149,7 +167,7 @@ const Stars = () => {
                 </>
               )}
             </div>
-            
+
             <button
               onClick={() => setIsCreateListOpen(true)}
               className="px-4 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
@@ -216,11 +234,11 @@ const Stars = () => {
               Type: {typeOptions.find(opt => opt.value === typeFilter)?.label}
               <ChevronDown className="w-4 h-4" />
             </button>
-            
+
             {isTypeOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setIsTypeOpen(false)}
                 />
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
@@ -258,11 +276,11 @@ const Stars = () => {
               Language
               <ChevronDown className="w-4 h-4" />
             </button>
-            
+
             {isLanguageOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setIsLanguageOpen(false)}
                 />
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
@@ -300,11 +318,11 @@ const Stars = () => {
               Sort by: {sortOptions.find(opt => opt.value === sortBy)?.label}
               <ChevronDown className="w-4 h-4" />
             </button>
-            
+
             {isSortOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setIsSortOpen(false)}
                 />
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
@@ -461,15 +479,14 @@ const Stars = () => {
                 </label>
               </div>
 
-              
+
               <button
                 onClick={handleCreateList}
                 disabled={isCreateButtonDisabled}
-                className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  isCreateButtonDisabled
-                    ? 'bg-green-100 text-green-400 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
+                className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${isCreateButtonDisabled
+                  ? 'bg-green-100 text-green-400 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
               >
                 Create
               </button>
@@ -487,4 +504,3 @@ const Stars = () => {
 };
 
 export default Stars;
-  

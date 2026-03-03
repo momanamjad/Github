@@ -18,10 +18,10 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
   useEffect(() => {
     if (inlineCreate && inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select(); 
-    } 
+      inputRef.current.select();
+    }
   }, [inlineCreate]);
-  
+
   const toggle = (path) =>
     setOpenDirs((prev) => ({ ...prev, [path]: !prev[path] }));
 
@@ -85,8 +85,8 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
       if (node.type === "dir") {
         const isOpen = !!openDirs[fullPath];
         return (
-          <div key={fullPath} className="pl-2">
-            <div className="flex items-center gap-1">
+          <div key={fullPath} className="pl-2 bg-[#C8D1DA] rounded">
+            <div className="flex items-center gap-1 ">
               <span
                 className="cursor-pointer select-none"
                 onClick={() => toggle(fullPath)}
@@ -102,25 +102,72 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                 onClick={() =>
                   setInlineCreate({ parentPath: fullPath, type: "file" })
                 }
-                className="ml-2 text-green-600 hover:text-green-800"
+                className="ml-2"
               >
-                <PlusSquare size={14} />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-file-plus-corner-icon lucide-file-plus-corner"
+                >
+                  <path d="M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35" />
+                  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                  <path d="M14 19h6" />
+                  <path d="M17 16v6" />
+                </svg>
               </button>
+              
               <button
                 title="add folder"
                 onClick={() =>
                   setInlineCreate({ parentPath: fullPath, type: "dir" })
                 }
-                className="ml-1 text-green-600 hover:text-green-800"
+                className="ml-1"
               >
-                <PlusSquare size={14} />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-folder-plus-icon lucide-folder-plus"
+                >
+                  <path d="M12 10v6" />
+                  <path d="M9 13h6" />
+                  <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                </svg>
               </button>
               <button
                 title="rename"
                 onClick={() => renameNode(fullPath)}
                 className="ml-1 text-blue-600 hover:text-blue-800"
               >
-                <Edit2 size={14} />
+                {/* <Edit2 size={14} /> */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-pencil-icon lucide-pencil"
+                >
+                  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                  <path d="m15 5 4 4" />
+                </svg>
               </button>
               <button
                 title="delete"

@@ -74,7 +74,12 @@
       "default_branch": "main",
       "mirror_url": null,
       "visibility": "public",
-      "topics": ["github", "clone", "react", "vite"]
+      "topics": [
+        "github",
+        "clone",
+        "react",
+        "vite"
+      ]
     },
     {
       "id": 2,
@@ -118,7 +123,11 @@
       "default_branch": "main",
       "mirror_url": null,
       "visibility": "public",
-      "topics": ["portfolio", "react", "tailwindcss"]
+      "topics": [
+        "portfolio",
+        "react",
+        "tailwindcss"
+      ]
     },
     {
       "id": 3,
@@ -162,7 +171,11 @@
       "default_branch": "main",
       "mirror_url": null,
       "visibility": "public",
-      "topics": ["nextjs", "ecommerce", "mongodb"]
+      "topics": [
+        "nextjs",
+        "ecommerce",
+        "mongodb"
+      ]
     },
     {
       "id": 4,
@@ -206,7 +219,11 @@
       "default_branch": "main",
       "mirror_url": null,
       "visibility": "public",
-      "topics": ["nodejs", "express", "rest-api"]
+      "topics": [
+        "nodejs",
+        "express",
+        "rest-api"
+      ]
     },
     {
       "id": 5,
@@ -250,7 +267,11 @@
       "default_branch": "main",
       "mirror_url": null,
       "visibility": "public",
-      "topics": ["python", "data-science", "machine-learning"]
+      "topics": [
+        "python",
+        "data-science",
+        "machine-learning"
+      ]
     }
   ],
   "pinnedRepositories": [
@@ -340,5 +361,78 @@
       "visibility": "public",
       "updated_at": "2025-01-13T15:45:00Z"
     }
-  ]
+  ],
+  "repositoryContents": {
+    "github-clone": [
+      {
+        "name": "src",
+        "path": "src",
+        "sha": "abc123def456",
+        "size": 0,
+        "url": "https://api.github.com/repos/momanamjad/github-clone/contents/src",
+        "html_url": "https://github.com/momanamjad/github-clone/tree/main/src",
+        "git_url": "https://api.github.com/repos/momanamjad/github-clone/git/trees/abc123",
+        "type": "dir",
+        "_links": {
+          "self": "https://api.github.com/repos/momanamjad/github-clone/contents/src",
+          "git": "https://api.github.com/repos/momanamjad/github-clone/git/trees/abc123",
+          "html": "https://github.com/momanamjad/github-clone/tree/main/src"
+        }
+      },
+      {
+        "name": "public",
+        "path": "public",
+        "sha": "def456ghi789",
+        "size": 0,
+        "url": "https://api.github.com/repos/momanamjad/github-clone/contents/public",
+        "html_url": "https://github.com/momanamjad/github-clone/tree/main/public",
+        "git_url": "https://api.github.com/repos/momanamjad/github-clone/git/trees/def456",
+        "type": "dir",
+        "_links": {
+          "self": "https://api.github.com/repos/momanamjad/github-clone/contents/public",
+          "git": "https://api.github.com/repos/momanamjad/github-clone/git/trees/def456",
+          "html": "https://github.com/momanamjad/github-clone/tree/main/public"
+        }
+      },
+      {
+        "name": "package.json",
+        "path": "package.json",
+        "sha": "ghi789jkl012",
+        "size": 845,
+        "url": "https://api.github.com/repos/momanamjad/github-clone/contents/package.json",
+        "html_url": "https://github.com/momanamjad/github-clone/blob/main/package.json",
+        "git_url": "https://api.github.com/repos/momanamjad/github-clone/git/blobs/ghi789",
+        "type": "file",
+        "_links": {
+          "self": "https://api.github.com/repos/momanamjad/github-clone/contents/package.json",
+          "git": "https://api.github.com/repos/momanamjad/github-clone/git/blobs/ghi789",
+          "html": "https://github.com/momanamjad/github-clone/blob/main/package.json"
+        }
+      },
+      {
+        "name": "README.md",
+        "path": "README.md",
+        "sha": "jkl012mno345",
+        "size": 2048,
+        "url": "https://api.github.com/repos/momanamjad/github-clone/contents/README.md",
+        "html_url": "https://github.com/momanamjad/github-clone/blob/main/README.md",
+        "git_url": "https://api.github.com/repos/momanamjad/github-clone/git/blobs/jkl012",
+        "type": "file",
+        "_links": {
+          "self": "https://api.github.com/repos/momanamjad/github-clone/contents/README.md",
+          "git": "https://api.github.com/repos/momanamjad/github-clone/git/blobs/jkl012",
+          "html": "https://github.com/momanamjad/github-clone/blob/main/README.md"
+        }
+      }
+    ]
+  },
+  "languageColors": {
+    "JavaScript": "#f1e05a",
+    "Python": "#3572A5",
+    "HTML": "#e34c26",
+    "CSS": "#563d7c",
+    "TypeScript": "#3178c6",
+    "C++": "#f34b7d",
+    "Java": "#b07219"
+  }
 }
