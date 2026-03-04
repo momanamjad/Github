@@ -71,6 +71,41 @@ export const updateStoredUser = (userData) => {
 };
 
 /**
+ * Get user status from localStorage
+ * @returns {Object} { emoji, text, isBusy }
+ */
+export const getStoredStatus = () => {
+  try {
+    const user = getStoredUser();
+    return user?.status || { emoji: '', text: '', isBusy: false };
+  } catch (error) {
+    console.error('Error retrieving status from storage:', error);
+    return { emoji: '', text: '', isBusy: false };
+  }
+};
+
+/**
+ * Update user status in localStorage
+ * @param {Object} status - { emoji, text, isBusy }
+ */
+export const updateStoredStatus = (status) => {
+  try {
+    const user = getStoredUser();
+    if (user) {
+      const updatedUser = { ...user, status };
+      updateStoredUser(updatedUser);
+      // Dispatch custom event for cross-component sync
+      window.dispatchEvent(new CustomEvent('github_status_updated', { detail: status }));
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error updating status in storage:', error);
+    return false;
+  }
+};
+
+/**
  * Get all repositories from localStorage
  * @returns {Array} Array of repository objects
  */

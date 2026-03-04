@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getStoredStatus } from "../../services/storageService";
 import ProfileIcon from '../../../public/customIcons/ProfileIcon';
 import RepositoriesIcon from '../../../public/customIcons/RepositoriesIcon';
 import StarsIcon from '../../../public/customIcons/StarsIcon';
@@ -41,6 +42,30 @@ export default function GitHubUserMenu() {
     };
   }, [isOpen]);
 
+  const [status, setStatus] = useState({ emoji: '🎯', text: 'Focusing' });
+
+  useEffect(() => {
+    // Initial load
+    const currentStatus = getStoredStatus();
+    if (currentStatus && (currentStatus.emoji || currentStatus.text)) {
+      setStatus({
+        emoji: currentStatus.emoji || '🎯',
+        text: currentStatus.text || 'Focusing'
+      });
+    }
+
+    const handleStatusUpdate = (e) => {
+      const newStatus = e.detail;
+      setStatus({
+        emoji: newStatus.emoji || '🎯',
+        text: newStatus.text || 'Focusing'
+      });
+    };
+
+    window.addEventListener('github_status_updated', handleStatusUpdate);
+    return () => window.removeEventListener('github_status_updated', handleStatusUpdate);
+  }, []);
+
   const toggleMenu = () => setIsOpen((v) => !v);
 
   const username = "momanamjad";
@@ -75,7 +100,16 @@ export default function GitHubUserMenu() {
             <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible"><path d="M5.22 14.78a.75.75 0 0 0 1.06-1.06L4.56 12h8.69a.75.75 0 0 0 0-1.5H4.56l1.72-1.72a.75.75 0 0 0-1.06-1.06l-3 3a.75.75 0 0 0 0 1.06l3 3Zm5.56-6.5a.75.75 0 1 1-1.06-1.06l1.72-1.72H2.75a.75.75 0 0 1 0-1.5h8.69L9.72 2.28a.75.75 0 0 1 1.06-1.06l3 3a.75.75 0 0 1 0 1.06l-3 3Z"></path></svg>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2.5 text-github-muted text-xs border-b border-github-border"><span className="text-[14px]">🎯</span><span className="text-[14px]">Focusing</span></div>
+          <div
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('github_open_status_modal'));
+              setIsOpen(false);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 text-github-muted text-xs border-b border-github-border hover:bg-gray-50 group/status cursor-pointer transition-colors"
+          >
+            <span className="text-[14px]">{status.emoji}</span>
+            <span className="text-[14px] text-github-text group-hover/status:text-blue-600 truncate">{status.text}</span>
+          </div>
 
           <div className="py-2 border-b border-github-border">
             <MenuItem icon={<ProfileIcon />} text="Profile" path="/profile" />

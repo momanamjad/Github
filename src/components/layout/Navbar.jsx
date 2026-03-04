@@ -9,6 +9,7 @@ import GitHubSearch from "@features/GitHubSearch";
 import LoadingBar from "react-top-loading-bar";
 import { useLocation } from "react-router-dom";
 import { useTabsContext } from "@/contexts/TabsContext";
+import StatusButton from "../common/StatusButton";
 
 const Navbar = () => {
   const [progress, setProgress] = useState(0);
@@ -150,6 +151,7 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+        <StatusButton hidden />
       </header>
     </div>
   );

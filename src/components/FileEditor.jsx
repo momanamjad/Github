@@ -14,7 +14,7 @@ const FileEditor = ({ repoId, file, onSave }) => {
     try {
       updateNode(repoId, file.path, { content });
       if (onSave) onSave(file.path, content);
-      alert("Saved");
+      alert("Saved"); 
     } catch (e) {
       alert(e.message);
     }

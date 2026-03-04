@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getStoredStatus, updateStoredStatus } from '../../services/storageService';
 
-const StatusButton = () => {
+const StatusButton = ({ hidden = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState('');
   const [statusText, setStatusText] = useState('');
@@ -9,6 +10,34 @@ const StatusButton = () => {
   const [expirationTime, setExpirationTime] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // Load status on mount
+  useEffect(() => {
+    const status = getStoredStatus();
+    if (status) {
+      setSelectedEmoji(status.emoji || '');
+      setStatusText(status.text || '');
+      setIsBusy(status.isBusy || false);
+    }
+
+    const handleExternalUpdate = (e) => {
+      const newStatus = e.detail;
+      setSelectedEmoji(newStatus.emoji || '');
+      setStatusText(newStatus.text || '');
+      setIsBusy(newStatus.isBusy || false);
+    };
+
+    const handleOpenModal = () => {
+      setIsModalOpen(true);
+    };
+
+    window.addEventListener('github_status_updated', handleExternalUpdate);
+    window.addEventListener('github_open_status_modal', handleOpenModal);
+    return () => {
+      window.removeEventListener('github_status_updated', handleExternalUpdate);
+      window.removeEventListener('github_open_status_modal', handleOpenModal);
+    };
+  }, []);
   const emojiPickerRef = useRef(null);
 
   const emojis = [
@@ -169,6 +198,7 @@ const StatusButton = () => {
     setExpiration('never');
     setExpirationTime(null);
     setIsModalOpen(false);
+    updateStoredStatus({ emoji: '', text: '', isBusy: false });
   };
 
   const setStatus = () => {
@@ -206,8 +236,9 @@ const StatusButton = () => {
 
     setIsModalOpen(false);
     setShowEmojiPicker(false);
+    updateStoredStatus({ emoji: selectedEmoji, text: statusText, isBusy });
   };
-   useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         emojiPickerRef.current &&
@@ -230,34 +261,34 @@ const StatusButton = () => {
 
   return (
     <>
-      <button
-        onClick={openModal}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+      {!hidden && (
+        <button
+          onClick={openModal}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
 
-        className={`relative flex items-center justify-center transition-all duration-200 rounded-full ${
-          isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
-        } ${
-          isHovered
-            ? 'bg-[#f6f8fa] px-3 py-1 gap-2'
-            : hasStatus
-            ? 'w-8 h-8'
-            : 'w-8 h-8 border border-[#d0d7de]'
-        }`}
-      >
-        <span className="text-base">
-          {hasStatus ? selectedEmoji : '🙂'}
-        </span>
-        {isHovered && (
-          <span className="text-sm text-[#59636E] whitespace-nowrap">
-            {hasStatus ? statusText || 'Edit status' : 'Set status'}
+          className={`relative flex items-center justify-center transition-all duration-200 rounded-full ${isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
+            } ${isHovered
+              ? 'bg-[#f6f8fa] px-3 py-1 gap-2'
+              : hasStatus
+                ? 'w-8 h-8'
+                : 'w-8 h-8 border border-[#d0d7de]'
+            }`}
+        >
+          <span className="text-base">
+            {hasStatus ? selectedEmoji : '🙂'}
           </span>
-        )}
-      </button>
+          {isHovered && (
+            <span className="text-sm text-[#59636E] whitespace-nowrap">
+              {hasStatus ? statusText || 'Edit status' : 'Set status'}
+            </span>
+          )}
+        </button>
+      )}
 
       {isModalOpen && (
-        <div   onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#e9edf0]/50 backdrop:blur-3xl bg-opacity-50">
-          <div     onClick={(e) => e.stopPropagation()} className=" relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg">
+        <div onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#e9edf0]/50 backdrop:blur-3xl bg-opacity-50">
+          <div onClick={(e) => e.stopPropagation()} className=" relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg">
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-[#59636E] hover:text-[#1F2328] lg:hidden"
@@ -284,8 +315,8 @@ const StatusButton = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#1F2328] mb-2">
-                  What's happening 
-                </label> 
+                  What's happening
+                </label>
                 <div className="relative">
                   <div className="flex gap-2">
                     <button
