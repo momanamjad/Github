@@ -18,11 +18,7 @@ export const getTree = (repoId) => {
  * @returns {Array} the tree that was saved
  */
 export const saveTree = (repoId, tree) => {
-  const repos = getStoredRepositories();
-  const updated = repos.map(r =>
-    r.id === repoId ? { ...r, fileTree: tree } : r
-  );
-  localStorage.setItem('github_repositories', JSON.stringify(updated));
+  updateRepository(repoId, { fileTree: tree });
   return tree;
 };
 

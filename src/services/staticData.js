@@ -1,17 +1,22 @@
-import userData from './userData.json';
+// ─── Static Data Service ──────────────────────────────────────────
+//
+// This file provides constants and dynamic generators for the GitHub clone.
+// OPTIMIZATION: userData.json is no longer eagerly imported at module level.
+// Instead, the heavy data properties are lazy-loaded on first access,
+// reducing initial bundle + parse time.
 
-/**
- * Static Data Service
- * 
- * This file provides constants and dynamic generators for the GitHub clone.
- * It uses userData.json as the base for seeded data.
- */
+// Language colors — small enough to inline or load eagerly
+let _languageColors = null;
+export const getLanguageColors = async () => {
+  if (!_languageColors) {
+    const userData = await import('./userData.json');
+    _languageColors = userData.languageColors;
+  }
+  return _languageColors;
+};
 
-// Language colors mapping for UI
-export const LANGUAGE_COLORS = userData.languageColors;
-
-// Mock repository contents (API style)
-export const STATIC_REPO_CONTENTS = userData.repositoryContents;
+// For backward compatibility, export a sync fallback
+export const LANGUAGE_COLORS = {};
 
 /**
  * Helper to generate user data for any username
@@ -52,20 +57,36 @@ export const generateReposForUser = (username) => {
   }));
 };
 
+// Lazy-loaded static data accessors — only imported when explicitly accessed
+let _userData = null;
+const _loadUserData = async () => {
+  if (!_userData) _userData = await import('./userData.json');
+  return _userData;
+};
+
 // These were used for the default user 'momanamjad'
 // but now we prefer pulling them from userData.json or storageService
-export const STATIC_USERS = {
-  momanamjad: userData.user,
+export const getStaticUsers = async () => {
+  const d = await _loadUserData();
+  return { momanamjad: d.user };
 };
 
-export const STATIC_REPOS = {
-  momanamjad: userData.repositories,
+export const getStaticRepos = async () => {
+  const d = await _loadUserData();
+  return { momanamjad: d.repositories };
 };
 
-export const STATIC_STARRED_REPOS = {
-  momanamjad: userData.starredRepositories,
+export const getStaticStarredRepos = async () => {
+  const d = await _loadUserData();
+  return { momanamjad: d.starredRepositories };
 };
 
-export const STATIC_PINNED_REPOS = {
-  momanamjad: userData.pinnedRepositories,
+export const getStaticPinnedRepos = async () => {
+  const d = await _loadUserData();
+  return { momanamjad: d.pinnedRepositories };
+};
+
+export const getStaticRepoContents = async () => {
+  const d = await _loadUserData();
+  return d.repositoryContents;
 };

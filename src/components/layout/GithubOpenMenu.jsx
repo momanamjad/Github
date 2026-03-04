@@ -1,5 +1,5 @@
-import { Radius } from "lucide-react";
-import React from "react";
+// lucide-react Radius import removed — was unused
+import React, { useMemo } from "react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoLogoGithub } from "react-icons/io";
@@ -111,12 +111,12 @@ const exploreItems = [
   { label: "MCP Registory", icon: Icons.MCPRegistory },
 ];
 
-const GithubOpenMenu = () => {
+const GithubOpenMenu = React.memo(() => {
   const [isOpen, setIsOpen] = React.useState(false);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
 
-  const routeMap = {
+  const routeMap = useMemo(() => ({
     Home: "/",
     Issues: "/issues",
     "Pull requests": "/pull-requests",
@@ -129,8 +129,8 @@ const GithubOpenMenu = () => {
     Explore: "/explore",
     MarketPlace: "/marketplace",
     "MCP Registory": "/mcp-registry",
-  };
-  
+  }), []);
+
   useEffect(() => {
     const handleClick = (e) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
@@ -326,8 +326,9 @@ const GithubOpenMenu = () => {
       </div>
     </>
   );
-};
+});
 
+GithubOpenMenu.displayName = 'GithubOpenMenu';
 export default GithubOpenMenu;
 function CrossBTN() {
   return (

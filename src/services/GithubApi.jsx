@@ -8,15 +8,17 @@ import {
 } from "./storageService.js";
 import { createUserData } from "./staticData.js";
 
-// Simulated delay to mimic API calls
-const simulateDelay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
+// Ensure storage is initialized once — no need to call in every function.
+// initializeStorage() is already a singleton promise, so this is safe.
+const storageReady = initializeStorage();
+
+// Simulated delay to mimic API calls — reduced from 300ms to 100ms
+const simulateDelay = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 //  get user github profile from baseurl
 export const getUser = async (username) => {
+  await storageReady;
   await simulateDelay();
-
-  // Initialize storage if not already done
-  await initializeStorage();
 
   // Get user from localStorage
   const user = getStoredUser();
@@ -30,10 +32,8 @@ export const getUser = async (username) => {
 
 // Getting the  user repositories from localStorage
 export const getRepos = async (username) => {
+  await storageReady;
   await simulateDelay();
-
-  // Initialize storage if not already done
-  await initializeStorage();
 
   const repos = getStoredRepositories();
   if (!repos || repos.length === 0) {
@@ -43,10 +43,8 @@ export const getRepos = async (username) => {
 };
 
 export const getStarredRepos = async (username) => {
+  await storageReady;
   await simulateDelay();
-
-  // Initialize storage if not already done
-  await initializeStorage();
 
   const starredRepos = getStoredStarredRepos();
   if (!starredRepos || starredRepos.length === 0) {
@@ -57,10 +55,8 @@ export const getStarredRepos = async (username) => {
 
 // for repository details on clicking repo
 export const getRepo = async (username, repo) => {
+  await storageReady;
   await simulateDelay();
-
-  // Initialize storage if not already done
-  await initializeStorage();
 
   const repos = getStoredRepositories();
   if (!repos || repos.length === 0) {
@@ -74,10 +70,8 @@ export const getRepo = async (username, repo) => {
 };
 
 export const getRepoContents = async (user, repo, path = "") => {
+  await storageReady;
   await simulateDelay();
-
-  // Initialize storage if not already done
-  await initializeStorage();
 
   const contents = getStoredRepoContents(repo);
 
@@ -111,10 +105,8 @@ export const getRepoContents = async (user, repo, path = "") => {
 
 // Export function to get pinned repos
 export const getPinnedRepos = async (username) => {
+  await storageReady;
   await simulateDelay();
-
-  // Initialize storage if not already done
-  await initializeStorage();
 
   return getStoredPinnedRepos();
 };

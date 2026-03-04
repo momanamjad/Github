@@ -1,13 +1,17 @@
- 
+import { lazy } from 'react';
 
-export { default as Home } from './Home';
-export { default as Issues } from './Issues';
-export { default as PullRequests } from './PullRequests';
-export { default as Repositories } from './Repositories';
-export { default as Projects } from './Projects';
-export { default as Discussions } from './Discussions';
-export { default as Codespaces } from './Codespaces';
-export { default as Copilot } from './Copilot';
-export { default as Explore } from './Explore';
-export { default as Marketplace } from './Marketplace';
-export { default as MCPRegistry } from './MCPRegistry';
+// Lazy-load every page so only the active route's bundle is fetched.
+// This dramatically reduces the initial JavaScript payload and improves
+// First Contentful Paint, Largest Contentful Paint, and Total Blocking Time.
+
+export const Home = lazy(() => import('./Home'));
+export const Issues = lazy(() => import('./Issues'));
+export const PullRequests = lazy(() => import('./PullRequests'));
+export const Repositories = lazy(() => import('./Repositories'));
+export const Projects = lazy(() => import('./Projects'));
+export const Discussions = lazy(() => import('./Discussions'));
+export const Codespaces = lazy(() => import('./Codespaces'));
+export const Copilot = lazy(() => import('./Copilot'));
+export const Explore = lazy(() => import('./Explore'));
+export const Marketplace = lazy(() => import('./Marketplace'));
+export const MCPRegistry = lazy(() => import('./MCPRegistry'));

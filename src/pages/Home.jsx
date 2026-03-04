@@ -1,23 +1,13 @@
-import React, { useEffect, useState } from "react";
-import {
-  Plus,
-  Search,
-  Filter,
-  Star,
-  GitBranch,
-  GitPullRequest,
-  Code,
-  MessageSquare,
-  ListTodo,
-} from "lucide-react";
-import { NewRepoPage } from "@/components/features";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { Star } from "lucide-react";
+// Note: NewRepoPage is not used in Home's render — removed unused barrel import
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
 import FilterModal from "@/components/FilterModal";
 import StarsIcon from "../../public/customIcons/StarsIcon";
-const Home = () => {
+const Home = React.memo(() => {
   const [sidebarRepos, setSidebarRepos] = useState([]);
-  const [filterOpen, setFilterOpen] = useState();
+  const [filterOpen, setFilterOpen] = useState(false);
   const [filterValue, setFilterValue] = useState();
 
   useEffect(() => {
@@ -42,7 +32,7 @@ const Home = () => {
 
   return (
     <div className="flex min-h-screen bg-[#ffffff] font-sans text-[#1f2328]">
-      <aside className="hidden w-80 border-r border-[#d0d7de] p-6 lg:block">
+      <aside className="hidden w-80 border-r border-[#d0d7de] p-6 lg:block" aria-label="Sidebar">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[16px] font-semibold text-[#f2328]">
             Top repositories
@@ -67,7 +57,7 @@ const Home = () => {
                 <img
                   className="w-full h-full object-cover"
                   src="profile.png"
-                  alt=""
+                  alt="Repository owner avatar"
                 />
               </span>{" "}
               {repo}
@@ -81,7 +71,7 @@ const Home = () => {
 
       <main className="flex-1 max-w-4xl mx-auto p-4 md:p-8">
         <div className="mb-8">
-          <h2 className="text-[24px] font-semibold mb-6">Home</h2>
+          <h1 className="text-[24px] font-semibold mb-6">Home</h1>
           {/* <div className="relative flex items-center p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm mb-6">
             <span className="text-gray-400 mr-2 font-medium">Ask anything</span>
             <div className="ml-auto flex items-center gap-2">
@@ -135,28 +125,28 @@ const Home = () => {
                 version="1.1"
                 width="16"
                 data-view-component="true"
-                class="octicon octicon-filter mr-2"
+                className="octicon octicon-filter mr-2"
               >
                 <path d="M.75 3h14.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1 0-1.5ZM3 7.75A.75.75 0 0 1 3.75 7h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 3 7.75Zm3 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path>
               </svg>
               <span className="text-[black] font-semibold">Filter</span>
             </button>
-            
-            {filterOpen&&(
+
+            {filterOpen && (
               <div>  <FilterModal
-              open={filterOpen}
-              onClose={() => setFilterOpen(false)}
-              title="Filter repositories"
-              options={["All", "JavaScript", "React", "TypeScript"]}
-              onSelect={setFilterValue}
-            /> </div>
+                open={filterOpen}
+                onClose={() => setFilterOpen(false)}
+                title="Filter repositories"
+                options={["All", "JavaScript", "React", "TypeScript"]}
+                onSelect={setFilterValue}
+              /> </div>
             )}
-            
+
           </div>
           <div className="p-5 border border-[#d0d7de] rounded-lg bg-white mb-4">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 bg-gray-800 rounded-full overflow-hidden">
-                <img className="object-cover" src="profile.png" alt="" />
+                <img className="object-cover" src="profile.png" alt="User avatar" />
               </div>
               <span className="text-sm">
                 <span className="font-bold text-[#1f2328]">
@@ -208,7 +198,7 @@ const Home = () => {
                   Shell
                 </span>
                 <span className="flex items-center gap-1">
-                 <StarsIcon/> 5
+                  <StarsIcon /> 5
                 </span>
               </div>
             </div>
@@ -246,6 +236,7 @@ const Home = () => {
       </aside>
     </div>
   );
-};
+});
 
+Home.displayName = 'Home';
 export default Home;

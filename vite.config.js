@@ -7,15 +7,15 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 export default defineConfig({
-      content: ["./src/**/*.{js,jsx,ts,tsx}",
+  content: ["./src/**/*.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
-        "./index.html", "./src/**/*.{js,jsx}"],
+    "./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        
+
         github: {
-          
+
           bg: "#0d1117",
           panel: "#161b22",
           panelHover: "#1f242c",
@@ -29,7 +29,7 @@ export default defineConfig({
       },
     },
   },
-  
+
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -45,6 +45,7 @@ export default defineConfig({
       "@lib": path.resolve(__dirname, "./src/lib"),
       "@hooks": path.resolve(__dirname, "./src/hooks"),
       "@constants": path.resolve(__dirname, "./src/constants"),
+      "@contexts": path.resolve(__dirname, "./src/contexts"),
     },
   },
 })

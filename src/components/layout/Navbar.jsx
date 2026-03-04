@@ -1,28 +1,27 @@
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { IoLogoGithub } from "react-icons/io";
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
-import GitHubUserMenu from "@features/GitHubUserMenu";
-import TopBarActions from "./Topbar";
-import GithubOpenMenu from "./GithubOpenMenu";
-import GitHubSearch from "@features/GitHubSearch";
 import LoadingBar from "react-top-loading-bar";
-import { useLocation } from "react-router-dom";
+import GitHubUserMenu from "@features/GitHubUserMenu";
+import GitHubSearch from "@features/GitHubSearch";
 import { useTabsContext } from "@/contexts/TabsContext";
 import StatusButton from "../common/StatusButton";
+import TopBarActions from "./Topbar";
+import GithubOpenMenu from "./GithubOpenMenu";
 
 const Navbar = () => {
   const [progress, setProgress] = useState(0);
-  const [value, setValue] = useState("");
-  const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+
   const location = useLocation();
   const navigate = useNavigate();
   const { hasTabsComponent } = useTabsContext();
+  const searchInputRef = useRef(null);
 
-  const routeMap = {
+  const routeMap = useMemo(() => ({
     Home: "/",
     Issues: "/issues",
     "Pull requests": "/pull-requests",
@@ -33,108 +32,107 @@ const Navbar = () => {
     Codespaces: "/codespaces",
     Copilot: "/copilot",
     Explore: "/explore",
-    MarketPlace: "/marketplace",
-    "MCP Registory": "/mcp-registry",
-  };
-  const currentPathName =
-    Object.keys(routeMap).find((key) => routeMap[key] === location.pathname) ||
-    "momanamjad";
+    Marketplace: "/marketplace",
+    "MCP Registry": "/mcp-registry",
+  }), []);
+
+  const currentPathName = useMemo(() => {
+    const found = Object.keys(routeMap).find((key) => routeMap[key] === location.pathname);
+    return found || "momanamjad";
+  }, [location.pathname, routeMap]);
+
+  // Handle Route Transition Progress
   useEffect(() => {
     setProgress(70);
     const timer = setTimeout(() => setProgress(100), 200);
     return () => clearTimeout(timer);
-  }, [location]);
+  }, [location.pathname]);
 
+  // Global Key Listeners
   useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.key === "/" && !isSearchOpen) {
+    const handleGlobalKeyDown = (e) => {
+      // '/' to focus search
+      if (e.key === "/" && document.activeElement !== searchInputRef.current) {
         e.preventDefault();
         setIsSearchOpen(true);
+        // The focus will happen in a separate effect once search modal is open if needed
       }
     };
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      setIsSearchOpen(true);
-    };
 
-    document.addEventListener("keydown", handleKeyPress);
-    return () => document.removeEventListener("keydown", handleKeyPress);
-  }, [isSearchOpen]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!value.trim()) return;
-    navigate(`/${value.trim()}`);
-    setValue("");
-  };
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "/") {
-      const inputField = document.getElementById("search-input");
-      inputField.focus();
+    const handleFocusSearch = (e) => {
+      if (e.key === "/") {
+        searchInputRef.current?.focus();
+      }
     }
-  });
-  const HandleInputClick = () => {
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
+
+  const handleSearchClick = useCallback(() => {
+    setIsSearchOpen(true);
+  }, []);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
     setIsSearchOpen(true);
   };
 
-  const handleInputChange = (event) => {
-    setInputValue(event.target.value);
-  };
-
   return (
-    <div>
+    <div className="sticky top-0 z-40 w-full">
       <LoadingBar
-        color="#2188ff"
+        color="#0969da"
         progress={progress}
         height={2}
-        onLoaderFinished={() => setProgress(0)}
+        onLoaderFinished={useCallback(() => setProgress(0), [])}
       />
       <header
-        className="bg-[#F6F8FA] border border-github-border  h-[70px]"
-        style={{ borderBottom: hasTabsComponent ? "transparent" : undefined }}
+        className={`bg-[#F6F8FA] border-b border-github-border h-[64px] flex items-center transition-all ${hasTabsComponent ? "border-transparent" : "border-github-border"
+          }`}
       >
-        <div className=" mx-auto  h-full flex items-center  justify-between">
-          <div className="flex items-center gap-2    ">
+        <div className="w-full px-4 flex items-center justify-between gap-4">
+          {/* Left Section */}
+          <div className="flex items-center gap-3">
             <GithubOpenMenu />
-            <Link to="/">
-              <IoLogoGithub size={33} className=" cursor-pointer" />
+            <Link to="/" className="hover:opacity-80 transition-opacity">
+              <IoLogoGithub size={32} />
             </Link>
-            <div className="hover:bg-[#ebeff6]  px-2 py-1 rounded-md ">
-              <span className="font-semibold text-[14px]  cursor-pointer whitespace-nowrap">
+            <div className="hover:bg-[#ebeff6] px-2 py-1 rounded-md transition-colors cursor-pointer">
+              <span className="font-semibold text-sm whitespace-nowrap">
                 {currentPathName}
               </span>
             </div>
           </div>
-          <div className="flex items-center justify-end w-full gap-4 px-4">
-            <form onSubmit={handleSubmit}>
+
+          {/* Search & Actions Section */}
+          <div className="flex-1 flex items-center justify-end gap-3 max-w-2xl">
+            <form onSubmit={handleSearchSubmit} className="flex-1 max-w-sm">
               <div
-                onClick={HandleInputClick}
-                className="relative flex items-center  px-4 py-[6px] border border-gray-300 rounded-md  focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-100 transition-all cursor-pointer"
+                onClick={handleSearchClick}
+                className="relative flex items-center group cursor-pointer"
               >
-                <Search
-                  className={`absolute left-3 h-4 w-4 text-gray-400 ${isFocused ? "text-blue-500" : ""}`}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Type"
-                  id="search-input"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  readOnly
-                  className="pl-5  focus:outline-none text-sm placeholder-gray-800 cursor-pointer"
-                />
-
-                {!inputValue && (
-                  <div className="absolute p-13 flex items-center   text-gray-500 pointer-events-none">
-                    <kbd className="px-1.5 py-0.4 ml-1 mr-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-800 rounded">
+                <div className={`
+                                    flex items-center w-full px-3 py-1.5 
+                                    bg-[#ffffff] border border-[#d0d7de] rounded-md
+                                    transition-all duration-200
+                                    ${isFocused ? 'ring-2 ring-blue-500 border-transparent shadow-sm' : 'hover:border-[#afb8c1]'}
+                                `}>
+                  <Search className="h-4 w-4 text-[#59636e] shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search or jump to..."
+                    readOnly
+                    className="ml-2 w-full bg-transparent focus:outline-none text-sm placeholder-[#59636e] cursor-pointer"
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                  />
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <kbd className="min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-medium text-[#59636e] bg-[#f6f8fa] border border-[#d0d7de] rounded shadow-sm">
                       /
                     </kbd>
-                    <span className="text-gray-600">to search</span>
                   </div>
-                )}
+                </div>
               </div>
             </form>
 
@@ -143,18 +141,18 @@ const Navbar = () => {
               onClose={() => setIsSearchOpen(false)}
             />
 
-            <div className=" ">
+            <div className="flex items-center gap-2">
               <TopBarActions />
-            </div>
-            <div className=" ">
               <GitHubUserMenu />
             </div>
           </div>
         </div>
-        <StatusButton hidden />
       </header>
+
+      {/* Keeping StatusButton here to preserve its existence in the tree if hidden */}
+      <StatusButton hidden />
     </div>
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

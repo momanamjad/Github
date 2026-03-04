@@ -7,38 +7,75 @@ const STORAGE_KEYS = {
   REPO_CONTENTS: 'github_repository_contents',
 };
 
+// ─── In-Memory Cache ──────────────────────────────────────────────
+// JSON.parse on every read is expensive (especially for large repo
+// arrays).  The cache stores the last-parsed value and the raw JSON
+// string that produced it, so we only re-parse when localStorage has
+// actually changed (e.g. from another tab).
+const _cache = {};
 
-export const initializeStorage = async () => {
-  try {
-    const existingUser = localStorage.getItem(STORAGE_KEYS.USER);
+function readCached(key) {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return null;
 
-    if (!existingUser) {
-      const userData = await import('./userData.json');
-
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData.user));
-      // ensure each seeded repo includes a minimal fileTree so components can safely read it
-      const reposWithTree = userData.repositories.map(repo => ({
-        ...repo,
-        fileTree: repo.fileTree || [
-          { type: 'dir', name: 'src', path: 'src', children: [] },
-          { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
-        ]
-      }));
-      localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(reposWithTree));
-      localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(userData.pinnedRepositories));
-      localStorage.setItem(STORAGE_KEYS.STARRED_REPOS, JSON.stringify(userData.starredRepositories));
-      localStorage.setItem(STORAGE_KEYS.REPO_CONTENTS, JSON.stringify(userData.repositoryContents));
-
-      console.log(' localStorage initialized with default data');
-      return true;
-    }
-
-    console.log(' localStorage already contains data');
-    return true;
-  } catch (error) {
-    console.error(' Error initializing localStorage:', error);
-    return false;
+  // If the raw string hasn't changed, return the cached object
+  if (_cache[key] && _cache[key].raw === raw) {
+    return _cache[key].parsed;
   }
+
+  try {
+    const parsed = JSON.parse(raw);
+    _cache[key] = { raw, parsed };
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCached(key, value) {
+  const raw = JSON.stringify(value);
+  localStorage.setItem(key, raw);
+  _cache[key] = { raw, parsed: value };
+}
+
+// ─── Initialization ───────────────────────────────────────────────
+let _initPromise = null;   // Ensures we only initialize once
+
+export const initializeStorage = () => {
+  if (_initPromise) return _initPromise;
+
+  _initPromise = (async () => {
+    try {
+      const existingUser = localStorage.getItem(STORAGE_KEYS.USER);
+
+      if (!existingUser) {
+        const userData = await import('./userData.json');
+
+        writeCached(STORAGE_KEYS.USER, userData.user);
+        // ensure each seeded repo includes a minimal fileTree so components can safely read it
+        const reposWithTree = userData.repositories.map(repo => ({
+          ...repo,
+          fileTree: repo.fileTree || [
+            { type: 'dir', name: 'src', path: 'src', children: [] },
+            { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
+          ]
+        }));
+        writeCached(STORAGE_KEYS.REPOSITORIES, reposWithTree);
+        writeCached(STORAGE_KEYS.PINNED_REPOS, userData.pinnedRepositories);
+        writeCached(STORAGE_KEYS.STARRED_REPOS, userData.starredRepositories);
+        writeCached(STORAGE_KEYS.REPO_CONTENTS, userData.repositoryContents);
+
+        return true;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(' Error initializing localStorage:', error);
+      return false;
+    }
+  })();
+
+  return _initPromise;
 };
 
 /**
@@ -47,8 +84,7 @@ export const initializeStorage = async () => {
  */
 export const getStoredUser = () => {
   try {
-    const user = localStorage.getItem(STORAGE_KEYS.USER);
-    return user ? JSON.parse(user) : null;
+    return readCached(STORAGE_KEYS.USER);
   } catch (error) {
     console.error('Error retrieving user from storage:', error);
     return null;
@@ -61,8 +97,7 @@ export const getStoredUser = () => {
  */
 export const updateStoredUser = (userData) => {
   try {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-    console.log(' User data updated in localStorage');
+    writeCached(STORAGE_KEYS.USER, userData);
     return true;
   } catch (error) {
     console.error('Error updating user in storage:', error);
@@ -111,8 +146,7 @@ export const updateStoredStatus = (status) => {
  */
 export const getStoredRepositories = () => {
   try {
-    const reposStr = localStorage.getItem(STORAGE_KEYS.REPOSITORIES);
-    let list = reposStr ? JSON.parse(reposStr) : [];
+    let list = readCached(STORAGE_KEYS.REPOSITORIES) || [];
     // ensure every repo has a fileTree; fill missing ones and persist
     let patched = false;
     list = list.map(repo => {
@@ -129,7 +163,7 @@ export const getStoredRepositories = () => {
       return repo;
     });
     if (patched) {
-      localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(list));
+      writeCached(STORAGE_KEYS.REPOSITORIES, list);
     }
     return list;
   } catch (error) {
@@ -150,6 +184,9 @@ export const addRepository = (newRepo) => {
     // Generate unique ID for the new repo
     const newId = repos.length > 0 ? Math.max(...repos.map(r => r.id)) + 1 : 1;
 
+    // Read user once instead of 3 times
+    const user = getStoredUser();
+
     // default filesystem structure for a fresh repository
     const initialTree = [
       { type: 'dir', name: 'src', path: 'src', children: [] },
@@ -161,9 +198,9 @@ export const addRepository = (newRepo) => {
       id: newId,
       node_id: `R_kgDOGrJ_${String.fromCharCode(65 + newId)}g`,
       owner: {
-        login: getStoredUser().login,
-        id: getStoredUser().id,
-        avatar_url: getStoredUser().avatar_url,
+        login: user?.login,
+        id: user?.id,
+        avatar_url: user?.avatar_url,
         type: "User"
       },
       created_at: new Date().toISOString(),
@@ -175,9 +212,8 @@ export const addRepository = (newRepo) => {
     };
 
     repos.push(repoWithId);
-    localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(repos));
+    writeCached(STORAGE_KEYS.REPOSITORIES, repos);
 
-    console.log(` Repository "${newRepo.name}" added to localStorage`);
     return repos;
   } catch (error) {
     console.error('Error adding repository to storage:', error);
@@ -196,8 +232,7 @@ export const deleteRepository = (repoId) => {
     const repos = getStoredRepositories();
     const filteredRepos = repos.filter(repo => repo.id !== repoId);
 
-    localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(filteredRepos));
-    console.log(`✅ Repository with ID ${repoId} deleted from localStorage`);
+    writeCached(STORAGE_KEYS.REPOSITORIES, filteredRepos);
 
     return filteredRepos;
   } catch (error) {
@@ -212,11 +247,6 @@ export const deleteRepository = (repoId) => {
  * @param {Object} updatedData - Updated repository data
  * @returns {Array} Updated repositories array
  */
-
-
-
-
-
 export const updateRepository = (repoId, updatedData) => {
   try {
     const repos = getStoredRepositories();
@@ -224,8 +254,7 @@ export const updateRepository = (repoId, updatedData) => {
       repo.id === repoId ? { ...repo, ...updatedData, updated_at: new Date().toISOString() } : repo
     );
 
-    localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(updatedRepos));
-    console.log(` Repository with ID ${repoId} updated in localStorage`);
+    writeCached(STORAGE_KEYS.REPOSITORIES, updatedRepos);
 
     return updatedRepos;
   } catch (error) {
@@ -240,8 +269,7 @@ export const updateRepository = (repoId, updatedData) => {
  */
 export const getStoredPinnedRepos = () => {
   try {
-    const pinnedRepos = localStorage.getItem(STORAGE_KEYS.PINNED_REPOS);
-    return pinnedRepos ? JSON.parse(pinnedRepos) : [];
+    return readCached(STORAGE_KEYS.PINNED_REPOS) || [];
   } catch (error) {
     console.error('Error retrieving pinned repos from storage:', error);
     return [];
@@ -259,7 +287,6 @@ export const pinRepository = (repo) => {
 
     // Check if already pinned
     if (pinnedRepos.some(r => r.name === repo.name)) {
-      console.log(`Repository "${repo.name}" is already pinned`);
       return pinnedRepos;
     }
 
@@ -275,8 +302,7 @@ export const pinRepository = (repo) => {
     };
 
     pinnedRepos.push(pinnedRepo);
-    localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(pinnedRepos));
-    console.log(` Repository "${repo.name}" pinned`);
+    writeCached(STORAGE_KEYS.PINNED_REPOS, pinnedRepos);
 
     return pinnedRepos;
   } catch (error) {
@@ -295,8 +321,7 @@ export const unpinRepository = (repoName) => {
     const pinnedRepos = getStoredPinnedRepos();
     const filteredRepos = pinnedRepos.filter(repo => repo.name !== repoName);
 
-    localStorage.setItem(STORAGE_KEYS.PINNED_REPOS, JSON.stringify(filteredRepos));
-    console.log(` Repository "${repoName}" unpinned`);
+    writeCached(STORAGE_KEYS.PINNED_REPOS, filteredRepos);
 
     return filteredRepos;
   } catch (error) {
@@ -311,8 +336,7 @@ export const unpinRepository = (repoName) => {
  */
 export const getStoredStarredRepos = () => {
   try {
-    const starredRepos = localStorage.getItem(STORAGE_KEYS.STARRED_REPOS);
-    return starredRepos ? JSON.parse(starredRepos) : [];
+    return readCached(STORAGE_KEYS.STARRED_REPOS) || [];
   } catch (error) {
     console.error('Error retrieving starred repos from storage:', error);
     return [];
@@ -330,13 +354,11 @@ export const starRepository = (repo) => {
 
     // Check if already starred
     if (starredRepos.some(r => r.full_name === repo.full_name)) {
-      console.log(`Repository "${repo.name}" is already starred`);
       return starredRepos;
     }
 
     starredRepos.push(repo);
-    localStorage.setItem(STORAGE_KEYS.STARRED_REPOS, JSON.stringify(starredRepos));
-    console.log(` Repository "${repo.name}" starred`);
+    writeCached(STORAGE_KEYS.STARRED_REPOS, starredRepos);
 
     return starredRepos;
   } catch (error) {
@@ -355,8 +377,7 @@ export const unstarRepository = (repoFullName) => {
     const starredRepos = getStoredStarredRepos();
     const filteredRepos = starredRepos.filter(repo => repo.full_name !== repoFullName);
 
-    localStorage.setItem(STORAGE_KEYS.STARRED_REPOS, JSON.stringify(filteredRepos));
-    console.log(`✅ Repository "${repoFullName}" unstarred`);
+    writeCached(STORAGE_KEYS.STARRED_REPOS, filteredRepos);
 
     return filteredRepos;
   } catch (error) {
@@ -371,8 +392,7 @@ export const unstarRepository = (repoFullName) => {
  */
 export const getStoredRepoContents = (repoName) => {
   try {
-    const contents = localStorage.getItem(STORAGE_KEYS.REPO_CONTENTS);
-    const allContents = contents ? JSON.parse(contents) : {};
+    const allContents = readCached(STORAGE_KEYS.REPO_CONTENTS) || {};
     return allContents[repoName] || null;
   } catch (error) {
     console.error('Error retrieving repo contents:', error);
@@ -388,8 +408,10 @@ export const clearAllStorage = () => {
   try {
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
+      delete _cache[key];
     });
-    console.log(' All localStorage data cleared');
+    // Reset init promise so next mount re-seeds from JSON
+    _initPromise = null;
     return true;
   } catch (error) {
     console.error('Error clearing storage:', error);
