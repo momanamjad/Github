@@ -6,7 +6,6 @@ import { initializeStorage } from "@services/storageService.js";
 import { GitHubProvider } from "@contexts/GitHubContext";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
 
-// Lazy-load route-level components that are NOT needed for the initial paint
 const Profile = lazy(() => import("@pages/Profile"));
 const ProfileLayout = lazy(() => import("@pages/ProfileLayout"));
 const Overview = lazy(() => import("@features/tabs/Overview"));
@@ -15,7 +14,6 @@ const Stars = lazy(() => import("@features/tabs/Stars"));
 const RepoDetails = lazy(() => import("@features/RepoDetails"));
 const NewRepoPage = lazy(() => import("@features/NewRepoPage"));
 
-// Lightweight loading fallback — minimal DOM keeps LCP fast
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
     <div className="w-8 h-8 border-3 border-[#d0d7de] border-t-[#0969da] rounded-full animate-spin" />
@@ -27,7 +25,6 @@ const App = () => {
   useDocumentTitle();
 
   useEffect(() => {
-    // Initialize localStorage with default data when app loads
     initializeStorage();
   }, []);
 
