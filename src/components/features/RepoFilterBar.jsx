@@ -32,7 +32,7 @@ const FilterMenu = ({ label, value, options, onChange }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white border border-[#d0d7de] rounded-md shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-32px)] sm:w-56 bg-white border border-[#d0d7de] rounded-md shadow-lg z-50 overflow-hidden">
           <div className="px-3 py-2 text-xs font-semibold border-b bg-[#f6f8fa]">
             Select {label}
           </div>
@@ -93,7 +93,7 @@ const RepoFilterBar = ({
           "
         />
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <FilterMenu
             label="Type"
             value={type}

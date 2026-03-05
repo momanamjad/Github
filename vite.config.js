@@ -48,4 +48,8 @@ export default defineConfig({
       "@contexts": path.resolve(__dirname, "./src/contexts"),
     },
   },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+  }
 })

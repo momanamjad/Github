@@ -1,26 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Folder,
+  FolderOpen,
   File as FileIcon,
-  PlusSquare,
-  Edit2,
+  FilePlus,
+  FolderPlus,
+  Pencil,
   Trash2,
+  Check,
+  X,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { addNode, moveNode, deleteNode } from "@services/fileSystemService.js";
 
-// simple tree view with expand/collapse and inline actions
 const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
   const [openDirs, setOpenDirs] = useState({});
-  // inline create { parentPath: string, type: 'file' | 'dir' }
   const [inlineCreate, setInlineCreate] = useState(null);
-  const inputRef = useRef(null);
+  const [renamingPath, setRenamingPath] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const createInputRef = useRef(null);
+  const renameInputRef = useRef(null);
 
   useEffect(() => {
-    if (inlineCreate && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    if (inlineCreate && createInputRef.current) {
+      createInputRef.current.focus();
+      createInputRef.current.select();
     }
   }, [inlineCreate]);
+
+  useEffect(() => {
+    if (renamingPath && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingPath]);
 
   const toggle = (path) =>
     setOpenDirs((prev) => ({ ...prev, [path]: !prev[path] }));
@@ -46,202 +60,192 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
         setOpenDirs((prev) => ({ ...prev, [parentPath]: true }));
       }
     } catch (e) {
-      alert(e.message);
+      console.error(e.message);
     }
   };
 
-  const renameNode = (oldPath) => {
+  // ── Inline rename (VS Code style) ──
+  const startRename = (path, currentName) => {
+    setRenamingPath(path);
+    setRenameValue(currentName);
+  };
+
+  const commitRename = (oldPath) => {
+    const clean = (renameValue || "").replace(/\s+/g, "-").trim();
     const segments = oldPath.split("/");
     const oldName = segments[segments.length - 1];
-    const newName = window.prompt("New name", oldName);
-    if (!newName || newName === oldName) return;
-    const clean = newName.replace(/\s+/g, "-").trim();
-    if (!clean) return;
+
+    if (!clean || clean === oldName) {
+      setRenamingPath(null);
+      return;
+    }
+
     segments[segments.length - 1] = clean;
     const newPath = segments.join("/");
     try {
       moveNode(repoId, oldPath, newPath);
+      setRenamingPath(null);
       refreshTree();
     } catch (e) {
-      alert(e.message);
+      console.error(e.message);
+      setRenamingPath(null);
     }
   };
 
-  const removeNode = (path) => {
-    if (!window.confirm(`Delete '${path}'?`)) return;
+  const cancelRename = () => {
+    setRenamingPath(null);
+    setRenameValue("");
+  };
+
+  const removeNode = (path, name) => {
+    if (!window.confirm(`Delete "${name}"?`)) return;
     try {
       deleteNode(repoId, path);
       refreshTree();
-      // if selected file was removed, clear selection
       if (onSelect) onSelect(null);
     } catch (e) {
-      alert(e.message);
+      console.error(e.message);
     }
   };
 
-  const renderNodes = (nodes, parentPath = "") => {
+  const renderNodes = (nodes, depth = 0) => {
     return nodes.map((node) => {
       const fullPath = node.path;
+      const isRenaming = renamingPath === fullPath;
+      const paddingLeft = `${depth * 16 + 8}px`;
+
       if (node.type === "dir") {
         const isOpen = !!openDirs[fullPath];
         return (
-          <div key={fullPath} className="pl-2 bg-[#C8D1DA] rounded">
-            <div className="flex items-center gap-1 ">
-              <span
-                className="cursor-pointer select-none"
-                onClick={() => toggle(fullPath)}
-              >
-                {isOpen ? "▾" : "▸"}
+          <div key={fullPath}>
+            {/* Directory row */}
+            <div
+              className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors border-b border-[#d0d7de]/50"
+              style={{ paddingLeft }}
+            >
+              <span onClick={() => toggle(fullPath)} className="shrink-0 text-[#636c76]">
+                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </span>
-              <Folder size={16} />
-              <span className="cursor-pointer" onClick={() => toggle(fullPath)}>
-                {node.name}
+              <span className="shrink-0 text-[#54aeff]">
+                {isOpen ? <FolderOpen size={16} /> : <Folder size={16} />}
               </span>
-              <button
-                title="add file"
-                onClick={() =>
-                  setInlineCreate({ parentPath: fullPath, type: "file" })
-                }
-                className="ml-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="lucide lucide-file-plus-corner-icon lucide-file-plus-corner"
+
+              {isRenaming ? (
+                <input
+                  ref={renameInputRef}
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename(fullPath);
+                    if (e.key === "Escape") cancelRename();
+                  }}
+                  onBlur={() => commitRename(fullPath)}
+                  className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] rounded bg-white outline-none ring-1 ring-[#0969da]/30"
+                />
+              ) : (
+                <span
+                  className="flex-1 text-[14px] text-[#1f2328] truncate"
+                  onClick={() => toggle(fullPath)}
                 >
-                  <path d="M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35" />
-                  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
-                  <path d="M14 19h6" />
-                  <path d="M17 16v6" />
-                </svg>
-              </button>
-              
-              <button
-                title="add folder"
-                onClick={() =>
-                  setInlineCreate({ parentPath: fullPath, type: "dir" })
-                }
-                className="ml-1"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="lucide lucide-folder-plus-icon lucide-folder-plus"
-                >
-                  <path d="M12 10v6" />
-                  <path d="M9 13h6" />
-                  <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
-                </svg>
-              </button>
-              <button
-                title="rename"
-                onClick={() => renameNode(fullPath)}
-                className="ml-1 text-blue-600 hover:text-blue-800"
-              >
-                {/* <Edit2 size={14} /> */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="lucide lucide-pencil-icon lucide-pencil"
-                >
-                  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-                  <path d="m15 5 4 4" />
-                </svg>
-              </button>
-              <button
-                title="delete"
-                onClick={() => removeNode(fullPath)}
-                className="ml-1 text-red-600 hover:text-red-800"
-              >
-                <Trash2 size={14} />
-              </button>
+                  {node.name}
+                </span>
+              )}
+
+              {/* Action buttons — visible on hover */}
+              {!isRenaming && (
+                <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-auto">
+                  <ActionBtn
+                    title="New file"
+                    onClick={() => {
+                      setOpenDirs((prev) => ({ ...prev, [fullPath]: true }));
+                      setInlineCreate({ parentPath: fullPath, type: "file" });
+                    }}
+                  >
+                    <FilePlus size={14} />
+                  </ActionBtn>
+                  <ActionBtn
+                    title="New folder"
+                    onClick={() => {
+                      setOpenDirs((prev) => ({ ...prev, [fullPath]: true }));
+                      setInlineCreate({ parentPath: fullPath, type: "dir" });
+                    }}
+                  >
+                    <FolderPlus size={14} />
+                  </ActionBtn>
+                  <ActionBtn title="Rename" onClick={() => startRename(fullPath, node.name)}>
+                    <Pencil size={13} />
+                  </ActionBtn>
+                  <ActionBtn title="Delete" onClick={() => removeNode(fullPath, node.name)} variant="danger">
+                    <Trash2 size={13} />
+                  </ActionBtn>
+                </div>
+              )}
             </div>
+
+            {/* Children */}
             {isOpen && (
               <>
-                {renderNodes(node.children, fullPath)}
+                {renderNodes(node.children, depth + 1)}
                 {inlineCreate && inlineCreate.parentPath === fullPath && (
-                  <div className="pl-6 py-1 flex items-center gap-2">
-                    {inlineCreate.type === "dir" ? (
-                      <Folder size={16} />
-                    ) : (
-                      <FileIcon size={16} />
-                    )}
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      placeholder={
-                        inlineCreate.type === "dir" ? "New folder" : "New file"
-                      }
-                      className="border px-2 py-0.5 text-sm rounded w-48"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter")
-                          commitCreate(
-                            fullPath,
-                            inlineCreate.type === "dir",
-                            e.currentTarget.value,
-                          );
-                        if (e.key === "Escape") setInlineCreate(null);
-                      }}
-                      onBlur={(e) =>
-                        commitCreate(
-                          fullPath,
-                          inlineCreate.type === "dir",
-                          e.currentTarget.value,
-                        )
-                      }
-                    />
-                  </div>
+                  <InlineInput
+                    ref={createInputRef}
+                    type={inlineCreate.type}
+                    depth={depth + 1}
+                    onCommit={(name) => commitCreate(fullPath, inlineCreate.type === "dir", name)}
+                    onCancel={() => setInlineCreate(null)}
+                  />
                 )}
               </>
             )}
           </div>
         );
       }
-      // file
+
+      // ── File node ──
       return (
-        <div key={fullPath} className="pl-6 flex items-center gap-1">
-          <FileIcon size={16} />
-          <span
-            className="cursor-pointer"
-            onClick={() => onSelect && onSelect(node)}
-          >
-            {node.name}
+        <div
+          key={fullPath}
+          className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors border-b border-[#d0d7de]/50"
+          style={{ paddingLeft }}
+        >
+          <span className="shrink-0 w-[14px]" />
+          <span className="shrink-0 text-[#636c76]">
+            <FileIcon size={16} />
           </span>
-          <button
-            title="rename"
-            onClick={() => renameNode(fullPath)}
-            className="ml-2 text-blue-600 hover:text-blue-800"
-          >
-            <Edit2 size={14} />
-          </button>
-          <button
-            title="delete"
-            onClick={() => removeNode(fullPath)}
-            className="ml-1 text-red-600 hover:text-red-800"
-          >
-            <Trash2 size={14} />
-          </button>
+
+          {isRenaming ? (
+            <input
+              ref={renameInputRef}
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename(fullPath);
+                if (e.key === "Escape") cancelRename();
+              }}
+              onBlur={() => commitRename(fullPath)}
+              className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] rounded bg-white outline-none ring-1 ring-[#0969da]/30"
+            />
+          ) : (
+            <span
+              className="flex-1 text-[14px] text-[#1f2328] truncate hover:underline hover:text-[#0969da]"
+              onClick={() => onSelect && onSelect(node)}
+            >
+              {node.name}
+            </span>
+          )}
+
+          {!isRenaming && (
+            <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-auto">
+              <ActionBtn title="Rename" onClick={() => startRename(fullPath, node.name)}>
+                <Pencil size={13} />
+              </ActionBtn>
+              <ActionBtn title="Delete" onClick={() => removeNode(fullPath, node.name)} variant="danger">
+                <Trash2 size={13} />
+              </ActionBtn>
+            </div>
+          )}
         </div>
       );
     });
@@ -249,58 +253,92 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
 
   return (
     <div>
-      <div className="flex gap-2 mb-2">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#f6f8fa] border border-[#d0d7de] rounded-t-md">
         <button
           onClick={() => setInlineCreate({ parentPath: "", type: "file" })}
-          className="text-green-600 hover:text-green-800 flex items-center gap-1"
+          className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f3f4f6] transition-colors cursor-pointer"
         >
-          <PlusSquare size={16} /> File
+          <FilePlus size={14} /> File
         </button>
         <button
           onClick={() => setInlineCreate({ parentPath: "", type: "dir" })}
-          className="text-green-600 hover:text-green-800 flex items-center gap-1"
+          className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f3f4f6] transition-colors cursor-pointer"
         >
-          <PlusSquare size={16} /> Folder
+          <FolderPlus size={14} /> Folder
         </button>
       </div>
-      {/* root-level nodes */}
-      {renderNodes(tree)}
-      {/* inline creator at root */}
-      {inlineCreate && inlineCreate.parentPath === "" && (
-        <div className="pl-2 py-1 flex items-center gap-2">
-          {inlineCreate.type === "dir" ? (
-            <Folder size={16} />
-          ) : (
-            <FileIcon size={16} />
-          )}
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder={
-              inlineCreate.type === "dir" ? "New folder" : "New file"
-            }
-            className="border px-2 py-0.5 text-sm rounded w-48"
-            onKeyDown={(e) => {
-              if (e.key === "Enter")
-                commitCreate(
-                  "",
-                  inlineCreate.type === "dir",
-                  e.currentTarget.value,
-                );
-              if (e.key === "Escape") setInlineCreate(null);
-            }}
-            onBlur={(e) =>
-              commitCreate(
-                "",
-                inlineCreate.type === "dir",
-                e.currentTarget.value,
-              )
-            }
+
+      {/* File tree */}
+      <div className="border border-t-0 border-[#d0d7de] rounded-b-md bg-white overflow-hidden">
+        {tree.length === 0 ? (
+          <div className="px-4 py-8 text-center text-[#636c76] text-sm">
+            This repository is empty. Create a file or folder to get started.
+          </div>
+        ) : (
+          renderNodes(tree)
+        )}
+
+        {/* Root-level inline input */}
+        {inlineCreate && inlineCreate.parentPath === "" && (
+          <InlineInput
+            ref={createInputRef}
+            type={inlineCreate.type}
+            depth={0}
+            onCommit={(name) => commitCreate("", inlineCreate.type === "dir", name)}
+            onCancel={() => setInlineCreate(null)}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
+
+// Small action button used in file rows
+const ActionBtn = ({ children, title, onClick, variant = "default" }) => (
+  <button
+    title={title}
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className={`p-1 rounded transition-colors cursor-pointer
+      ${variant === "danger"
+        ? "text-[#636c76] hover:text-[#cf222e] hover:bg-[#ffebe9]"
+        : "text-[#636c76] hover:text-[#0969da] hover:bg-[#ddf4ff]"
+      }`}
+  >
+    {children}
+  </button>
+);
+
+// Inline input for creating files/folders
+const InlineInput = React.forwardRef(({ type, depth, onCommit, onCancel }, ref) => {
+  const paddingLeft = `${depth * 16 + 8}px`;
+  return (
+    <div
+      className="flex items-center gap-1.5 py-1 px-2 bg-[#ddf4ff] border-b border-[#0969da]/30"
+      style={{ paddingLeft }}
+    >
+      <span className="shrink-0 w-[14px]" />
+      <span className="shrink-0 text-[#636c76]">
+        {type === "dir" ? <Folder size={16} /> : <FileIcon size={16} />}
+      </span>
+      <input
+        ref={ref}
+        type="text"
+        placeholder={type === "dir" ? "Folder name..." : "Filename..."}
+        className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] rounded bg-white outline-none ring-1 ring-[#0969da]/30"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") onCommit(e.currentTarget.value);
+          if (e.key === "Escape") onCancel();
+        }}
+        onBlur={(e) => onCommit(e.currentTarget.value)}
+      />
+    </div>
+  );
+});
+
+InlineInput.displayName = "InlineInput";
 
 export default FileExplorer;

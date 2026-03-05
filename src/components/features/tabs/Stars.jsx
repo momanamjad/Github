@@ -182,10 +182,10 @@ const Stars = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
       {/* Lists Section */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h2 className="text-xl font-semibold text-gray-900">
             Lists <span className="text-gray-500 font-normal">({lists.length})</span>
           </h2>
@@ -205,7 +205,7 @@ const Stars = () => {
                     className="fixed inset-0 z-10"
                     onClick={() => setIsListSortOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                  <div className="absolute right-0 sm:right-auto sm:left-0 mt-2 w-[calc(100vw-48px)] sm:w-64 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                     <div className="py-2 px-4 border-b border-gray-200 flex items-center justify-between">
                       <span className="text-sm font-semibold">Sort by</span>
                       <button
@@ -291,7 +291,7 @@ const Stars = () => {
         </div>
 
         {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <button className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
             Search
           </button>
@@ -312,7 +312,7 @@ const Stars = () => {
                   className="fixed inset-0 z-10"
                   onClick={() => setIsTypeOpen(false)}
                 />
-                <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                <div className="absolute left-0 sm:left-0 mt-2 w-[calc(100vw-48px)] sm:w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                   <div className="py-1">
                     {typeOptions.map((option) => (
                       <button
@@ -354,7 +354,7 @@ const Stars = () => {
                   className="fixed inset-0 z-10"
                   onClick={() => setIsLanguageOpen(false)}
                 />
-                <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                <div className="absolute left-0 mt-2 w-[calc(100vw-48px)] sm:w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                   <div className="py-1 max-h-60 overflow-y-auto">
                     {languageOptions.map((option) => (
                       <button
@@ -396,7 +396,7 @@ const Stars = () => {
                   className="fixed inset-0 z-10"
                   onClick={() => setIsSortOpen(false)}
                 />
-                <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-[calc(100vw-48px)] sm:w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                   <div className="py-1">
                     {sortOptions.map((option) => (
                       <button
@@ -451,17 +451,17 @@ const Stars = () => {
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <Link
                         to={`/${repo.owner.login}/${encodeURIComponent(repo.name)}`}
-                        className="text-blue-600 hover:underline font-semibold"
+                        className="text-blue-600 hover:underline font-semibold text-sm sm:text-base truncate"
                       >
                         {repo.full_name}
                       </Link>
                     </div>
                     <button
                       onClick={() => handleStarToggle(repo)}
-                      className="flex items-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-[#F6F8FA] transition-colors"
+                      className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-[#F6F8FA] transition-colors shrink-0"
                     >
                       <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-400" />
                       <span className="text-gray-700">Starred</span>
@@ -495,7 +495,7 @@ const Stars = () => {
 
       {/* Create List Modal */}
       {isCreateListOpen && (
-        <div className="fixed inset-0 bg-gray-500/55 z-50  flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-500/55 z-50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-lg w-full max-w-md">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">

@@ -48,9 +48,9 @@ const ProfileSidebar = ({
     followers: 0,
     following: 3,
   });
- 
- 
- 
+
+
+
 
   const handleSaveProfile = (updatedProfile) => {
     setUserProfile((prev) => ({
@@ -67,31 +67,46 @@ const ProfileSidebar = ({
       navigate(`/${userProfile.username || username}/${repoName}`);
     }
   };
- 
+
 
   const displayRepos =
     pinnedRepos.length > 0 ? pinnedRepos : repositories.slice(0, 5);
 
   return (
     <>
-      <aside className="w-full lg:w-1/4 px-4 mt-6 lg:sticky lg:top-6">
-        <div className="relative inline-block">
-          <img
-            src={userProfile.avatar}
-            alt={userProfile.name}
-            className="rounded-full w-[256px] border-3 border-[#E7E6E8]"
-          />
+      <aside className="w-full lg:w-1/4 px-3 sm:px-4 mt-4 lg:mt-6 lg:sticky lg:top-6">
+        {/* Mobile: horizontal layout, Desktop: vertical */}
+        <div className="flex items-center gap-4 lg:block">
+          <div className="relative inline-block shrink-0">
+            <img
+              src={userProfile.avatar}
+              alt={userProfile.name}
+              className="rounded-full w-[72px] sm:w-[96px] lg:w-[256px] border-3 border-[#E7E6E8]"
+            />
 
-          <div className="absolute bottom-2 right-2">
-           <StatusButton/>
+            <div className="absolute bottom-0 right-0 lg:bottom-2 lg:right-2">
+              <StatusButton />
+            </div>
+          </div>
+
+          {/* Mobile: name beside avatar */}
+          <div className="lg:hidden flex-1 min-w-0">
+            <h1 className="text-[18px] sm:text-[20px] font-semibold leading-tight">
+              {userProfile.name}
+            </h1>
+            <p className="text-[14px] sm:text-[16px] font-light text-[#59636E] leading-tight">
+              {userProfile.username}
+              {userProfile.pronouns && ` · ${userProfile.pronouns}`}
+            </p>
           </div>
         </div>
 
-  
-        <h1 className="text-[26px] font-semibold leading-tight mt-4">
+
+        {/* Desktop: name below avatar */}
+        <h1 className="hidden lg:block text-[26px] font-semibold leading-tight mt-4">
           {userProfile.name}
         </h1>
-        <p className="text-[20px] font-light text-[#59636E] leading-tight">
+        <p className="hidden lg:block text-[20px] font-light text-[#59636E] leading-tight">
           {userProfile.username}
           {userProfile.pronouns && ` · ${userProfile.pronouns}`}
         </p>
@@ -173,55 +188,54 @@ const ProfileSidebar = ({
                   {(repo.language ||
                     repo.stargazersCount > 0 ||
                     repo.forksCount > 0) && (
-                    <div className="mt-1 flex items-center gap-3 pl-[22px] text-xs text-[#59636E]">
-                      {repo.language && (
-                        <span className="flex items-center gap-1">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              repo.language === "JavaScript"
-                                ? "bg-yellow-400"
-                                : repo.language === "TypeScript"
-                                  ? "bg-blue-500"
-                                  : repo.language === "CSS"
-                                    ? "bg-purple-500"
-                                    : repo.language === "HTML"
-                                      ? "bg-orange-500"
-                                      : repo.language === "Python"
-                                        ? "bg-green-500"
-                                        : "bg-gray-500"
-                            }`}
-                          />
-                          {repo.language}
-                        </span>
-                      )}
-                      {repo.stargazersCount > 0 && (
-                        <span className="flex items-center gap-1">
-                          <svg
-                            className="fill-current"
-                            viewBox="0 0 16 16"
-                            width="14"
-                            height="14"
-                          >
-                            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.192L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"></path>
-                          </svg>
-                          {repo.stargazersCount}
-                        </span>
-                      )}
-                      {repo.forksCount > 0 && (
-                        <span className="flex items-center gap-1">
-                          <svg
-                            className="fill-current"
-                            viewBox="0 0 16 16"
-                            width="14"
-                            height="14"
-                          >
-                            <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"></path>
-                          </svg>
-                          {repo.forksCount}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                      <div className="mt-1 flex items-center gap-3 pl-[22px] text-xs text-[#59636E]">
+                        {repo.language && (
+                          <span className="flex items-center gap-1">
+                            <span
+                              className={`w-2 h-2 rounded-full ${repo.language === "JavaScript"
+                                  ? "bg-yellow-400"
+                                  : repo.language === "TypeScript"
+                                    ? "bg-blue-500"
+                                    : repo.language === "CSS"
+                                      ? "bg-purple-500"
+                                      : repo.language === "HTML"
+                                        ? "bg-orange-500"
+                                        : repo.language === "Python"
+                                          ? "bg-green-500"
+                                          : "bg-gray-500"
+                                }`}
+                            />
+                            {repo.language}
+                          </span>
+                        )}
+                        {repo.stargazersCount > 0 && (
+                          <span className="flex items-center gap-1">
+                            <svg
+                              className="fill-current"
+                              viewBox="0 0 16 16"
+                              width="14"
+                              height="14"
+                            >
+                              <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.192L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"></path>
+                            </svg>
+                            {repo.stargazersCount}
+                          </span>
+                        )}
+                        {repo.forksCount > 0 && (
+                          <span className="flex items-center gap-1">
+                            <svg
+                              className="fill-current"
+                              viewBox="0 0 16 16"
+                              width="14"
+                              height="14"
+                            >
+                              <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"></path>
+                            </svg>
+                            {repo.forksCount}
+                          </span>
+                        )}
+                      </div>
+                    )}
                 </button>
               ))}
             </div>
@@ -334,7 +348,7 @@ const ProfileSidebar = ({
         </div>
       </aside>
 
-      
+
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

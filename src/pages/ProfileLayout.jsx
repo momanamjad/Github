@@ -12,9 +12,10 @@ const ProfileLayout = () => {
 
       <Tabs username={username} />
 
-      <div className="flex max-w-7xl mx-auto px-4">
+      {/* Responsive layout: stacked on mobile, side-by-side on lg+ */}
+      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto px-3 sm:px-4">
         <ProfileSidebar />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <Outlet />
         </div>
       </div>
