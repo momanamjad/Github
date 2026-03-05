@@ -156,7 +156,7 @@ const GithubOpenMenu = React.memo(() => {
         aria-label="Open Menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="btn-octicon m-2 p-2 border border-[#C8D1DA] hover:bg-[#ebeff2]  rounded-[8px] cursor-pointer"
+        className="btn-octicon p-2 border border-[#C8D1DA] hover:bg-[#ebeff2] rounded-[8px] cursor-pointer"
         size={36}
       >
         <svg
@@ -182,11 +182,8 @@ const GithubOpenMenu = React.memo(() => {
 
       <div
         ref={sidebarRef}
-        className="fixed top-0 left-0 z-50 h-full overflow-y-auto"
+        className="fixed top-0 left-0 z-50 h-full overflow-y-auto w-full max-w-[320px] bg-white rounded-r-[9px]"
         style={{
-          width: "320px",
-          borderRadius: "0px 9px 9px 0px",
-          backgroundColor: "#FFFFFF",
           transform: isOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
         }}

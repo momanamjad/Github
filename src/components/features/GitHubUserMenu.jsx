@@ -58,7 +58,7 @@ const GitHubUserMenu = () => {
       {isOpen && (
         <div
           ref={menuRef}
-          className="absolute top-full right-0 mt-2 w-[90vw] sm:w-80 md:w-[300px] bg-white border border-github-border rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden"
+          className="fixed sm:absolute top-[64px] sm:top-full right-0 sm:mt-2 w-full sm:w-80 md:w-[300px] max-h-[calc(100vh-64px)] sm:max-h-none overflow-y-auto bg-white border border-github-border sm:rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
           {/* Popover Arrow */}
           <div className="hidden sm:block absolute -top-2 right-3 w-4 h-4 bg-white border-l border-t border-github-border transform rotate-45" />

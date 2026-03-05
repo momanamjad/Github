@@ -1,10 +1,7 @@
 import {
-  CopilotIcon,
-  PlusIcon,
   IssueOpenedIcon,
   GitPullRequestIcon,
-  RepoIcon,
-  TriangleDownIcon,
+  InboxIcon,
 } from "@primer/octicons-react";
 import CreateNewIssue from "@features/CreateNew";
 import { useNavigate } from "react-router-dom";
@@ -30,30 +27,33 @@ const IconButton = ({ children, label, onClick }) => (
   </button>
 );
 
-const Divider = () => <div className="w-px h-6 bg-[#d1d9e0] mx-2" />;
+const Divider = () => <div className="w-px h-6 bg-[#d1d9e0] mx-1 lg:mx-2" />;
 
 const TopBarActions = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="hidden lg:flex items-center gap-2.5">
-      <Divider />
+    <div className="flex items-center gap-1 lg:gap-2.5">
+      {/* Divider — only on lg+ */}
+      <div className="hidden lg:block">
+        <Divider />
+      </div>
 
+      {/* Create New — always visible */}
       <CreateNewIssue />
 
-      <IconButton label="Issues" onClick={() => navigate("/issues")}>
-        <IssueOpenedIcon size={16} />
-      </IconButton>
-      <IconButton label="Pull requests"
-      onClick={()=>navigate("/pull-requests")}>
-        <GitPullRequestIcon size={16} />
-      </IconButton>
-
-      <IconButton label="Repositories"
-      onClick={()=>navigate("/repositories")}
-      >
-        <RepoIcon size={16} />
-      </IconButton>
+      {/* These action icons hide below lg breakpoint (same as real GitHub) */}
+      <div className="hidden lg:flex items-center gap-2.5">
+        <IconButton label="Issues" onClick={() => navigate("/issues")}>
+          <IssueOpenedIcon size={16} />
+        </IconButton>
+        <IconButton label="Pull requests" onClick={() => navigate("/pull-requests")}>
+          <GitPullRequestIcon size={16} />
+        </IconButton>
+        <IconButton label="Notifications">
+          <InboxIcon size={16} />
+        </IconButton>
+      </div>
     </div>
   );
 };

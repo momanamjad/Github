@@ -22,7 +22,7 @@ const CreateNew = () => {
   const buttonRef = React.useRef(null);
   const itemRefs = React.useRef([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const handleNewRepoClick = () => {
     navigate("/new");
   };
@@ -113,7 +113,7 @@ const CreateNew = () => {
           <div
             role="menu"
             aria-label="Create new"
-            className="absolute  top-11  bg-white border border-[#C8D1DA] rounded-md shadow-lg p-4 w-48"
+            className="absolute right-0 top-11 bg-white border border-[#C8D1DA] rounded-md shadow-lg p-4 w-[calc(100vw-32px)] sm:w-48 z-50"
           >
             <MenuItem
               ref={(el) => (itemRefs.current[0] = el)}
