@@ -49,7 +49,10 @@ const App = () => {
               <Route path="/profile/stars" element={<Stars />} />
               {/* Redirect plain /stars to the profile stars route to avoid it being
                   captured by the dynamic /:username route. */}
-              <Route path="/stars" element={<Navigate to="/momanamjad/stars" replace />} />
+              <Route
+                path="/stars"
+                element={<Navigate to="/momanamjad/stars" replace />}
+              />
             </Route>
             <Route path="/new" element={<NewRepoPage />} />
             <Route path="/:username" element={<ProfileLayout />}>

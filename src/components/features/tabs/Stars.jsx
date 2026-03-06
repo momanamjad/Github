@@ -202,27 +202,27 @@ const Stars = () => {
               {isListSortOpen && (
                 <>
                   <div
-                    className="fixed inset-0 z-10"
+                    className="fixed inset-0 bg-black/20 z-[90] sm:z-10 sm:bg-transparent"
                     onClick={() => setIsListSortOpen(false)}
                   />
-                  <div className="absolute right-0 sm:right-auto sm:left-0 mt-2 w-[calc(100vw-48px)] sm:w-64 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                    <div className="py-2 px-4 border-b border-gray-200 flex items-center justify-between">
+                  <div className="fixed sm:absolute bottom-0 left-0 right-0 sm:bottom-auto sm:right-auto sm:left-0 sm:top-full sm:mt-2 w-full sm:w-64 bg-white sm:border border-t border-gray-200 sm:rounded-md rounded-t-xl shadow-2xl z-[100] flex flex-col animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-3 sm:px-4 sm:py-2 text-sm sm:text-xs font-semibold border-b sm:bg-white bg-[#f6f8fa] flex justify-between items-center rounded-t-xl sm:rounded-none">
                       <span className="text-sm font-semibold">Sort by</span>
                       <button
                         onClick={() => setIsListSortOpen(false)}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-gray-400 hover:text-gray-600 sm:hidden"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="py-1">
+                    <div className="py-1 max-h-[60vh] sm:max-h-72 overflow-y-auto w-full pb-4 sm:pb-0">
                       {listSortOptions.map((option) => (
                         <button
                           key={option.value}
                           onClick={() => {
                             setIsListSortOpen(false);
                           }}
-                          className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2"
+                          className="w-full px-4 py-3 sm:py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 border-b sm:border-none border-gray-100 last:border-none"
                         >
                           {option.value === 'last-updated' && (
                             <Check className="w-4 h-4 text-gray-900" />
@@ -309,11 +309,17 @@ const Stars = () => {
             {isTypeOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-10"
+                  className="fixed inset-0 bg-black/20 z-[90] sm:z-10 sm:bg-transparent"
                   onClick={() => setIsTypeOpen(false)}
                 />
-                <div className="absolute left-0 sm:left-0 mt-2 w-[calc(100vw-48px)] sm:w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                  <div className="py-1">
+                <div className="fixed sm:absolute bottom-0 left-0 right-0 sm:bottom-auto sm:right-auto sm:left-0 sm:top-full sm:mt-2 w-full sm:w-56 bg-white sm:border border-t border-gray-200 sm:rounded-md rounded-t-xl shadow-2xl z-[100] flex flex-col animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-3 sm:hidden text-sm font-semibold border-b bg-[#f6f8fa] flex justify-between items-center rounded-t-xl">
+                    <span>Select type</span>
+                    <button onClick={() => setIsTypeOpen(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="py-1 max-h-[60vh] sm:max-h-72 overflow-y-auto w-full pb-4 sm:pb-0">
                     {typeOptions.map((option) => (
                       <button
                         key={option.value}
@@ -321,7 +327,7 @@ const Stars = () => {
                           setTypeFilter(option.value);
                           setIsTypeOpen(false);
                         }}
-                        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2"
+                        className="w-full px-4 py-3 sm:py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 border-b sm:border-none border-gray-100 last:border-none"
                       >
                         {typeFilter === option.value && (
                           <Check className="w-4 h-4 text-gray-900" />
@@ -351,11 +357,17 @@ const Stars = () => {
             {isLanguageOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-10"
+                  className="fixed inset-0 bg-black/20 z-[90] sm:z-10 sm:bg-transparent"
                   onClick={() => setIsLanguageOpen(false)}
                 />
-                <div className="absolute left-0 mt-2 w-[calc(100vw-48px)] sm:w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                  <div className="py-1 max-h-60 overflow-y-auto">
+                <div className="fixed sm:absolute bottom-0 left-0 right-0 sm:bottom-auto sm:right-auto sm:left-0 sm:top-full sm:mt-2 w-full sm:w-56 bg-white sm:border border-t border-gray-200 sm:rounded-md rounded-t-xl shadow-2xl z-[100] flex flex-col animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-3 sm:hidden text-sm font-semibold border-b bg-[#f6f8fa] flex justify-between items-center rounded-t-xl">
+                    <span>Select language</span>
+                    <button onClick={() => setIsLanguageOpen(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="py-1 max-h-[60vh] sm:max-h-60 overflow-y-auto w-full pb-4 sm:pb-0">
                     {languageOptions.map((option) => (
                       <button
                         key={option.value}
@@ -363,7 +375,7 @@ const Stars = () => {
                           setLanguageFilter(option.value);
                           setIsLanguageOpen(false);
                         }}
-                        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2"
+                        className="w-full px-4 py-3 sm:py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 border-b sm:border-none border-gray-100 last:border-none"
                       >
                         {languageFilter === option.value && (
                           <Check className="w-4 h-4 text-gray-900" />
@@ -393,11 +405,17 @@ const Stars = () => {
             {isSortOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-10"
+                  className="fixed inset-0 bg-black/20 z-[90] sm:z-10 sm:bg-transparent"
                   onClick={() => setIsSortOpen(false)}
                 />
-                <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-[calc(100vw-48px)] sm:w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                  <div className="py-1">
+                <div className="fixed sm:absolute bottom-0 left-0 right-0 sm:bottom-auto sm:right-auto sm:left-0 sm:top-full sm:mt-2 w-full sm:w-56 bg-white sm:border border-t border-gray-200 sm:rounded-md rounded-t-xl shadow-2xl z-[100] flex flex-col animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-3 sm:hidden text-sm font-semibold border-b bg-[#f6f8fa] flex justify-between items-center rounded-t-xl">
+                    <span>Sort by</span>
+                    <button onClick={() => setIsSortOpen(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="py-1 max-h-[60vh] sm:max-h-72 overflow-y-auto w-full pb-4 sm:pb-0">
                     {sortOptions.map((option) => (
                       <button
                         key={option.value}
@@ -405,7 +423,7 @@ const Stars = () => {
                           setSortBy(option.value);
                           setIsSortOpen(false);
                         }}
-                        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2"
+                        className="w-full px-4 py-3 sm:py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 border-b sm:border-none border-gray-100 last:border-none"
                       >
                         {sortBy === option.value && (
                           <Check className="w-4 h-4 text-gray-900" />

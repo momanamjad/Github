@@ -58,7 +58,7 @@ const GitHubUserMenu = () => {
       {isOpen && (
         <div
           ref={menuRef}
-          className="fixed sm:absolute top-[64px] sm:top-full right-0 sm:mt-2 w-full sm:w-80 md:w-[300px] max-h-[calc(100vh-64px)] sm:max-h-none overflow-y-auto bg-white border border-github-border sm:rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+          className="fixed sm:absolute top-[64px] sm:top-full right-0 sm:right-0 sm:mt-2 w-full sm:w-80 md:w-[300px] max-h-[calc(100vh-64px)] sm:max-h-[85vh] overflow-y-auto bg-white border-t sm:border border-github-border sm:rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
           {/* Popover Arrow */}
           <div className="hidden sm:block absolute -top-2 right-3 w-4 h-4 bg-white border-l border-t border-github-border transform rotate-45" />
@@ -90,26 +90,26 @@ const GitHubUserMenu = () => {
 
           {/* Menu Items */}
           <div className="py-2 border-b border-github-border overflow-y-auto max-h-60 sm:max-h-none">
-            <MenuItem icon={<ProfileIcon />} text="Profile" path={`/${username}`} />
-            <MenuItem icon={<RepositoriesIcon />} text="Repositories" path={`/${username}/repositories`} />
-            <MenuItem icon={<StarsIcon />} text="Stars" path={`/${username}/stars`} />
-            <MenuItem icon={<GistsIcon />} text="Gists" path="/gists" />
-            <MenuItem icon={<OrganizationsIcon />} text="Organizations" path="/organizations" />
-            <MenuItem icon={<EnterprisesIcon />} text="Enterprises" path="/enterprises" />
-            <MenuItem icon={<SponsorsIcon />} text="Sponsors" path="/sponsors" />
+            <MenuItem icon={<ProfileIcon />} text="Profile" path={`/${username}`} onClose={closeMenu} />
+            <MenuItem icon={<RepositoriesIcon />} text="Repositories" path={`/${username}/repositories`} onClose={closeMenu} />
+            <MenuItem icon={<StarsIcon />} text="Stars" path={`/${username}/stars`} onClose={closeMenu} />
+            <MenuItem icon={<GistsIcon />} text="Gists" path="/gists" onClose={closeMenu} />
+            <MenuItem icon={<OrganizationsIcon />} text="Organizations" path="/organizations" onClose={closeMenu} />
+            <MenuItem icon={<EnterprisesIcon />} text="Enterprises" path="/enterprises" onClose={closeMenu} />
+            <MenuItem icon={<SponsorsIcon />} text="Sponsors" path="/sponsors" onClose={closeMenu} />
           </div>
 
           <div className="py-2 border-b border-github-border">
-            <MenuItem icon={<SettingsIcon />} text="Settings" path="/settings" />
-            <MenuItem icon={<CopilotIcon />} text="Copilot settings" path="/settings/copilot" />
-            <MenuItem icon={<FeatureIcon />} text="Feature preview" badge="New" />
-            <MenuItem icon={<AppearanceIcon />} text="Appearance" />
-            <MenuItem icon={<AccessibilityIcon />} text="Accessibility" />
-            <MenuItem icon={<EnterpriseIcon />} text="Try Enterprise" badge="Free" badgeColor="green" />
+            <MenuItem icon={<SettingsIcon />} text="Settings" path="/settings" onClose={closeMenu} />
+            <MenuItem icon={<CopilotIcon />} text="Copilot settings" path="/settings/copilot" onClose={closeMenu} />
+            <MenuItem icon={<FeatureIcon />} text="Feature preview" badge="New" onClose={closeMenu} />
+            <MenuItem icon={<AppearanceIcon />} text="Appearance" onClose={closeMenu} />
+            <MenuItem icon={<AccessibilityIcon />} text="Accessibility" onClose={closeMenu} />
+            <MenuItem icon={<EnterpriseIcon />} text="Try Enterprise" badge="Free" badgeColor="green" onClose={closeMenu} />
           </div>
 
           <div className="py-2">
-            <MenuItem icon={<SignOutIcon />} text="Sign out" />
+            <MenuItem icon={<SignOutIcon />} text="Sign out" onClose={closeMenu} />
           </div>
         </div>
       )}
@@ -117,11 +117,12 @@ const GitHubUserMenu = () => {
   );
 };
 
-const MenuItem = ({ icon, text, path, badge, badgeColor, onClick }) => {
+const MenuItem = ({ icon, text, path, badge, badgeColor, onClick, onClose }) => {
   const navigate = useNavigate();
   const handleClick = (e) => {
-    if (onClick) return onClick(e);
-    if (path) return navigate(path);
+    if (onClick) onClick(e);
+    if (path) navigate(path);
+    if (onClose) onClose();
   };
 
   return (

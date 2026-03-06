@@ -100,9 +100,9 @@ const StatusButton = ({ hidden = false }) => {
       </button>
 
       {isStatusModalOpen && (
-        <div onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#e9edf0]/50 backdrop-blur-sm">
-          <div onClick={(e) => e.stopPropagation()} ref={modalRef} className="relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg p-6">
-            <header className="flex justify-between items-center mb-4">
+        <div onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#e9edf0]/50 backdrop-blur-sm">
+          <div onClick={(e) => e.stopPropagation()} ref={modalRef} className="relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg p-4 sm:p-6 max-h-[95vh] flex flex-col">
+            <header className="flex justify-between items-center mb-4 flex-shrink-0">
               <h2 className="text-xl font-semibold text-[#1F2328]">Edit status</h2>
               <button onClick={closeModal} className="text-[#59636E] hover:text-[#1F2328]">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ const StatusButton = ({ hidden = false }) => {
               </button>
             </header>
 
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto pr-1 pb-1">
               <div>
                 <label className="block text-sm font-medium text-[#1F2328] mb-2">What's happening</label>
                 <div className="relative">
@@ -191,7 +191,7 @@ const StatusButton = ({ hidden = false }) => {
               </div>
             </div>
 
-            <footer className="flex gap-2 justify-end mt-6">
+            <footer className="flex gap-2 justify-end mt-6 flex-shrink-0">
               <button
                 onClick={handleClear}
                 className="px-4 py-2 text-sm font-medium text-[#1F2328] border border-[#d0d7de] rounded-md hover:bg-[#f6f8fa] transition-colors"

@@ -15,7 +15,7 @@ const FilterMenu = ({ label, value, options, onChange }) => {
   }, []);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative sm:static lg:relative">
       <button
         onClick={() => setOpen(!open)}
         className="
@@ -31,32 +31,43 @@ const FilterMenu = ({ label, value, options, onChange }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white border border-[#d0d7de] rounded-md shadow-lg z-50 overflow-hidden">
-          <div className="px-3 py-2 text-xs font-semibold border-b bg-[#f6f8fa]">
-            Select {label}
-          </div>
+        <>
+          <div
+            className="fixed inset-0 bg-black/20 z-[90] sm:hidden"
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+          />
+          <div className="fixed sm:absolute bottom-0 left-0 right-0 sm:bottom-auto sm:left-0 sm:right-auto sm:top-full sm:mt-2 w-full sm:w-56 bg-white sm:border border-t sm:border-[#d0d7de] border-[#d0d7de] sm:rounded-md rounded-t-xl shadow-2xl z-[100] flex flex-col animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2 duration-200">
+            <div className="px-4 py-3 sm:px-3 sm:py-2 text-sm sm:text-xs font-semibold border-b sm:bg-[#f6f8fa] bg-white flex justify-between items-center rounded-t-xl sm:rounded-none">
+              <span>Select {label}</span>
+              <button className="sm:hidden text-gray-500 p-1" onClick={(e) => { e.stopPropagation(); setOpen(false); }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+                </svg>
+              </button>
+            </div>
 
-          <div className="max-h-72 overflow-auto">
-            {options.map((opt) => {
-              const val = opt.value || opt;
-              const labelText = opt.label || opt;
+            <div className="max-h-[60vh] sm:max-h-72 overflow-y-auto">
+              {options.map((opt) => {
+                const val = opt.value || opt;
+                const labelText = opt.label || opt;
 
-              return (
-                <button
-                  key={val}
-                  onClick={() => {
-                    onChange(val);
-                    setOpen(false);
-                  }}
-                  className="flex justify-between w-full px-3 py-2 text-sm hover:bg-gray-100"
-                >
-                  {labelText}
-                  {value === val && <CheckIcon size={16} />}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={val}
+                    onClick={() => {
+                      onChange(val);
+                      setOpen(false);
+                    }}
+                    className="flex justify-between items-center w-full px-4 py-3 sm:px-3 sm:py-2 text-sm hover:bg-gray-100 border-b sm:border-none border-gray-100 last:border-none"
+                  >
+                    <span>{labelText}</span>
+                    {value === val && <CheckIcon size={16} />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

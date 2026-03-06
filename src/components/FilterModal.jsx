@@ -4,16 +4,23 @@ export default function FilterModal({ open, onClose, title, options = [], onSele
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-4">
       <div
-        className="absolute inset-0 bg-gray-200/60"
+        className="fixed inset-0 bg-black/20"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-sm bg-white border border-gray-300 rounded-lg shadow-lg">
-        <div className="px-4 py-3 border-b font-semibold">{title}</div>
+      <div className="relative w-full max-w-sm bg-white sm:border border-gray-300 rounded-t-xl sm:rounded-lg shadow-lg flex flex-col max-h-[80vh] sm:max-h-[90vh] animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2 duration-200">
+        <div className="px-4 py-3 border-b font-semibold flex justify-between items-center bg-[#f6f8fa] rounded-t-xl sm:bg-white sm:rounded-t-lg shrink-0">
+          <span>{title}</span>
+          <button className="sm:hidden p-1 text-gray-500" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+            </svg>
+          </button>
+        </div>
 
-        <div className="max-h-80 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-4 sm:pb-0">
           {options.map((opt, i) => (
             <button
               key={i}
@@ -21,7 +28,7 @@ export default function FilterModal({ open, onClose, title, options = [], onSele
                 onSelect(opt);
                 onClose();
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+              className="w-full text-left px-4 py-3 sm:py-2 hover:bg-gray-100 text-sm border-b sm:border-none border-gray-100 last:border-none active:bg-gray-200"
             >
               {opt}
             </button>

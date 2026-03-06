@@ -25,6 +25,7 @@ const CreateNew = () => {
   const navigate = useNavigate();
   const handleNewRepoClick = () => {
     navigate("/new");
+    closeMenu();
   };
   React.useEffect(() => {
     const handler = (e) => {
@@ -80,7 +81,7 @@ const CreateNew = () => {
 
   return (
     <>
-      <div className="relative  " ref={menuRef}>
+      <div className="relative" ref={menuRef}>
         <div
           label=" "
           onClick={toggleMenu}
@@ -113,7 +114,7 @@ const CreateNew = () => {
           <div
             role="menu"
             aria-label="Create new"
-            className="absolute right-0 top-11 bg-white border border-[#C8D1DA] rounded-md shadow-lg p-4 w-[calc(100vw-32px)] sm:w-48 z-50"
+            className="fixed sm:absolute right-0 top-[64px] sm:top-11 bg-white border-t border-b sm:border border-[#C8D1DA] sm:rounded-md shadow-lg p-2 w-full sm:w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <MenuItem
               ref={(el) => (itemRefs.current[0] = el)}
@@ -134,6 +135,7 @@ const CreateNew = () => {
               ref={(el) => (itemRefs.current[2] = el)}
               icon={icons.ImportRepo}
               label="Import repository"
+              onClick={closeMenu}
             />
 
             <hr className="my-2" />
@@ -142,11 +144,13 @@ const CreateNew = () => {
               ref={(el) => (itemRefs.current[3] = el)}
               icon={icons.newCodeSpace}
               label="New codespace"
+              onClick={closeMenu}
             />
             <MenuItem
               ref={(el) => (itemRefs.current[4] = el)}
               icon={icons.newGist}
               label="New gist"
+              onClick={closeMenu}
             />
 
             <hr className="my-2" />
@@ -155,11 +159,13 @@ const CreateNew = () => {
               ref={(el) => (itemRefs.current[5] = el)}
               icon={icons.NewOrganization}
               label="New organization"
+              onClick={closeMenu}
             />
             <MenuItem
               ref={(el) => (itemRefs.current[6] = el)}
               icon={icons.newProject}
               label="New project"
+              onClick={closeMenu}
             />
           </div>
         )}

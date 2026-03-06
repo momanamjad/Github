@@ -14,7 +14,7 @@ const EmojiPicker = ({ onSelect, onClear, onClose, pickerRef }) => {
     return (
         <div
             ref={pickerRef}
-            className="absolute top-12 left-0 z-10 w-80 bg-white border border-[#d0d7de] rounded-lg shadow-lg p-4 max-h-64 overflow-y-auto"
+            className="absolute top-12 left-0 z-10 w-[calc(100vw-2.5rem)] sm:w-80 max-w-full bg-white border border-[#d0d7de] rounded-lg shadow-lg p-4 max-h-64 overflow-y-auto"
         >
             <div className="mb-2">
                 <input

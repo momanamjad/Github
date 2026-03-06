@@ -4,6 +4,8 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -19,7 +21,20 @@ import { getPinnedRepos } from "@services/GithubApi";
 const PinnedRepos = ({ username }) => {
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   useEffect(() => {
     const fetchPinned = async () => {
@@ -39,7 +54,7 @@ const PinnedRepos = ({ username }) => {
 
     fetchPinned();
   }, [username]);
- 
+
   if (loading)
     return (
       <p className="px-4 text-[#8b949e]">Loading pinned repositories...</p>
