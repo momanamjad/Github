@@ -18,18 +18,19 @@ const PinnedRepoCard = ({
           <div className="flex items-start gap-3">
             <Reposvg />
             {/* use internal routing instead of external href */}
-          <Link
-            to={`/${repo.author}/${encodeURIComponent(repo.name)}`}
-            className="text-[#0969DA] font-semibold text-[14px] hover:underline break-all"
-          >
-            {repo.name || "Repository"}
-          </Link>
+            <Link
+              to={`/${repo.author}/${encodeURIComponent(repo.name)}`}
+              className="text-[#0969DA] font-semibold text-[14px] hover:underline break-all"
+            >
+              {repo.name || "Repository"}
+            </Link>
           </div>
 
           {/* Drag handle (six dots) */}
           <button
             {...(dragHandleProps?.listeners || {})}
-            className="p-1 rounded hover:bg-slate-100 cursor-pointer"
+            className="p-1 rounded hover:bg-slate-100 cursor-grab touch-none"
+            style={{ touchAction: 'none' }}
             aria-label="Drag"
           >
             <svg
