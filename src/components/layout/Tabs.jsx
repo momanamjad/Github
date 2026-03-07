@@ -1,5 +1,6 @@
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon } from "@ui/Icons";
+import { OverviewIcon, ReposotoryIcon, ProjectsIcon, PackageIcon, StarsIcon } from "@ui/Icons";
+import ChevronDownIcon from "../../../public/customIcons/ChevronDownIcon";
 import LoadingBar from 'react-top-loading-bar';
 import { useEffect, useState, useRef } from "react";
 import { useTabsContext } from "@/contexts/TabsContext";
@@ -50,7 +51,7 @@ const Tabs = ({ username }) => {
     { to: `/${username}/repositories`, icon: ReposotoryIcon, label: "Repositories", count: repoCount },
     { to: `/${username}/projects`, icon: ProjectsIcon, label: "Projects" },
     { to: `/${username}/packages`, icon: PackageIcon, label: "Packages" },
-    { to: `/${username}/stars`, icon: null, label: "Stars" },
+    { to: `/${username}/stars`, icon: StarsIcon, label: "Stars" },
   ];
 
   // Determine which non-Overview tab is currently active
@@ -110,12 +111,9 @@ const Tabs = ({ username }) => {
                   text-[#636c76] hover:bg-[#eaeef2] rounded-md"
               >
                 <span>More</span>
-                <svg
-                  width="12" height="12" viewBox="0 0 16 16" fill="currentColor"
+                <ChevronDownIcon
                   className={`transition-transform ${moreOpen ? "rotate-180" : ""}`}
-                >
-                  <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
-                </svg>
+                />
               </button>
 
               {moreOpen && (

@@ -4,6 +4,8 @@ import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
 import FilterModal from "@/components/FilterModal";
 import StarsIcon from "../../public/customIcons/StarsIcon";
+import FilterIcon from "../../public/customIcons/FilterIcon";
+import ChevronDownIcon from "../../public/customIcons/ChevronDownIcon";
 import { useNavigate } from "react-router-dom";
 
 const INITIAL_REPO_COUNT = 4;
@@ -106,7 +108,7 @@ const Home = React.memo(() => {
                 <span className="w-4 h-4 rounded-full inline-block overflow-hidden shrink-0">
                   <img
                     className="w-full h-full object-cover"
-                    src="profile.png"
+                    src="profile.webp"
                     alt="Repository owner avatar"
                   />
                 </span>
@@ -144,17 +146,7 @@ const Home = React.memo(() => {
               className="flex items-center gap-2 text-sm bg-[#EFF2F5] text-[#636c76] hover:bg-[#D1D9E0] px-3 py-2 rounded-md border border-[#d0d7de]"
               onClick={() => setFilterOpen(true)}
             >
-              <svg
-                aria-hidden="true"
-                height="16"
-                viewBox="0 0 16 16"
-                version="1.1"
-                width="16"
-                data-view-component="true"
-                className="octicon octicon-filter mr-2"
-              >
-                <path d="M.75 3h14.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1 0-1.5ZM3 7.75A.75.75 0 0 1 3.75 7h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 3 7.75Zm3 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path>
-              </svg>
+              <FilterIcon className="mr-2" />
               <span className="text-[black] font-semibold">Filter</span>
             </button>
 
@@ -177,7 +169,7 @@ const Home = React.memo(() => {
               <div className="w-6 h-6 bg-gray-800 rounded-full overflow-hidden">
                 <img
                   className="object-cover"
-                  src="profile.png"
+                  src="profile.webp"
                   alt="User avatar"
                 />
               </div>
@@ -199,15 +191,7 @@ const Home = React.memo(() => {
                   <Star size={16} /> Star{" "}
                   <span>
                     <button type="button">
-                      <svg
-                        aria-hidden="true"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        version="1.1"
-                        width="16"
-                      >
-                        <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path>
-                      </svg>
+                      <ChevronDownIcon />
                     </button>
                   </span>
                 </div>

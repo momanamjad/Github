@@ -18,7 +18,7 @@ import AppearanceIcon from '../../../public/customIcons/AppearanceIcon';
 import AccessibilityIcon from '../../../public/customIcons/AccessibilityIcon';
 import EnterpriseIcon from '../../../public/customIcons/EnterpriseIcon';
 import SignOutIcon from '../../../public/customIcons/SignOutIcon';
-
+import SwitchIcon from '../../../public/customIcons/SwitchIcon';
 const GitHubUserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { status, user, setIsStatusModalOpen } = useGitHub();
@@ -72,9 +72,7 @@ const GitHubUserMenu = () => {
               <div className="text-github-text font-semibold text-[14px]">{username}</div>
               <div className="text-github-muted text-[14px] truncate">{name}</div>
             </div>
-            <svg className="w-4 h-4 text-github-muted" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M5.22 14.78a.75.75 0 0 0 1.06-1.06L4.56 12h8.69a.75.75 0 0 0 0-1.5H4.56l1.72-1.72a.75.75 0 0 0-1.06-1.06l-3 3a.75.75 0 0 0 0 1.06l3 3Zm5.56-6.5a.75.75 0 1 1-1.06-1.06l1.72-1.72H2.75a.75.75 0 0 1 0-1.5h8.69L9.72 2.28a.75.75 0 0 1 1.06-1.06l3 3a.75.75 0 0 1 0 1.06l-3 3Z" />
-            </svg>
+            <SwitchIcon className="w-4 h-4 text-github-muted" />
           </div>
 
           {/* Status Section */}

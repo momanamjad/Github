@@ -3,6 +3,7 @@ import { useGitHub } from '@contexts/GitHubContext';
 import { useClickOutside, useInterval } from '@hooks/useGitHub_hooks';
 import { PRESET_STATUSES, EXPIRATION_OPTIONS } from '../../constants/githubConstants';
 import EmojiPicker from './EmojiPicker';
+import XIcon from '../../../public/customIcons/XIcon';
 
 const StatusButton = ({ hidden = false }) => {
   const { status, updateStatus, isStatusModalOpen, setIsStatusModalOpen } = useGitHub();
@@ -88,12 +89,12 @@ const StatusButton = ({ hidden = false }) => {
         onClick={openModal}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`relative flex items-center justify-center transition-all duration-200 rounded-full ${status.isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
-          } ${isHovered ? 'bg-[#f6f8fa] px-3 py-1 gap-2' : hasStatus ? 'w-8 h-8' : 'w-8 h-8 border border-[#d0d7de]'}`}
+        className={`relative flex items-center justify-center transition-all duration-200 rounded-full bg-white shadow-sm hover:text-blue-600 ${status.isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
+          } ${isHovered ? 'px-2 sm:px-3 py-1 gap-1 sm:gap-2' : hasStatus ? 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10' : 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 border border-[#d0d7de]'}`}
       >
-        <span className="text-base">{hasStatus ? status.emoji : '🙂'}</span>
+        <span className="text-[10px] sm:text-sm lg:text-base leading-none flex items-center justify-center">{hasStatus ? status.emoji : '🙂'}</span>
         {isHovered && (
-          <span className="text-sm text-[#59636E] whitespace-nowrap">
+          <span className="text-xs sm:text-sm text-[#59636E] whitespace-nowrap">
             {hasStatus ? status.text || 'Edit status' : 'Set status'}
           </span>
         )}
@@ -105,9 +106,7 @@ const StatusButton = ({ hidden = false }) => {
             <header className="flex justify-between items-center mb-4 flex-shrink-0">
               <h2 className="text-xl font-semibold text-[#1F2328]">Edit status</h2>
               <button onClick={closeModal} className="text-[#59636E] hover:text-[#1F2328]">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XIcon className="w-5 h-5" />
               </button>
             </header>
 

@@ -1,5 +1,8 @@
 import React from "react";
 import RepoSelector from "./RepoSelector";
+import CopyToClipboardIcon from "../../../public/customIcons/CopyToClipboardIcon";
+import CloseIcon from "../../../public/customIcons/CloseIcon";
+import ArrowRightIcon from "../../../public/customIcons/ArrowRightIcon";
 
 const OpenIssueModal = ({ onClose, username = "momanamjad" }) => {
   return (
@@ -23,26 +26,13 @@ const OpenIssueModal = ({ onClose, username = "momanamjad" }) => {
               data-variant="invisible"
               aria-labelledby="_r_1c_"
             >
-              <svg
-                aria-hidden="true"
-                focusable="false"
-                viewBox="0 0 16 16"
-                width="16"
-                height="16"
-                fill="currentColor"
-                display="inline-block"
-                overflow="visible"
-              //   style="vertical-align: text-bottom;"
-              >
-                <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path>
-                <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-              </svg>
+              <CopyToClipboardIcon display="inline-block" overflow="visible" />
             </button>
             <button
               onClick={onClose}
               className="hover:bg-[#F3F4F6] p-1.5 rounded-md text-[#59636E] transition-colors"
             >
-              <CrossBTN />
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -65,18 +55,7 @@ const OpenIssueModal = ({ onClose, username = "momanamjad" }) => {
             <div className="mt-1 flex gap-4 justify-between items-center p-4 pb-2">
               <h1 className="text-lg font-semibold">Blank Issue</h1>
               <span id="_r_5r_--trailing-visual" className="flex-shrink-0">
-                <svg
-                  aria-hidden="true"
-                  focusable="false"
-                  viewBox="0 0 16 16"
-                  width="16"
-                  height="16"
-                  fill="currentColor"
-                  display="inline-block"
-                  overflow="visible"
-                >
-                  <path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"></path>
-                </svg>
+                <ArrowRightIcon display="inline-block" overflow="visible" />
               </span>
             </div>
             <div className="mb-2 pb-1 pl-4">
@@ -90,19 +69,3 @@ const OpenIssueModal = ({ onClose, username = "momanamjad" }) => {
 };
 
 export default OpenIssueModal;
-function CrossBTN() {
-  return (
-    <svg
-      aria-hidden="true"
-      focusable="false"
-      viewBox="0 0 16 16"
-      width="16"
-      height="16"
-      fill="currentColor"
-      display="inline-block"
-      overflow="visible"
-    >
-      <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-    </svg>
-  );
-}

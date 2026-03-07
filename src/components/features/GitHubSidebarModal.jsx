@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-
+import HamburgerIcon from "../../../public/customIcons/HamburgerIcon";
+import CloseIcon from "../../../public/customIcons/CloseIcon";
+import GithubLogoIcon from "../../../public/customIcons/GithubLogoIcon";
+import ReposotoryIcon from "../../../public/customIcons/ReposotoryIcon";
+import SearchIconSvg from "../../../public/customIcons/SearchIconSvg";
 const navItems = [
   { icon: "M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z", label: "Home", path: "M" },
   {
@@ -48,34 +52,11 @@ const repos = [
 
 // Simple SVG icons
 const Icons = {
-  hamburger: (
-    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-      <path d="M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z" />
-    </svg>
-  ),
-  close: (
-    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-      <path d="M3.457 3.457a.75.75 0 0 1 1.06 0l3.483 3.484 3.483-3.484a.75.75 0 1 1 1.061 1.06L8.06 8l3.484 3.483a.75.75 0 1 1-1.06 1.061l-3.484-3.484-3.483 3.484a.75.75 0 0 1-1.06-1.06L6.938 8 3.457 4.517a.75.75 0 0 1 0-1.06Z" />
-    </svg>
-  ),
-  github: (
-    <svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52.01-.53.63-.01 1.08.58 1.23.82 1.21 2.03 3.14 1.46 3.91 1.11.12-.86.44-1.46.8-1.79-2.67-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.53.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.36 3-.36s2.04.09 3 .36c2.29-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.47 5.93.44.38.82 1.12.82 2.27 0 1.64-.01 2.96-.01 3.37 0 .21.14.46.56.38C13.72 14.53 16 11.52 16 8c0-4.42-3.58-8-8-8z"
-      />
-    </svg>
-  ),
-  repo: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-      <path d="M2 2.25C2 1.01 3.01 0 4.25 0h8.5C13.99 0 15 1.01 15 2.25v11.5C15 14.99 13.99 16 12.75 16h-8.5C3.01 16 2 14.99 2 13.75V2.25ZM4.25 1.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75V2.25a.75.75 0 0 0-.75-.75h-8.5Z" />
-    </svg>
-  ),
-  search: (
-    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-    </svg>
-  ),
+  hamburger: <HamburgerIcon />,
+  close: <CloseIcon />,
+  github: <GithubLogoIcon />,
+  repo: <ReposotoryIcon width="14" height="14" />,
+  search: <SearchIconSvg />,
 };
 
 export default function GitHubSidebarModal() {
@@ -124,7 +105,7 @@ export default function GitHubSidebarModal() {
             cursor: "pointer",
           }}
         >
-          {Icons.hamburger} 
+          {Icons.hamburger}
         </button>
 
         {/* GitHub logo */}
@@ -295,9 +276,9 @@ export default function GitHubSidebarModal() {
         <div className="py-3 px-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-500 font-semibold" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Top repositories 
+              Top repositories
 
-              
+
             </span>
             <button
               type="button"

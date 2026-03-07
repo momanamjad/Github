@@ -36,7 +36,7 @@ const ProfileSidebar = ({
     name: "Moman Amjad",
     username: "momanamjad",
     pronouns: "he/him",
-    avatar: "/profile.png",
+    avatar: "/profile.webp",
     bio: "",
     company: "Filinix Solutions",
     location: "koh e noor Faisalabad",
@@ -81,10 +81,10 @@ const ProfileSidebar = ({
             <img
               src={userProfile.avatar}
               alt={userProfile.name}
-              className="rounded-full w-[72px] sm:w-[96px] lg:w-[256px] border-3 border-[#E7E6E8]"
+              className="rounded-full w-[72px] sm:w-[96px] lg:w-[256px] border border-[#d0d7de] object-cover"
             />
 
-            <div className="absolute bottom-0 right-0 lg:bottom-2 lg:right-2">
+            <div className="absolute -bottom-1 -right-1 sm:bottom-0 sm:right-0 lg:bottom-5 lg:right-5 z-10">
               <StatusButton />
             </div>
           </div>
@@ -193,16 +193,16 @@ const ProfileSidebar = ({
                           <span className="flex items-center gap-1">
                             <span
                               className={`w-2 h-2 rounded-full ${repo.language === "JavaScript"
-                                  ? "bg-yellow-400"
-                                  : repo.language === "TypeScript"
-                                    ? "bg-blue-500"
-                                    : repo.language === "CSS"
-                                      ? "bg-purple-500"
-                                      : repo.language === "HTML"
-                                        ? "bg-orange-500"
-                                        : repo.language === "Python"
-                                          ? "bg-green-500"
-                                          : "bg-gray-500"
+                                ? "bg-yellow-400"
+                                : repo.language === "TypeScript"
+                                  ? "bg-blue-500"
+                                  : repo.language === "CSS"
+                                    ? "bg-purple-500"
+                                    : repo.language === "HTML"
+                                      ? "bg-orange-500"
+                                      : repo.language === "Python"
+                                        ? "bg-green-500"
+                                        : "bg-gray-500"
                                 }`}
                             />
                             {repo.language}

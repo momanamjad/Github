@@ -634,8 +634,8 @@ Also handles dynamic routes like `/:username/:repo` → `"repo-name — username
 -<h2 className="text-[24px] font-semibold mb-6">Home</h2>
 +<h1 className="text-[24px] font-semibold mb-6">Home</h1>
 
--<img className="object-cover" src="profile.png" alt="" />
-+<img className="object-cover" src="profile.png" alt="User avatar" />
+-<img className="object-cover" src="profile.webp" alt="" />
++<img className="object-cover" src="profile.webp" alt="User avatar" />
 
 -<aside className="hidden w-80 border-r border-[#d0d7de] p-6 lg:block">
 +<aside className="hidden w-80 border-r border-[#d0d7de] p-6 lg:block" aria-label="Sidebar">
