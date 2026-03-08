@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-/**
- * Sets the document <title> based on the current route.
- * Improves SEO by giving each page a unique, descriptive title.
- */
+
 
 const ROUTE_TITLES = {
     '/': 'Home — GitHub Clone',
@@ -20,7 +17,6 @@ const ROUTE_TITLES = {
     '/mcp-registry': 'MCP Registry — GitHub Clone',
     '/new': 'Create a New Repository — GitHub Clone',
 };
-
 const DEFAULT_TITLE = 'GitHub Clone — Build & Collaborate on Code';
 
 export const useDocumentTitle = () => {
