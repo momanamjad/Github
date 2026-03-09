@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@ui/avatar";
 import { Card, CardContent } from "@ui/card";
 import { Button } from "@ui/button";
 import RealTimeComponent from "@features/RealTimeComponent";
-import EditProfileModal from "@features/EditProfileModal";
+import EditProfileForm from "@features/EditProfileForm";
 import StatusButton from "../common/StatusButton";
 import ReposotoryIcon from "../ui/icons/ReposotoryIcon";
 import StarsIcon from "../ui/icons/StarsIcon";
@@ -24,7 +24,7 @@ const ProfileSidebar = ({
   onRepoClick,
 }) => {
   const navigate = useNavigate();
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Status-related state
   // const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
@@ -63,6 +63,7 @@ const ProfileSidebar = ({
       ...updatedProfile,
     }));
     console.log("Profile updated:", updatedProfile);
+    setIsEditingProfile(false);
   };
 
   const handleRepoClick = (repoName) => {
@@ -95,40 +96,53 @@ const ProfileSidebar = ({
           </div>
 
           {/* Mobile: name beside avatar */}
-          <div className="lg:hidden flex-1 min-w-0">
-            <h1 className="text-[18px] sm:text-[20px] font-semibold leading-tight">
+          {!isEditingProfile && (
+            <div className="lg:hidden flex-1 min-w-0">
+              <h1 className="text-[18px] sm:text-[20px] font-semibold leading-tight">
+                {userProfile.name}
+              </h1>
+              <p className="text-[14px] sm:text-[16px] font-light text-[#59636E] leading-tight">
+                {userProfile.username}
+                {userProfile.pronouns && ` · ${userProfile.pronouns}`}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {isEditingProfile ? (
+          <div className="mt-4">
+            <EditProfileForm
+              userProfile={userProfile}
+              onSave={handleSaveProfile}
+              onCancel={() => setIsEditingProfile(false)}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Desktop: name below avatar */}
+            <h1 className="hidden lg:block text-[26px] font-semibold leading-tight mt-4">
               {userProfile.name}
             </h1>
-            <p className="text-[14px] sm:text-[16px] font-light text-[#59636E] leading-tight">
+            <p className="hidden lg:block text-[20px] font-light text-[#59636E] leading-tight">
               {userProfile.username}
               {userProfile.pronouns && ` · ${userProfile.pronouns}`}
             </p>
-          </div>
-        </div>
 
+            {userProfile.bio && (
+              <p className="mt-3 text-[16px] text-[#24292f] leading-snug">{userProfile.bio}</p>
+            )}
 
-        {/* Desktop: name below avatar */}
-        <h1 className="hidden lg:block text-[26px] font-semibold leading-tight mt-4">
-          {userProfile.name}
-        </h1>
-        <p className="hidden lg:block text-[20px] font-light text-[#59636E] leading-tight">
-          {userProfile.username}
-          {userProfile.pronouns && ` · ${userProfile.pronouns}`}
-        </p>
-
-        {userProfile.bio && (
-          <p className="mt-3 text-sm text-github-muted">{userProfile.bio}</p>
+            <div className="mt-4">
+              <Button
+                variant="editProfile"
+                className="cursor-pointer w-full bg-[#f6f8fa] text-[#24292f] border border-[#d0d7de] hover:bg-[#f3f4f6]"
+                onClick={() => setIsEditingProfile(true)}
+              >
+                Edit profile
+              </Button>
+            </div>
+          </>
         )}
-
-        <div className="mt-4">
-          <Button
-            variant="editProfile"
-            className="cursor-pointer w-full"
-            onClick={() => setIsEditModalOpen(true)}
-          >
-            Edit profile
-          </Button>
-        </div>
 
         <div className="flex gap-4 text-sm mt-4">
           <span className="cursor-pointer text-[#596368] text-[14px] hover:text-blue-500">
@@ -239,8 +253,9 @@ const ProfileSidebar = ({
           </div>
         )}
 
-        <div className="text-sm text-github-muted mt-4 space-y-2">
-          {userProfile.company && (
+        {!isEditingProfile && (
+          <div className="text-sm text-[#24292f] mt-4 space-y-2">
+            {userProfile.company && (
             <div className="flex items-center gap-3">
               <span className="text-lg">
                 <CompanyIcon />
@@ -303,15 +318,8 @@ const ProfileSidebar = ({
             </div>
           )}
         </div>
+        )}
       </aside>
-
-
-      <EditProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        userProfile={userProfile}
-        onSave={handleSaveProfile}
-      />
     </>
   );
 };
