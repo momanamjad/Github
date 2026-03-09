@@ -8,7 +8,6 @@ import XIcon from '../../../public/customIcons/XIcon';
 const StatusButton = ({ hidden = false }) => {
   const { status, updateStatus, isStatusModalOpen, setIsStatusModalOpen } = useGitHub();
 
-  // Internal modal states (synced to context on Save)
   const [localEmoji, setLocalEmoji] = useState(status.emoji || '');
   const [localText, setLocalText] = useState(status.text || '');
   const [localIsBusy, setLocalIsBusy] = useState(status.isBusy || false);
@@ -81,24 +80,24 @@ const StatusButton = ({ hidden = false }) => {
 
   const hasStatus = status.emoji || status.text;
 
-  if (hidden) return null;
-
   return (
     <>
-      <button
-        onClick={openModal}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`relative flex items-center justify-center transition-all duration-200 rounded-full bg-white shadow-sm hover:text-blue-600 ${status.isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
-          } ${isHovered ? 'px-2 sm:px-3 py-1 gap-1 sm:gap-2' : hasStatus ? 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10' : 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 border border-[#d0d7de]'}`}
-      >
-        <span className="text-[10px] sm:text-sm lg:text-base leading-none flex items-center justify-center">{hasStatus ? status.emoji : '🙂'}</span>
-        {isHovered && (
-          <span className="text-xs sm:text-sm text-[#59636E] whitespace-nowrap">
-            {hasStatus ? status.text || 'Edit status' : 'Set status'}
-          </span>
-        )}
-      </button>
+      {!hidden && (
+        <button
+          onClick={openModal}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={`relative flex items-center justify-center transition-all duration-200 rounded-full bg-white shadow-sm hover:text-blue-600 ${status.isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
+            } ${isHovered ? 'px-2 sm:px-3 py-1 gap-1 sm:gap-2' : hasStatus ? 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10' : 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 border border-[#d0d7de]'}`}
+        >
+          <span className="text-[10px] sm:text-sm lg:text-base leading-none flex items-center justify-center">{hasStatus ? status.emoji : '🙂'}</span>
+          {isHovered && (
+            <span className="text-xs sm:text-sm text-[#59636E] whitespace-nowrap">
+              {hasStatus ? status.text || 'Edit status' : 'Set status'}
+            </span>
+          )}
+        </button>
+      )}
 
       {isStatusModalOpen && (
         <div onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#e9edf0]/50 backdrop-blur-sm">

@@ -1,0 +1,3 @@
+import React from 'react';
+const CommentsIcon = (props) => (<svg fill='currentColor' viewBox='0 0 16 16' {...props}><path d='M1.5 2.75v8.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-8.5c0-.69-.56-1.25-1.25-1.25H2.75c-.69 0-1.25.56-1.25 1.25zM14 2.75v8.5c0 .14-.11.25-.25.25H2.75c-.14 0-.25-.11-.25-.25v-8.5c0-.14.11-.25.25-.25h10.5c.14 0 .25.11.25.25z'></path><path d='M4.5 4.5h7v1h-7zM4.5 6.5h7v1h-7zM4.5 8.5h4v1h-4z'></path></svg>);
+export default CommentsIcon;

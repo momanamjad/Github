@@ -11,10 +11,17 @@ import {
   LayoutGrid,
   ArrowUpDown,
   Check,
+  ChevronDown
 } from "lucide-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
 import { Link } from "react-router-dom";
+import ActivityGraphIcon from "../components/ui/icons/ActivityGraphIcon";
+import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
+import PullRequestIcon from "../components/ui/icons/PullRequestIcon";
+import StarsIcon from "../components/ui/icons/StarsIcon";
+import IssuesIcon from "../components/ui/icons/IssuesIcon";
+import EmptyStateSearchIcon from "../components/ui/icons/EmptyStateSearchIcon";
 
 export default function Repositories() {
   const [activeTab, setActiveTab] = useState("my-contributions");
@@ -213,19 +220,7 @@ export default function Repositories() {
                           ?.label
                       }
                     </span>
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                    <ChevronDown className="w-3 h-3" />
                   </button>
 
                   {/* Dropdown Menu */}
@@ -311,14 +306,7 @@ export default function Repositories() {
                         </div>
                         <div className="w-16 h-8">
                           {/* Activity graph placeholder */}
-                          <svg className="w-full h-full" viewBox="0 0 64 32">
-                            <polyline
-                              points="0,28 8,24 16,20 24,26 32,18 40,22 48,16 56,20 64,14"
-                              fill="none"
-                              stroke="#10b981"
-                              strokeWidth="1.5"
-                            />
-                          </svg>
+                          <ActivityGraphIcon className="w-full h-full" />
                         </div>
                       </div>
 
@@ -340,34 +328,15 @@ export default function Repositories() {
                           <span>{repo.forks}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 16 16"
-                          >
-                            <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z" />
-                          </svg>
+                          <StarsIcon className="w-3 h-3" fill="currentColor" />
                           <span>{repo.stars}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 16 16"
-                          >
-                            <path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                            <path d="M8 0a8 8 0 110 16A8 8 0 018 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z" />
-                          </svg>
+                          <IssuesIcon className="w-3 h-3" fill="currentColor" />
                           <span>{repo.issues}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 16 16"
-                          >
-                            <path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z" />
-                          </svg>
+                          <PullRequestIcon className="w-3 h-3" fill="currentColor" />
                           <span>{repo.pullRequests}</span>
                         </div>
                         <span className="ml-auto">{repo.updated}</span>
@@ -383,23 +352,7 @@ export default function Repositories() {
               /* Empty state for My Forks */
               <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
                 <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                  <svg
-                    className="w-16 h-16 text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <rect
-                      x="3"
-                      y="3"
-                      width="18"
-                      height="18"
-                      rx="2"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <EmptyStateSearchIcon className="w-16 h-16 text-gray-300" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   No repositories matched your search.
@@ -418,13 +371,7 @@ export default function Repositories() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-600">
             <div className="flex items-center gap-2">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <FooterGithubIcon className="w-6 h-6" />
               <span>© 2026 GitHub, Inc.</span>
             </div>
             <a href="#" className="hover:text-blue-600 hover:underline">
