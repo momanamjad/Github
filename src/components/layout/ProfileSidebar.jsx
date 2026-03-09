@@ -256,68 +256,68 @@ const ProfileSidebar = ({
         {!isEditingProfile && (
           <div className="text-sm text-[#24292f] mt-4 space-y-2">
             {userProfile.company && (
-            <div className="flex items-center gap-3">
-              <span className="text-lg">
-                <CompanyIcon />
-              </span>
-              <span>{userProfile.company}</span>
-            </div>
-          )}
+              <div className="flex items-center gap-3">
+                <span className="text-lg">
+                  <CompanyIcon />
+                </span>
+                <span>{userProfile.company}</span>
+              </div>
+            )}
 
-          {userProfile.location && (
-            <div className="flex items-center gap-3">
-              <span className="text-lg">
-                <LocationIcon />
-              </span>
-              <span>{userProfile.location}</span>
-            </div>
-          )}
+            {userProfile.location && (
+              <div className="flex items-center gap-3">
+                <span className="text-lg">
+                  <LocationIcon />
+                </span>
+                <span>{userProfile.location}</span>
+              </div>
+            )}
 
-          <RealTimeComponent />
+            <RealTimeComponent />
 
-          {userProfile.email && (
-            <div className="flex items-center gap-3">
-              <span className="text-lg">
-                <EmailIcon />
-              </span>
-              <span>{userProfile.email}</span>
-            </div>
-          )}
+            {userProfile.email && (
+              <div className="flex items-center gap-3">
+                <span className="text-lg">
+                  <EmailIcon />
+                </span>
+                <span>{userProfile.email}</span>
+              </div>
+            )}
 
-          {userProfile.website && (
-            <div className="flex items-center gap-3">
-              <span className="text-lg">🔗</span>
-              <a
-                href={userProfile.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                {userProfile.website}
-              </a>
-            </div>
-          )}
+            {userProfile.website && (
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🔗</span>
+                <a
+                  href={userProfile.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {userProfile.website}
+                </a>
+              </div>
+            )}
 
-          {userProfile.socialLinks.some((link) => link) && (
-            <div className="space-y-2 pt-2 border-t">
-              {userProfile.socialLinks
-                .filter((link) => link)
-                .map((link, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <span className="text-lg">🔗</span>
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline truncate"
-                    >
-                      {link}
-                    </a>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
+            {userProfile.socialLinks.some((link) => link) && (
+              <div className="space-y-2 pt-2 border-t">
+                {userProfile.socialLinks
+                  .filter((link) => link)
+                  .map((link, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <span className="text-lg">🔗</span>
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline truncate"
+                      >
+                        {link}
+                      </a>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         )}
       </aside>
     </>

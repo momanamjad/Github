@@ -11,39 +11,35 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Building2,
-  MapPin,
-  Link as LinkIcon,
-} from "lucide-react";
+import { Building2, MapPin, Link as LinkIcon } from "lucide-react";
 
 const timezones = [
-    "(GMT-12:00) International Date Line West",
-    "(GMT-11:00) Midway Island, Samoa",
-    "(GMT-10:00) Hawaii",
-    "(GMT-09:00) Alaska",
-    "(GMT-08:00) Pacific Time (US & Canada)",
-    "(GMT-07:00) Mountain Time (US & Canada)",
-    "(GMT-06:00) Central Time (US & Canada)",
-    "(GMT-05:00) Eastern Time (US & Canada)",
-    "(GMT-04:00) Atlantic Time (Canada)",
-    "(GMT-03:00) Brasilia, Buenos Aires",
-    "(GMT-02:00) Mid-Atlantic",
-    "(GMT-01:00) Azores, Cape Verde Islands",
-    "(GMT+00:00) London, Dublin, Lisbon",
-    "(GMT+01:00) Paris, Brussels, Berlin",
-    "(GMT+02:00) Cairo, Athens, Helsinki",
-    "(GMT+03:00) Moscow, Kuwait, Riyadh",
-    "(GMT+04:00) Abu Dhabi, Muscat",
-    "(GMT+05:00) Islamabad, Karachi, Tashkent",
-    "(GMT+05:30) Mumbai, Kolkata, Chennai",
-    "(GMT+06:00) Almaty, Dhaka",
-    "(GMT+07:00) Bangkok, Hanoi, Jakarta",
-    "(GMT+08:00) Beijing, Singapore, Hong Kong",
-    "(GMT+09:00) Tokyo, Seoul, Osaka",
-    "(GMT+10:00) Sydney, Melbourne, Guam",
-    "(GMT+11:00) Magadan, Solomon Islands",
-    "(GMT+12:00) Auckland, Wellington, Fiji",
+  "(GMT-12:00) International Date Line West",
+  "(GMT-11:00) Midway Island, Samoa",
+  "(GMT-10:00) Hawaii",
+  "(GMT-09:00) Alaska",
+  "(GMT-08:00) Pacific Time (US & Canada)",
+  "(GMT-07:00) Mountain Time (US & Canada)",
+  "(GMT-06:00) Central Time (US & Canada)",
+  "(GMT-05:00) Eastern Time (US & Canada)",
+  "(GMT-04:00) Atlantic Time (Canada)",
+  "(GMT-03:00) Brasilia, Buenos Aires",
+  "(GMT-02:00) Mid-Atlantic",
+  "(GMT-01:00) Azores, Cape Verde Islands",
+  "(GMT+00:00) London, Dublin, Lisbon",
+  "(GMT+01:00) Paris, Brussels, Berlin",
+  "(GMT+02:00) Cairo, Athens, Helsinki",
+  "(GMT+03:00) Moscow, Kuwait, Riyadh",
+  "(GMT+04:00) Abu Dhabi, Muscat",
+  "(GMT+05:00) Islamabad, Karachi, Tashkent",
+  "(GMT+05:30) Mumbai, Kolkata, Chennai",
+  "(GMT+06:00) Almaty, Dhaka",
+  "(GMT+07:00) Bangkok, Hanoi, Jakarta",
+  "(GMT+08:00) Beijing, Singapore, Hong Kong",
+  "(GMT+09:00) Tokyo, Seoul, Osaka",
+  "(GMT+10:00) Sydney, Melbourne, Guam",
+  "(GMT+11:00) Magadan, Solomon Islands",
+  "(GMT+12:00) Auckland, Wellington, Fiji",
 ];
 
 const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
@@ -54,7 +50,8 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
     company: userProfile?.company || "",
     location: userProfile?.location || "",
     displayLocalTime: userProfile?.displayLocalTime || false,
-    timezone: userProfile?.timezone || "(GMT-12:00) International Date Line West",
+    timezone:
+      userProfile?.timezone || "(GMT-12:00) International Date Line West",
     website: userProfile?.website || "",
     socialLinks: userProfile?.socialLinks || ["", "", "", ""],
   });
@@ -81,9 +78,10 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
 
   return (
     <div className="space-y-4 py-4 w-full">
-      {/* Name */}
       <div className="space-y-1">
-        <Label htmlFor="name" className="text-sm font-semibold">Name</Label>
+        <Label htmlFor="name" className="text-sm font-semibold">
+          Name
+        </Label>
         <Input
           id="name"
           placeholder="Your name"
@@ -93,9 +91,10 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         />
       </div>
 
-      {/* Bio */}
       <div className="space-y-1">
-        <Label htmlFor="bio" className="text-sm font-semibold">Bio</Label>
+        <Label htmlFor="bio" className="text-sm font-semibold">
+          Bio
+        </Label>
         <Textarea
           id="bio"
           placeholder="Add a bio"
@@ -109,9 +108,10 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         </p>
       </div>
 
-      {/* Pronouns */}
       <div className="space-y-1">
-        <Label htmlFor="pronouns" className="text-sm font-semibold">Pronouns</Label>
+        <Label htmlFor="pronouns" className="text-sm font-semibold">
+          Pronouns
+        </Label>
         <Select
           value={formData.pronouns}
           onValueChange={(value) => handleInputChange("pronouns", value)}
@@ -129,9 +129,11 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         </Select>
       </div>
 
-      {/* Company */}
       <div className="space-y-1">
-        <Label htmlFor="company" className="text-sm font-semibold flex items-center">
+        <Label
+          htmlFor="company"
+          className="text-sm font-semibold flex items-center"
+        >
           <Building2 className="w-4 h-4 mr-2" />
           Company
         </Label>
@@ -144,9 +146,11 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         />
       </div>
 
-      {/* Location */}
       <div className="space-y-1">
-        <Label htmlFor="location" className="text-sm font-semibold flex items-center">
+        <Label
+          htmlFor="location"
+          className="text-sm font-semibold flex items-center"
+        >
           <MapPin className="w-4 h-4 mr-2" />
           Location
         </Label>
@@ -159,15 +163,19 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         />
       </div>
 
-      {/* Display Local Time */}
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
           <Checkbox
             id="displayLocalTime"
             checked={formData.displayLocalTime}
-            onCheckedChange={(checked) => handleInputChange("displayLocalTime", checked)}
+            onCheckedChange={(checked) =>
+              handleInputChange("displayLocalTime", checked)
+            }
           />
-          <Label htmlFor="displayLocalTime" className="text-sm font-normal cursor-pointer">
+          <Label
+            htmlFor="displayLocalTime"
+            className="text-sm font-normal cursor-pointer"
+          >
             Display current local time
           </Label>
         </div>
@@ -191,9 +199,11 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         )}
       </div>
 
-      {/* Website */}
       <div className="space-y-1">
-        <Label htmlFor="website" className="text-sm font-semibold flex items-center">
+        <Label
+          htmlFor="website"
+          className="text-sm font-semibold flex items-center"
+        >
           <LinkIcon className="w-4 h-4 mr-2" />
           Website
         </Label>
@@ -207,7 +217,6 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         />
       </div>
 
-      {/* Social Accounts */}
       <div className="space-y-2">
         <Label className="text-sm font-semibold">Social accounts</Label>
         <div className="space-y-2">
@@ -225,12 +234,18 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
         </div>
       </div>
 
-      {/* Footer Actions */}
       <div className="flex justify-start gap-2 pt-2">
-        <Button onClick={handleSave} className="bg-[#2da44e] hover:bg-[#2c974b] text-white font-semibold text-sm h-8 px-4">
+        <Button
+          onClick={handleSave}
+          className="bg-[#2da44e] hover:bg-[#2c974b] text-white font-semibold text-sm h-8 px-4"
+        >
           Save
         </Button>
-        <Button variant="outline" onClick={onCancel} className="text-sm h-8 px-4 bg-[#f6f8fa] hover:bg-[#f3f4f6]">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="text-sm h-8 px-4 bg-[#f6f8fa] hover:bg-[#f3f4f6]"
+        >
           Cancel
         </Button>
       </div>
