@@ -7,16 +7,14 @@ const PinnedRepoCard = ({
   repo,
   stars,
   dragHandleProps,
-  style,
+  isDragging,
+  isOverlay,
 }) => {
   return (
     <article
-      style={style}
-      ref={dragHandleProps?.ref}
       className={`bg-[white] border border-[#C8D1DA] rounded-md p-4 transition flex flex-col justify-between min-h-[114px] select-none ${
-        style.isDragging ? "shadow-xl ring-2 ring-[#0969da] opacity-80" : ""
-      }`}
-      {...(dragHandleProps?.attributes || {})}
+        isOverlay ? "shadow-xl ring-2 ring-[#0969da] cursor-grabbing rotate-2" : ""
+      } ${isDragging && !isOverlay ? "opacity-0" : ""}`}
     >
       <div>
         <div className="flex items-start justify-between gap-3">
@@ -32,14 +30,13 @@ const PinnedRepoCard = ({
           </div>
 
           {/* Drag handle (six dots) */}
-          <button
-            {...(dragHandleProps?.listeners || {})}
+          <div
+            {...dragHandleProps?.listeners}
+            {...dragHandleProps?.attributes}
             className="p-3 -m-2 rounded hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
-            style={{ touchAction: 'none' }}
-            aria-label="Drag"
           >
             <DragIcon />
-          </button>
+          </div>
         </div>
 
         <p className="text-[#8b949e] text-[12px] mt-2 leading-snug">

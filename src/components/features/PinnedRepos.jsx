@@ -8,6 +8,8 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -21,16 +23,17 @@ import { getPinnedRepos } from "@services/GithubApi";
 const PinnedRepos = ({ username }) => {
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // slightly higher distance to prevent accidental drags while scrolling
+        distance: 5, // A small distance to prevent accidental grabs
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150, // Reduced from 250 for much faster pickup on mobile
-        tolerance: 8, // Increased tolerance so slight finger wiggles don't cancel the drag
+        delay: 0, // 0 delay for instant grab on handle touch like native GitHub
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor)
@@ -71,11 +74,16 @@ const PinnedRepos = ({ username }) => {
     );
   if (repos.length === 0) return null;
 
-  // derive ids for sortable context
   const ids = repos.map((r) => r.name || r.id || `${r.author}/${r.name}`);
+
+  const handleDragStart = (event) => {
+    const { active } = event;
+    setActiveId(active.id);
+  };
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
+    setActiveId(null);
     if (!over) return;
     if (active.id !== over.id) {
       const oldIndex = ids.indexOf(active.id);
@@ -100,7 +108,9 @@ const PinnedRepos = ({ username }) => {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
       >
         <SortableContext items={ids} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ">
@@ -112,30 +122,38 @@ const PinnedRepos = ({ username }) => {
             })}
           </div>
         </SortableContext>
+        
+        <DragOverlay dropAnimation={{
+          sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.4" } } }),
+        }}>
+          {activeId ? (
+            <SortableItem key="overlay" id={activeId} repo={repos.find(r => (r.name || r.id || `${r.author}/${r.name}`) === activeId)} isOverlay />
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </section>
   );
 };
 
-function SortableItem({ id, repo }) {
+function SortableItem({ id, repo, isOverlay }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.9 : 1,
-    zIndex: isDragging ? 99 : "auto",
+    opacity: isDragging && !isOverlay ? 0.3 : 1, // Dim the original card slot
   };
 
   return (
-    <div>
+    <div ref={setNodeRef} style={style}>
       <PinnedRepoCard
         repo={repo}
         stars={repo.stars}
         language={repo.language}
         languageColor={repo.languageColor}
         visibility={repo.visibility}
-        dragHandleProps={{ attributes, listeners, ref: setNodeRef }}
-        style={style}
+        dragHandleProps={{ attributes, listeners }}
+        isDragging={isDragging}
+        isOverlay={isOverlay}
       />
     </div>
   );
