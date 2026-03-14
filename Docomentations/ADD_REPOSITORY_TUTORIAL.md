@@ -203,7 +203,7 @@ export const initializeStorage = async () => {
     localStorage.setItem('github_pinned_repositories', JSON.stringify(userData.pinnedRepositories));
     localStorage.setItem('github_starred_repositories', JSON.stringify(userData.starredRepositories));
     
-    console.log('✅ localStorage initialized');
+    // console.log('✅ localStorage initialized');
   }
 };
 
@@ -237,7 +237,7 @@ export const addRepository = (newRepo) => {
   // Step 5: Save back to localStorage
   localStorage.setItem('github_repositories', JSON.stringify(repos));
   
-  console.log(`✅ Repository "${newRepo.name}" added`);
+  // console.log(`✅ Repository "${newRepo.name}" added`);
   return repos;
 };
 
@@ -491,7 +491,7 @@ import { getStoredRepositories } from "@services/storageService.js";
 const repos = getStoredRepositories();
 // Returns array of all repositories
 repos.forEach(repo => {
-  console.log(repo.name); // "github-clone", "react-portfolio", etc.
+  // console.log(repo.name); // "github-clone", "react-portfolio", etc.
 });
 ```
 
@@ -561,7 +561,7 @@ starRepository(repo); // Adds to starred repos
 
 ```javascript
 // Debug: Check what's in localStorage
-console.log(localStorage.getItem('github_repositories'));
+// console.log(localStorage.getItem('github_repositories'));
 ```
 
 ### **Problem: Data disappears after page refresh**
@@ -571,7 +571,7 @@ This shouldn't happen because localStorage persists. But if it does:
 
 ```javascript
 // Check if initialization completed
-console.log(localStorage.getItem('github_user'));
+// console.log(localStorage.getItem('github_user'));
 
 // If null, manually initialize
 import { initializeStorage } from "@services/storageService.js";

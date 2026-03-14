@@ -17,7 +17,7 @@
 import { getStoredRepositories } from "@services/storageService.js";
 
 const repos = getStoredRepositories();
-repos.forEach(repo => console.log(repo.name));
+// repos.forEach(repo => console.log(repo.name));
 ```
 
 ### **2. Create New Repository** 
@@ -40,7 +40,7 @@ addRepository(newRepo);
 import { getStoredUser } from "@services/storageService.js";
 
 const user = getStoredUser();
-console.log(user.login); // "momanamjad"
+// console.log(user.login); // "momanamjad"
 ```
 
 ### **4. Pin a Repository**
@@ -147,13 +147,13 @@ deleteNode(repoId, 'old-file.txt');
 
 **Check what's in storage:**
 ```javascript
-console.log(localStorage.getItem('github_repositories'));
+// console.log(localStorage.getItem('github_repositories'));
 ```
 
 **Check storage stats:**
 ```javascript
 import { getStorageStats } from "@services/storageService.js";
-console.log(getStorageStats());
+// console.log(getStorageStats());
 ```
 
 **Clear everything:**

@@ -24,13 +24,13 @@ const PinnedRepos = ({ username }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8, // slightly higher distance to prevent accidental drags while scrolling
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 150, // Reduced from 250 for much faster pickup on mobile
+        tolerance: 8, // Increased tolerance so slight finger wiggles don't cancel the drag
       },
     }),
     useSensor(KeyboardSensor)
@@ -53,6 +53,16 @@ const PinnedRepos = ({ username }) => {
     };
 
     fetchPinned();
+
+    // Listen to custom event dispatched by RepoList.jsx
+    const handlePinnedUpdate = () => {
+      fetchPinned();
+    };
+    window.addEventListener('github_pinned_updated', handlePinnedUpdate);
+
+    return () => {
+      window.removeEventListener('github_pinned_updated', handlePinnedUpdate);
+    };
   }, [username]);
 
   if (loading)

@@ -83,7 +83,7 @@ function getRepoByName(repoName) {
 
 // Usage:
 const myRepo = getRepoByName('github-clone');
-console.log(myRepo); // { id: 1, name: "github-clone", ... }
+// console.log(myRepo); // { id: 1, name: "github-clone", ... }
 ```
 
 ### **Example 4: Get Pinned Repositories**
@@ -217,7 +217,7 @@ function createMultipleRepos() {
     addRepository(repo);
   });
 
-  console.log(`Created ${repos.length} repositories`);
+  // console.log(`Created ${repos.length} repositories`);
 }
 
 // Usage:
@@ -238,7 +238,7 @@ function updateRepoDescription(repoId, newDescription) {
     description: newDescription,
     updated_at: new Date().toISOString()
   });
-  console.log('Repository updated!');
+  // console.log('Repository updated!');
 }
 
 // Usage:
@@ -276,7 +276,7 @@ function pinTheRepo(repoId) {
   
   if (repo) {
     pinRepository(repo);
-    console.log(`Pinned: ${repo.name}`);
+    // console.log(`Pinned: ${repo.name}`);
   }
 }
 
@@ -295,7 +295,7 @@ function starTheRepo(repoId) {
   
   if (repo) {
     starRepository(repo);
-    console.log(`Starred: ${repo.name}`);
+    // console.log(`Starred: ${repo.name}`);
   }
 }
 
@@ -319,7 +319,7 @@ function deleteRepo(repoId) {
   
   if (confirmed) {
     deleteRepository(repoId);
-    console.log('Repository deleted!');
+    // console.log('Repository deleted!');
   }
 }
 
@@ -334,7 +334,7 @@ import { unpinRepository } from '@services/storageService.js';
 
 function unpinRepo(repoName) {
   unpinRepository(repoName);
-  console.log(`Unpinned: ${repoName}`);
+  // console.log(`Unpinned: ${repoName}`);
 }
 
 // Usage:
@@ -348,7 +348,7 @@ import { unstarRepository } from '@services/storageService.js';
 
 function unstarRepo(repoFullName) {
   unstarRepository(repoFullName);
-  console.log(`Unstarred: ${repoFullName}`);
+  // console.log(`Unstarred: ${repoFullName}`);
 }
 
 // Usage:
@@ -375,7 +375,7 @@ function searchRepositories(searchTerm) {
 
 // Usage:
 const results = searchRepositories('react');
-console.log(results); // All repos with 'react' in name or description
+// console.log(results); // All repos with 'react' in name or description
 ```
 
 ### **Example 2: Sort Repositories**
@@ -443,9 +443,9 @@ function getRepoStatistics() {
 
 // Usage:
 const stats = getRepoStatistics();
-console.log(`Total repos: ${stats.totalRepos}`);
-console.log(`Total stars: ${stats.totalStars}`);
-console.log(`Languages: ${stats.languages.join(', ')}`);
+// console.log(`Total repos: ${stats.totalRepos}`);
+// console.log(`Total stars: ${stats.totalStars}`);
+// console.log(`Languages: ${stats.languages.join(', ')}`);
 ```
 
 ### **Example 5: Build Repository with Default Values**

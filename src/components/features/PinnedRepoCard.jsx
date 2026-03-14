@@ -13,7 +13,9 @@ const PinnedRepoCard = ({
     <article
       style={style}
       ref={dragHandleProps?.ref}
-      className="bg-[white] border border-[#C8D1DA] rounded-md p-4 transition flex flex-col justify-between  min-h-[114px]"
+      className={`bg-[white] border border-[#C8D1DA] rounded-md p-4 transition flex flex-col justify-between min-h-[114px] select-none ${
+        style.isDragging ? "shadow-xl ring-2 ring-[#0969da] opacity-80" : ""
+      }`}
       {...(dragHandleProps?.attributes || {})}
     >
       <div>
@@ -32,7 +34,7 @@ const PinnedRepoCard = ({
           {/* Drag handle (six dots) */}
           <button
             {...(dragHandleProps?.listeners || {})}
-            className="p-1 rounded hover:bg-slate-100 cursor-grab touch-none"
+            className="p-3 -m-2 rounded hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
             style={{ touchAction: 'none' }}
             aria-label="Drag"
           >

@@ -1,14 +1,14 @@
 import React from "react";
 import { Star } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { getStoredStarredRepos, starRepository, unstarRepository } from "@services/storageService.js";
+import { getStoredStarredRepos, starRepository, unstarRepository, getStoredPinnedRepos, pinRepository, unpinRepository } from "@services/storageService.js";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import { Link } from "react-router-dom";
 
 /**
  * Individual Repository Item to improve render efficiency
  */
-const RepoItem = React.memo(({ repo, isStarred, onToggleStar }) => {
+const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onTogglePin }) => {
   const formattedDate = new Date(repo.updated_at).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -51,35 +51,56 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar }) => {
         </div>
       </div>
 
-      <button
-        onClick={() => onToggleStar(repo)}
-        className={`
-                    flex items-center gap-1.5
-                    px-3 py-1
-                    text-xs font-medium
-                    border border-github-border
-                    rounded-md
-                    transition-all duration-200
-                    hover:bg-[#F6F8FA]
-                    ${isStarred ? 'bg-[#F6F8FA]' : 'bg-white'}
-                `}
-      >
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onTogglePin(repo)}
+          className={`
+                      flex items-center gap-1.5
+                      px-3 py-1
+                      text-xs font-medium
+                      border border-github-border
+                      rounded-md
+                      transition-all duration-200
+                      hover:bg-[#F6F8FA]
+                      ${isPinned ? 'bg-[#F6F8FA]' : 'bg-white'}
+                  `}
+        >
+          {isPinned ? "Unpin" : "Pin"}
+        </button>
+        <button
+          onClick={() => onToggleStar(repo)}
+          className={`
+                      flex items-center gap-1.5
+                      px-3 py-1
+                      text-xs font-medium
+                      border border-github-border
+                      rounded-md
+                      transition-all duration-200
+                      hover:bg-[#F6F8FA]
+                      ${isStarred ? 'bg-[#F6F8FA]' : 'bg-white'}
+                  `}
+        >
         <Star
           size={14}
           className={isStarred ? "fill-[#e3b341] text-[#e3b341]" : "text-github-muted"}
         />
         {isStarred ? "Starred" : "Star"}
-      </button>
+        </button>
+      </div>
     </div>
   );
 });
 
 const RepoList = ({ repos }) => {
   const [starredFullNames, setStarredFullNames] = useState([]);
+  const [pinnedNames, setPinnedNames] = useState([]);
 
   useEffect(() => {
     const starred = getStoredStarredRepos();
     setStarredFullNames(starred.map(r => r.full_name));
+
+    const pinned = getStoredPinnedRepos();
+    setPinnedNames(pinned.map(r => r.name));
   }, []);
 
   const handleStarToggle = useCallback((repo) => {
@@ -91,6 +112,22 @@ const RepoList = ({ repos }) => {
       } else {
         starRepository(repo);
         return [...prev, repo.full_name];
+      }
+    });
+  }, []);
+
+  const handlePinToggle = useCallback((repo) => {
+    setPinnedNames(prev => {
+      const isCurrentlyPinned = prev.includes(repo.name);
+      if (isCurrentlyPinned) {
+        unpinRepository(repo.name);
+        // Dispatch event so PinnedRepos.jsx instantly updates
+        window.dispatchEvent(new Event('github_pinned_updated'));
+        return prev.filter(name => name !== repo.name);
+      } else {
+        pinRepository(repo);
+        window.dispatchEvent(new Event('github_pinned_updated'));
+        return [...prev, repo.name];
       }
     });
   }, []);
@@ -111,6 +148,8 @@ const RepoList = ({ repos }) => {
           repo={repo}
           isStarred={starredFullNames.includes(repo.full_name)}
           onToggleStar={handleStarToggle}
+          isPinned={pinnedNames.includes(repo.name)}
+          onTogglePin={handlePinToggle}
         />
       ))}
     </div>

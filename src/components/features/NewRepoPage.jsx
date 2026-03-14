@@ -3,6 +3,21 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { addRepository, getStoredUser } from "@services/storageService.js";
 
+const ADJECTIVES = [
+  "glorious", "stunning", "crisp", "super", "bug-free", "urban", "solid", "shiny", 
+  "flawless", "organic", "silver", "legendary", "fuzzy", "friendly", "literate", "miniature"
+];
+const NOUNS = [
+  "octo", "broccoli", "robot", "journey", "adventure", "engine", "system", 
+  "invention", "innovation", "disco", "spoon", "waddle", "ninja", "spatula", "lamp", "umbrella"
+];
+
+const generateRandomRepoName = () => {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  return `${adj}-${noun}`;
+};
+
 const NewRepoPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -15,6 +30,7 @@ const NewRepoPage = () => {
     license: "none",
   });
 
+  const [suggestedRepoName] = useState(generateRandomRepoName);
   const [showGitignoreDropdown, setShowGitignoreDropdown] = useState(false);
   const [showLicenseDropdown, setShowLicenseDropdown] = useState(false);
   const [visibilityOpen, setVisibilityOpen] = useState(false);
@@ -121,7 +137,7 @@ const NewRepoPage = () => {
   };
 
   const suggestRepoName = () => {
-    setFormData((prev) => ({ ...prev, repoName: "verbose-journey" }));
+    setFormData((prev) => ({ ...prev, repoName: suggestedRepoName }));
   };
   useEffect(() => {
     const handler = (e) => {
@@ -221,7 +237,7 @@ const NewRepoPage = () => {
                     onClick={suggestRepoName}
                     className="text-[#1F883D] hover:underline"
                   >
-                    verbose-journey
+                    {suggestedRepoName}
                   </button>
                   ?
                 </p>
