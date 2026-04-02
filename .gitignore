@@ -25,6 +25,9 @@ dist-ssr
 
 # Documentations
 Docomentations/
+ICONS_GENERATOR_README.md
+PERFORMANCE_OPTIMIZATIONS.md
+docs/
 docs/
 documentation/
 *.pdf
