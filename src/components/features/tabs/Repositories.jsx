@@ -14,7 +14,12 @@ const Repositories = () => {
   const [type, setType] = useState("all");
 
   useEffect(() => {
-    getRepos(username).then(setRepos);
+    const fetchRepos = () => getRepos(username).then(setRepos);
+    
+    fetchRepos(); // Initial fetch
+
+    window.addEventListener('github_repos_updated', fetchRepos);
+    return () => window.removeEventListener('github_repos_updated', fetchRepos);
   }, [username]);
 
   const filteredRepos = useMemo(() => {

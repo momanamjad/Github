@@ -5,6 +5,8 @@ import OpenMenuLayout from "./layout/OpenMenuLayout";
 import { initializeStorage } from "@services/storageService.js";
 import { GitHubProvider } from "@contexts/GitHubContext";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
+import Buddy from "./bot/Buddy";
+import { useState } from "react";
 
 const Profile = lazy(() => import("@pages/Profile"));
 const ProfileLayout = lazy(() => import("@pages/ProfileLayout"));
@@ -23,6 +25,7 @@ const PageLoader = () => (
 const App = () => {
   // Dynamic document title per route (SEO)
   useDocumentTitle();
+  const [repos, setRepos] = useState([])
 
   useEffect(() => {
     initializeStorage();
@@ -32,6 +35,7 @@ const App = () => {
     <GitHubProvider>
       <div className="min-h-screen bg-github-bg text-github-text text-[14px] leading-normal">
         <Suspense fallback={<PageLoader />}>
+          <Buddy repos={repos} setRepos={setRepos} />
           <Routes>
             <Route element={<OpenMenuLayout />}>
               <Route path="/" element={<Pages.Home />} />
