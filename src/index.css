@@ -10,6 +10,15 @@
   display: none;
 }
 
+@keyframes marquee-ltr {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-marquee-ltr {
+  animation: marquee-ltr 15s linear infinite;
+}
+
 .tooltip-styles {
   background-color: #24292f;  
   color: #f6f8fa; 
@@ -177,5 +186,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden !important;
+    width: 100%;
+    position: relative;
+  }
+  html {
+    overflow-x: hidden !important;
+    width: 100%;
   }
 }
