@@ -13,7 +13,7 @@ const INITIAL_REPO_COUNT = 4;
 const Home = React.memo(() => {
   const [allRepos, setAllRepos] = useState([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filterValue, setFilterValue] = useState();
+  const [, setFilterValue] = useState();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const navigate = useNavigate();

@@ -1,14 +1,19 @@
 import { LockIcon, Package } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { getRepos } from "@services/GithubApi.jsx";
 
 export default function RepoSelector({ username, onSelect }) {
   const [repos, setRepos] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Derived state — useMemo is the correct tool here (avoids setState-in-effect)
+  const filtered = useMemo(() => {
+    const lower = search.toLowerCase();
+    return repos.filter((r) => r.full_name.toLowerCase().includes(lower));
+  }, [search, repos]);
 
   const containerRef = useRef(null);
   const inputRef = useRef(null);
@@ -25,11 +30,11 @@ export default function RepoSelector({ username, onSelect }) {
         );
 
         setRepos(sorted);
-        setFiltered(sorted);
+        // filtered is derived from repos via useMemo — no need to set it
       } catch (error) {
         console.error("Error fetching repos:", error);
         setRepos([]);
-        setFiltered([]);
+        // filtered will automatically be [] when repos is []
       }
     };
 
@@ -38,14 +43,7 @@ export default function RepoSelector({ username, onSelect }) {
     }
   }, [username]);
 
-  // filter
-  useEffect(() => {
-    const lower = search.toLowerCase();
-    const list = repos.filter((r) => r.full_name.toLowerCase().includes(lower));
-
-    setFiltered(list);
-    setActiveIndex(0);
-  }, [search, repos]);
+  // (filter effect removed — replaced by useMemo above)
 
   // outside click
   useEffect(() => {

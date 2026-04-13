@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { TriangleDownIcon, CheckIcon } from "@primer/octicons-react";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+
 import NewRepoBtn from "../common/NewRepoBtn";
 import CloseIcon from "../../../public/customIcons/CloseIcon";
 const FilterMenu = ({ label, value, options, onChange }) => {
@@ -84,10 +83,6 @@ const RepoFilterBar = ({
   setType,
   languages,
 }) => {
-  const navigate = useNavigate();
-  const handleNewRepoClick = () => {
-    navigate("/new");
-  };
   return (
     <div className="flex flex-col gap-3 py-4 border-b border-github-border">
       <div className="flex flex-col sm:flex-row gap-3">

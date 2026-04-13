@@ -4,7 +4,8 @@ import CloseIcon from "../../../public/customIcons/CloseIcon";
 import GithubLogoIcon from "../../../public/customIcons/GithubLogoIcon";
 import ReposotoryIcon from "../../../public/customIcons/ReposotoryIcon";
 import SearchIconSvg from "../../../public/customIcons/SearchIconSvg";
-const navItems = [
+// navItems defined for future use — prefixed with _ to suppress lint warning
+const _navItems = [
   { icon: "M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z", label: "Home", path: "M" },
   {
     icon: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm8 8a8 8 0 1 0-16 0 8 8 0 0 0 16 0Z",

@@ -1,149 +1,168 @@
-import { buddyTools } from "./buddyTools"
-import { executeTool } from "./executeTool"
-import { getStoredRepositories } from "../services/storageService"
+import { buddyTools } from "./buddyTools";
+import { executeTool } from "./executeTool";
+import { getStoredRepositories } from "../services/storageService";
 
-export async function callBuddy(userMessage, chatHistory = [], currentPath = "/") {
-    const repos = getStoredRepositories();
+// ── Constants ─────────────────────────────────────────────────────
+const DAILY_LIMIT = 1500;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY || ""}`;
 
-    // Track Daily Gemini Queries limit (1500 RPM for free tier)
-    let queriesToday = parseInt(localStorage.getItem('gemini_queries_today') || '0');
+// ── Helpers ───────────────────────────────────────────────────────
+
+/** Increment today's query count and return the new value */
+function incrementQueryCount() {
     const todayStr = new Date().toDateString();
-    if (localStorage.getItem('gemini_last_query_date') !== todayStr) {
-        queriesToday = 0;
-        localStorage.setItem('gemini_last_query_date', todayStr);
+    if (localStorage.getItem("gemini_last_query_date") !== todayStr) {
+        localStorage.setItem("gemini_last_query_date", todayStr);
+        localStorage.setItem("gemini_queries_today", "0");
     }
-    
-    localStorage.setItem('gemini_queries_today', (queriesToday + 1).toString());
+    const next = (parseInt(localStorage.getItem("gemini_queries_today") || "0")) + 1;
+    localStorage.setItem("gemini_queries_today", String(next));
+    return next;
+}
 
-    // Format previous messages for Gemini context
-    // Gemini API enforces STRICT alternation between 'user' and 'model'.
-    const formattedHistory = [];
+/** Return true if today's count has already hit the limit */
+function isRateLimited() {
+    const todayStr = new Date().toDateString();
+    if (localStorage.getItem("gemini_last_query_date") !== todayStr) return false;
+    return parseInt(localStorage.getItem("gemini_queries_today") || "0") >= DAILY_LIMIT;
+}
+
+/** Build a human-readable "try again after X" message */
+function make429Message() {
+    const nextTime = new Date();
+    nextTime.setMinutes(nextTime.getMinutes() + 1);
+    const timeString = nextTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return `Whoops! I'm getting too many requests too quickly (15 messages/minute limit) 🛑. Please try again in ~1 minute (after ${timeString}).`;
+}
+
+/** POST a payload to Gemini and return parsed JSON. Throws on network/HTTP error. */
+async function geminiPost(payload, signal) {
+    const response = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        console.error("Gemini API Error:", data);
+        if (response.status === 429) throw new Error("__429__");
+        throw new Error(data.error?.message || response.statusText || "Unknown API error");
+    }
+
+    return data;
+}
+
+/** Format stored chat history into Gemini's strict alternating role format */
+function formatHistory(chatHistory) {
+    const formatted = [];
     let lastRole = null;
 
     for (const m of chatHistory) {
         if (!m.text) continue;
         const role = m.role === "buddy" ? "model" : "user";
-        
+
         if (role === lastRole) {
-            // Merge consecutive messages of the same role
-            formattedHistory[formattedHistory.length - 1].parts[0].text += "\n\n" + m.text;
+            // Merge consecutive same-role messages
+            formatted[formatted.length - 1].parts[0].text += "\n\n" + m.text;
         } else {
-            formattedHistory.push({ role, parts: [{ text: m.text }] });
+            formatted.push({ role, parts: [{ text: m.text }] });
             lastRole = role;
         }
     }
 
-    // Edge case: if we are about to inject a "userMessage", but the history already ends with a "user", we should merge it, 
-    // OR we can just inject a dummy model confirmation to act as a buffer. 
-    // But since `firstPayload` adds { role: "user", parts: [{ text: userMessage }] }, 
-    // let's ensure the last item in formattedHistory is NOT 'user'.
-    if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === "user") {
-        formattedHistory.push({ role: "model", parts: [{ text: "Got it. Please continue." }] });
+    // Ensure history doesn't end with "user" before we append the new user message
+    if (formatted.length > 0 && formatted[formatted.length - 1].role === "user") {
+        formatted.push({ role: "model", parts: [{ text: "Got it. Please continue." }] });
     }
 
+    return formatted;
+}
 
-    const systemPrompt = `You are Buddy, a helpful assistant inside a GitHub clone app.
-The user is currently browsing the page URL path: "${currentPath}". Use this context if they ask things like "what am I looking at" or "pin this/this page".
-Current repos: ${repos.map(r => r.name).join(", ") || "none"}.
-Help the user manage their repos using the available tools.`
+// ── Main export ───────────────────────────────────────────────────
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+/**
+ * Send a message to Buddy (Gemini) and return its text reply.
+ * @param {string} userMessage
+ * @param {Array}  chatHistory  - previous messages [{role, text}]
+ * @param {string} currentPath  - current URL pathname for context
+ * @param {AbortSignal} [signal] - optional AbortSignal for cancellation
+ */
+export async function callBuddy(userMessage, chatHistory = [], currentPath = "/", signal) {
+    // Hard rate-limit guard — never charges quota if already exceeded
+    if (isRateLimited()) {
+        return `You've reached today's ${DAILY_LIMIT} message limit 🛑. Your quota resets at midnight. Come back tomorrow!`;
+    }
+
+    incrementQueryCount();
+
+    const repos = getStoredRepositories();
+    const formattedHistory = formatHistory(chatHistory);
+
+    const systemPrompt = `You are Buddy, a helpful AI assistant embedded in a GitHub clone app.
+The user is currently on page: "${currentPath}". Use this context when they ask "what am I looking at" or ask to navigate.
+Available repositories: ${repos.map(r => r.name).join(", ") || "none"}.
+Help the user manage their repositories using the available tools.`;
 
     const basePayload = {
-        systemInstruction: {
-            parts: [{ text: systemPrompt }]
-        },
-        tools: [{
-            functionDeclarations: buddyTools
-        }],
-    }
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        tools: [{ functionDeclarations: buddyTools }],
+    };
 
-    const firstPayload = {
-        ...basePayload,
-        contents: [
-            ...formattedHistory,
-            { role: "user", parts: [{ text: userMessage }] }
-        ]
-    }
-
-    // First API call
-    const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(firstPayload)
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-        console.error("Gemini API Error:", data);
-        if (response.status === 429) {
-            const nextTime = new Date();
-            nextTime.setMinutes(nextTime.getMinutes() + 1);
-            const timeString = nextTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return `Whoops, I'm receiving too many requests too quickly (I have a 15 messages/minute speed limit) 🛑! Please give me a breather and try again in 1 minute (after ${timeString}).`;
-        }
-        return `API Error: ${data.error?.message || response.statusText}. Please check your Gemini API Key in the .env file.`;
-    }
-
-    const firstCandidate = data.candidates?.[0];
-    if (!firstCandidate || !firstCandidate.content) {
-        return "I didn't quite get that. Could you try again?";
-    }
-
-    const parts = firstCandidate.content.parts || [];
-    const functionCallPart = parts.find(p => p.functionCall);
-    const textPart = parts.find(p => p.text);
-
-    if (functionCallPart) {
-        const { name, args } = functionCallPart.functionCall;
-        
-        // Execute the tool locally
-        const toolResult = executeTool(name, args)
-
-        // Second API call — send tool result back to Gemini
-        const followUpPayload = {
+    try {
+        // ── First call: may return a direct text reply OR a function call ──
+        const firstData = await geminiPost({
             ...basePayload,
             contents: [
                 ...formattedHistory,
                 { role: "user", parts: [{ text: userMessage }] },
-                { role: "model", parts: [functionCallPart] },
-                { role: "user", parts: [{
-                    functionResponse: {
-                        name: name,
-                        response: {
-                           name: name,
-                           content: toolResult
-                        }
-                    }
-                }]}
-            ]
+            ],
+        }, signal);
+
+        const firstCandidate = firstData.candidates?.[0];
+        if (!firstCandidate?.content) {
+            return "I didn't quite get that. Could you try again?";
         }
 
-        const followUpResponse = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(followUpPayload)
-        })
+        const parts = firstCandidate.content.parts || [];
+        const functionCallPart = parts.find(p => p.functionCall);
+        const textPart = parts.find(p => p.text);
 
-        const followUpData = await followUpResponse.json()
-        if (!followUpResponse.ok) {
-            console.error("Gemini API Error (Tool Response):", followUpData);
-            if (followUpResponse.status === 429) {
-                const nextTime = new Date();
-                nextTime.setMinutes(nextTime.getMinutes() + 1);
-                const timeString = nextTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                return `Whoops, I'm receiving too many requests too quickly (I have a 15 messages/minute speed limit) 🛑! Please give me a breather and try again in 1 minute (after ${timeString}).`;
-            }
-            return `API Error: ${followUpData.error?.message || followUpResponse.statusText}`;
+        // ── Tool call path ─────────────────────────────────────────────────
+        if (functionCallPart) {
+            const { name, args } = functionCallPart.functionCall;
+            const toolResult = executeTool(name, args);
+
+            const followUpData = await geminiPost({
+                ...basePayload,
+                contents: [
+                    ...formattedHistory,
+                    { role: "user", parts: [{ text: userMessage }] },
+                    { role: "model", parts: [functionCallPart] },
+                    {
+                        role: "user", parts: [{
+                            functionResponse: {
+                                name,
+                                response: { name, content: toolResult },
+                            },
+                        }],
+                    },
+                ],
+            }, signal);
+
+            const nextParts = followUpData.candidates?.[0]?.content?.parts || [];
+            return nextParts.find(p => p.text)?.text || "Done!";
         }
 
-        const nextCandidate = followUpData.candidates?.[0];
-        const nextParts = nextCandidate?.content?.parts || [];
-        return nextParts.find(p => p.text)?.text || "Done!";
+        // ── Direct text reply ──────────────────────────────────────────────
+        return textPart?.text || "I'm not sure how to help with that.";
+
+    } catch (err) {
+        if (err.name === "AbortError") return null; // Request was intentionally cancelled
+        if (err.message === "__429__") return make429Message();
+        console.error("Buddy error:", err);
+        return `Something went wrong: ${err.message}. Please check your internet connection and try again.`;
     }
-
-    // Direct text response
-    return textPart?.text || "I'm not sure how to help with that.";
 }

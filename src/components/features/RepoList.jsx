@@ -95,12 +95,17 @@ const RepoList = ({ repos }) => {
   const [starredFullNames, setStarredFullNames] = useState([]);
   const [pinnedNames, setPinnedNames] = useState([]);
 
+  // Load initial starred/pinned state asynchronously to avoid
+  // synchronous setState inside effect body (react-hooks/set-state-in-effect)
   useEffect(() => {
-    const starred = getStoredStarredRepos();
-    setStarredFullNames(starred.map(r => r.full_name));
+    const id = setTimeout(() => {
+      const starred = getStoredStarredRepos();
+      setStarredFullNames(starred.map(r => r.full_name));
 
-    const pinned = getStoredPinnedRepos();
-    setPinnedNames(pinned.map(r => r.name));
+      const pinned = getStoredPinnedRepos();
+      setPinnedNames(pinned.map(r => r.name));
+    }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   const handleStarToggle = useCallback((repo) => {

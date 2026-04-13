@@ -31,7 +31,7 @@ export const getUser = async (username) => {
 };
 
 // Getting the  user repositories from localStorage
-export const getRepos = async (username) => {
+export const getRepos = async (_username) => {
   await storageReady;
   await simulateDelay();
 
@@ -42,7 +42,7 @@ export const getRepos = async (username) => {
   return repos;
 };
 
-export const getStarredRepos = async (username) => {
+export const getStarredRepos = async (_username) => {
   await storageReady;
   await simulateDelay();
 
@@ -69,7 +69,7 @@ export const getRepo = async (username, repo) => {
   return repoData;
 };
 
-export const getRepoContents = async (user, repo, path = "") => {
+export const getRepoContents = async (user, repo, _path = "") => {
   await storageReady;
   await simulateDelay();
 
@@ -104,7 +104,7 @@ export const getRepoContents = async (user, repo, path = "") => {
 };
 
 // Export function to get pinned repos
-export const getPinnedRepos = async (username) => {
+export const getPinnedRepos = async (_username) => {
   await storageReady;
   await simulateDelay();
 

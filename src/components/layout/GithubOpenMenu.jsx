@@ -1,6 +1,5 @@
 // lucide-react Radius import removed — was unused
-import React, { useMemo } from "react";
-import { useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoLogoGithub } from "react-icons/io";
 import { getStoredRepositories } from "../../services/storageService";
@@ -41,23 +40,25 @@ const exploreItems = [
 ];
 
 const GithubOpenMenu = React.memo(() => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [showSearch, setShowSearch] = React.useState(false);
-  const [topRepos, setTopRepos] = React.useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [topRepos, setTopRepos] = useState([]);
 
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+    // Run asynchronously so we don't call setState synchronously in an effect
+    const id = setTimeout(() => {
       const repos = getStoredRepositories();
-      // sort by updated_at or id and slice top 5
       const sorted = [...repos].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
       setTopRepos(sorted.slice(0, 5));
       setSearchQuery("");
       setShowSearch(false);
-    }
+    }, 0);
+    return () => clearTimeout(id);
   }, [isOpen]);
 
   const filteredRepos = useMemo(() => {

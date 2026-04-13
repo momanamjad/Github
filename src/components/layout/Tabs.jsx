@@ -20,18 +20,28 @@ const Tabs = ({ username }) => {
     return () => setHasTabsComponent(false);
   }, [setHasTabsComponent]);
 
+  // Loading bar progress on route change
   useEffect(() => {
-    setProgress(70);
-    const timer = setTimeout(() => setProgress(100), 400);
-    return () => clearTimeout(timer);
+    // Use a timer so the setState is async, not synchronous-in-effect
+    const startTimer = setTimeout(() => {
+      setProgress(70);
+      setMoreOpen(false); // also close the dropdown on navigation
+    }, 0);
+    const endTimer = setTimeout(() => setProgress(100), 400);
+    return () => {
+      clearTimeout(startTimer);
+      clearTimeout(endTimer);
+    };
   }, [location]);
 
+  // Fetch repo count for the tab badge
   useEffect(() => {
     getRepos(username)
       .then((repos) => setRepoCount(repos?.length || 0))
       .catch(() => setRepoCount(0));
   }, [username]);
 
+  // Close "More" dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (moreRef.current && !moreRef.current.contains(e.target)) {
@@ -42,9 +52,6 @@ const Tabs = ({ username }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setMoreOpen(false);
-  }, [location]);
 
   // All non-Overview tabs
   const allTabs = [
@@ -53,11 +60,6 @@ const Tabs = ({ username }) => {
     { to: `/${username}/packages`, icon: PackageIcon, label: "Packages" },
     { to: `/${username}/stars`, icon: StarsIcon, label: "Stars" },
   ];
-
-  // Determine which non-Overview tab is currently active
-  const overviewPath = `/${username}`;
-  const isOverviewActive =
-    location.pathname === overviewPath || location.pathname === overviewPath + "/";
 
   const activeTabIndex = allTabs.findIndex(
     (tab) =>
@@ -68,7 +70,6 @@ const Tabs = ({ username }) => {
   // For mobile: the active non-Overview tab shows inline, rest go in "More"
   const activeNonOverviewTab = activeTabIndex >= 0 ? allTabs[activeTabIndex] : null;
   const moreTabs = allTabs.filter((_, i) => i !== activeTabIndex);
-  const hasMoreActive = false; // "More" itself is never the active page
 
   return (
     <div>

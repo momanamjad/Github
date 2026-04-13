@@ -52,10 +52,12 @@ export const initializeStorage = () => {
         const userData = await import('./userData.json');
 
         writeCached(STORAGE_KEYS.USER, userData.user);
-        // ensure each seeded repo includes a minimal fileTree so components can safely read it
+
+        // Ensure each seeded repo has a fileTree — done here at init time only,
+        // NOT on every read, to avoid silent mutation inside getStoredRepositories.
         const reposWithTree = userData.repositories.map(repo => ({
           ...repo,
-          fileTree: repo.fileTree || [
+          fileTree: repo.fileTree ?? [
             { type: 'dir', name: 'src', path: 'src', children: [] },
             { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
           ]
@@ -64,13 +66,26 @@ export const initializeStorage = () => {
         writeCached(STORAGE_KEYS.PINNED_REPOS, userData.pinnedRepositories);
         writeCached(STORAGE_KEYS.STARRED_REPOS, userData.starredRepositories);
         writeCached(STORAGE_KEYS.REPO_CONTENTS, userData.repositoryContents);
-
-        return true;
+      } else {
+        // Migration: patch fileTree for any existing repos that are missing it
+        // (one-time fix for data seeded before this field was added)
+        const existing = readCached(STORAGE_KEYS.REPOSITORIES) || [];
+        const needsPatch = existing.some(r => !r.fileTree);
+        if (needsPatch) {
+          const patched = existing.map(repo => ({
+            ...repo,
+            fileTree: repo.fileTree ?? [
+              { type: 'dir', name: 'src', path: 'src', children: [] },
+              { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
+            ]
+          }));
+          writeCached(STORAGE_KEYS.REPOSITORIES, patched);
+        }
       }
 
       return true;
     } catch (error) {
-      console.error(' Error initializing localStorage:', error);
+      console.error('Error initializing localStorage:', error);
       return false;
     }
   })();
@@ -146,26 +161,8 @@ export const updateStoredStatus = (status) => {
  */
 export const getStoredRepositories = () => {
   try {
-    let list = readCached(STORAGE_KEYS.REPOSITORIES) || [];
-    // ensure every repo has a fileTree; fill missing ones and persist
-    let patched = false;
-    list = list.map(repo => {
-      if (!repo.fileTree) {
-        patched = true;
-        return {
-          ...repo,
-          fileTree: [
-            { type: 'dir', name: 'src', path: 'src', children: [] },
-            { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
-          ]
-        };
-      }
-      return repo;
-    });
-    if (patched) {
-      writeCached(STORAGE_KEYS.REPOSITORIES, list);
-    }
-    return list;
+    // fileTree patching is handled at init time — this is a clean read-only path.
+    return readCached(STORAGE_KEYS.REPOSITORIES) || [];
   } catch (error) {
     console.error('Error retrieving repositories from storage:', error);
     return [];
@@ -180,46 +177,38 @@ export const getStoredRepositories = () => {
 export const addRepository = (newRepo) => {
   try {
     const repos = getStoredRepositories();
+    const user  = getStoredUser();
 
-    // Generate unique ID for the new repo
+    // Use incrementing numeric ID for compatibility, but a UUID for node_id
     const newId = repos.length > 0 ? Math.max(...repos.map(r => r.id)) + 1 : 1;
-
-    // Read user once instead of 3 times
-    const user = getStoredUser();
-
-    // default filesystem structure for a fresh repository
-    const initialTree = [
-      { type: 'dir', name: 'src', path: 'src', children: [] },
-      { type: 'file', name: 'README.md', path: 'README.md', content: `# ${newRepo.name}\n` }
-    ];
 
     const repoWithId = {
       ...newRepo,
       id: newId,
-      node_id: `R_kgDOGrJ_${String.fromCharCode(65 + newId)}g`,
+      node_id: crypto.randomUUID(),
       owner: {
         login: user?.login,
         id: user?.id,
         avatar_url: user?.avatar_url,
-        type: "User"
+        type: 'User'
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      pushed_at: new Date().toISOString(),
+      pushed_at:  new Date().toISOString(),
       visibility: 'public',
-      // attach a basic file tree so UI can operate on it immediately
-      fileTree: initialTree
+      fileTree: [
+        { type: 'dir',  name: 'src',       path: 'src',       children: [] },
+        { type: 'file', name: 'README.md', path: 'README.md', content: `# ${newRepo.name}\n` }
+      ]
     };
 
     repos.push(repoWithId);
     writeCached(STORAGE_KEYS.REPOSITORIES, repos);
-
     return repos;
   } catch (error) {
     console.error('Error adding repository to storage:', error);
     return getStoredRepositories();
   }
-
 };
 
 /**

@@ -95,8 +95,8 @@ const PinnedRepos = ({ username }) => {
           `pinnedOrder:${username}`,
           JSON.stringify(newArray.map((r) => r.name || r.id))
         );
-      } catch (e) {
-        // ignore
+      } catch (_e) {
+        // ignore localStorage errors silently
       }
     }
   };

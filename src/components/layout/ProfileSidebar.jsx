@@ -3,7 +3,7 @@
 // Your EXISTING sidebar + Status Button Integration
 // ============================================
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@ui/avatar";
 import { Card, CardContent } from "@ui/card";

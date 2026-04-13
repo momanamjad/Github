@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PRESET_EMOJIS } from '../../constants/githubConstants';
 
-const EmojiPicker = ({ onSelect, onClear, onClose, pickerRef }) => {
+const EmojiPicker = ({ onSelect, onClear, _onClose, pickerRef }) => {
     const [filter, setFilter] = useState('');
 
     const filteredEmojis = useMemo(() => {

@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { Package, Search, Star, Download, Code, Filter, TrendingUp } from 'lucide-react';
 
+// Pre-compute stable mock data outside the component to avoid Math.random() in render
+const MCP_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => ({
+  id: item,
+  stars: [342, 128, 491, 205, 376, 89, 453, 167][item - 1],
+  downloads: [8.2, 3.5, 6.1, 1.9, 7.4, 2.8, 5.3, 4.0][item - 1],
+  tools: [5, 8, 3, 11, 6, 4, 9, 7][item - 1],
+  resources: [2, 4, 1, 5, 3, 2, 4, 1][item - 1],
+}));
+
 const MCPRegistry = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -132,9 +141,9 @@ const MCPRegistry = () => {
 
             {/* MCP Servers List */}
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+              {MCP_ITEMS.map((item) => (
                 <div
-                  key={item}
+                  key={item.id}
                   className="border border-gray-300 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -142,9 +151,9 @@ const MCPRegistry = () => {
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-5 h-5 text-purple-600" />
                         <h3 className="text-lg font-semibold text-blue-600 hover:underline">
-                          @mcp/server-name-{item}
+                          @mcp/server-name-{item.id}
                         </h3>
-                        {item % 3 === 0 && (
+                        {item.id % 3 === 0 && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             Verified
                           </span>
@@ -152,7 +161,7 @@ const MCPRegistry = () => {
                       </div>
                       
                       <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        A powerful MCP server that provides tools for {item % 2 === 0 ? 'data processing' : 'AI integration'} 
+                        A powerful MCP server that provides tools for {item.id % 2 === 0 ? 'data processing' : 'AI integration'}{' '}
                         with comprehensive documentation and examples
                       </p>
 
@@ -163,11 +172,11 @@ const MCPRegistry = () => {
                         </span>
                         <span className="flex items-center">
                           <Star className="w-3 h-3 mr-1 text-yellow-500" />
-                          {Math.floor(Math.random() * 500) + 100}
+                          {item.stars}
                         </span>
                         <span className="flex items-center">
                           <Download className="w-3 h-3 mr-1" />
-                          {(Math.random() * 10).toFixed(1)}k downloads
+                          {item.downloads}k downloads
                         </span>
                         <span>Updated 2 days ago</span>
                       </div>
@@ -175,10 +184,10 @@ const MCPRegistry = () => {
                       {/* Tools/Capabilities */}
                       <div className="flex flex-wrap gap-2 mt-3">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                          tools: {Math.floor(Math.random() * 10) + 3}
+                          tools: {item.tools}
                         </span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                          resources: {Math.floor(Math.random() * 5) + 1}
+                          resources: {item.resources}
                         </span>
                       </div>
                     </div>

@@ -1,0 +1,25 @@
+{
+  "name": "GitHub Clone",
+  "short_name": "GH Clone",
+  "description": "A feature-rich GitHub clone built with React. Browse repositories, manage issues, pull requests, and explore code.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/profile.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/profile.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["developer tools", "productivity"]
+}

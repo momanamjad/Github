@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import ReposotoryIcon from "../../../public/customIcons/ReposotoryIcon";
 
-const NewRepoBtn = ({ size, children }) => {
+const NewRepoBtn = ({ size, _children }) => {
   const navigate = useNavigate();
   const handleNewRepoClick = () => {
     navigate("/new");

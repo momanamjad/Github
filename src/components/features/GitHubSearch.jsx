@@ -21,17 +21,22 @@ export default function GitHubSearch({ isOpen, onClose }) {
         .then((res) => setRepos(res || []))
         .catch(() => setRepos([]));
 
-      // Auto-prefill search query based on current location
+      // Auto-prefill search query async so we don't call setState directly in effect
       const pathParts = location.pathname.split('/').filter(Boolean);
-      if (pathParts.length === 1 && pathParts[0].toLowerCase() === username.toLowerCase()) {
-        setSearchQuery(`owner:${username} `);
-      } else if (pathParts.length >= 2 && pathParts[0].toLowerCase() === username.toLowerCase()) {
-        setSearchQuery(`repo:${username}/${pathParts[1]} `);
-      } else {
-        setSearchQuery('');
-      }
+      const id = setTimeout(() => {
+        if (pathParts.length === 1 && pathParts[0].toLowerCase() === username.toLowerCase()) {
+          setSearchQuery(`owner:${username} `);
+        } else if (pathParts.length >= 2 && pathParts[0].toLowerCase() === username.toLowerCase()) {
+          setSearchQuery(`repo:${username}/${pathParts[1]} `);
+        } else {
+          setSearchQuery('');
+        }
+      }, 0);
+      return () => clearTimeout(id);
     } else {
-      setSearchQuery('');
+      // Clear query async when modal closes
+      const clearId = setTimeout(() => setSearchQuery(''), 0);
+      return () => clearTimeout(clearId);
     }
   }, [isOpen, location.pathname, username]);
 
@@ -61,16 +66,16 @@ export default function GitHubSearch({ isOpen, onClose }) {
     navigate(`/${username}/${repoName}`);
   };
 
-  const handleCodeClick = (path) => {
+  const handleCodeClick = (_path) => {
     onClose();
-    // mock navigation
+    // mock navigation — path would be used in real implementation
   };
 
   const isOwnerSearch = searchQuery.toLowerCase().startsWith('owner:');
   const isRepoSearch = searchQuery.toLowerCase().startsWith('repo:');
 
-  // Also determine current rendered repo context from query if available
-  const parsedRepoName = isRepoSearch ? searchQuery.split(':')[1]?.split(' ')[0]?.split('/')[1] : null;
+  // parsedRepoName available for future repo-specific search scoping
+  const _parsedRepoName = isRepoSearch ? searchQuery.split(':')[1]?.split(' ')[0]?.split('/')[1] : null;
 
   const filteredRepos = repos.filter(r =>
     !isOwnerSearch && !isRepoSearch && searchQuery

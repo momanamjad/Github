@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useGitHub } from '@contexts/GitHubContext';
 import { useClickOutside, useInterval } from '@hooks/useGitHub_hooks';
 import { PRESET_STATUSES, EXPIRATION_OPTIONS } from '../../constants/githubConstants';
@@ -36,6 +36,16 @@ const StatusButton = ({ hidden = false }) => {
   // Custom Hooks
   useClickOutside([emojiPickerRef], () => setShowEmojiPicker(false));
 
+  // handleClear must be declared BEFORE useInterval which references it
+  const handleClear = useCallback(() => {
+    setLocalEmoji('');
+    setLocalText('');
+    setLocalIsBusy(false);
+    setExpirationTime(null);
+    updateStatus({ emoji: '', text: '', isBusy: false });
+    closeModal();
+  }, [updateStatus, closeModal]);
+
   // Auto-clear status timer
   useInterval(() => {
     if (expirationTime && Date.now() >= expirationTime) {
@@ -69,14 +79,6 @@ const StatusButton = ({ hidden = false }) => {
     closeModal();
   };
 
-  const handleClear = () => {
-    setLocalEmoji('');
-    setLocalText('');
-    setLocalIsBusy(false);
-    setExpirationTime(null);
-    updateStatus({ emoji: '', text: '', isBusy: false });
-    closeModal();
-  };
 
   const hasStatus = status.emoji || status.text;
 

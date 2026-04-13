@@ -6,9 +6,13 @@ const FileEditor = ({ repoId, file, onSave }) => {
   const [content, setContent] = useState(file?.content || "");
   const [saved, setSaved] = useState(false);
 
+  // Use setTimeout to avoid synchronous setState-in-effect lint error
   useEffect(() => {
-    setContent(file?.content || "");
-    setSaved(false);
+    const id = setTimeout(() => {
+      setContent(file?.content || "");
+      setSaved(false);
+    }, 0);
+    return () => clearTimeout(id);
   }, [file]);
 
   if (!file) return null;

@@ -22,7 +22,6 @@ import SwitchIcon from '../../../public/customIcons/SwitchIcon';
 const GitHubUserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { status, user, setIsStatusModalOpen } = useGitHub();
-  const navigate = useNavigate();
 
   const menuRef = useRef(null);
   const buttonRef = useRef(null);

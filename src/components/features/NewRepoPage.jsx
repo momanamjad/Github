@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { addRepository, getStoredUser } from "@services/storageService.js";
+import { addRepository } from "@services/storageService.js";
 
 const ADJECTIVES = [
   "glorious", "stunning", "crisp", "super", "bug-free", "urban", "solid", "shiny", 
@@ -86,10 +86,8 @@ const NewRepoPage = () => {
       alert("Repository name cannot contain spaces or newlines.");
       return;
     }
-    formData.repoName = cleanedName;
-    
-    // Create repository object for localStorage
-    const repoName = cleanedName; // sanitized earlier
+    // Don't mutate state directly — use the cleaned name as a local constant
+    const repoName = cleanedName;
     const newRepo = {
       name: repoName,
       full_name: `${formData.owner}/${repoName}`,

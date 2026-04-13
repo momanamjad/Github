@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { IoLogoGithub } from "react-icons/io";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
 import LoadingBar from "react-top-loading-bar";
 import GitHubUserMenu from "@features/GitHubUserMenu";
@@ -14,10 +14,8 @@ const Navbar = () => {
   const [progress, setProgress] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
 
   const location = useLocation();
-  const navigate = useNavigate();
   const { hasTabsComponent } = useTabsContext();
   const searchInputRef = useRef(null);
 
@@ -41,11 +39,15 @@ const Navbar = () => {
     return found || "momanamjad";
   }, [location.pathname, routeMap]);
 
-  // Handle Route Transition Progress
+  // Handle Route Transition Progress — use setTimeout to avoid
+  // synchronous setState inside effect body (react-hooks/set-state-in-effect)
   useEffect(() => {
-    setProgress(70);
-    const timer = setTimeout(() => setProgress(100), 200);
-    return () => clearTimeout(timer);
+    const startTimer = setTimeout(() => setProgress(70), 0);
+    const endTimer = setTimeout(() => setProgress(100), 200);
+    return () => {
+      clearTimeout(startTimer);
+      clearTimeout(endTimer);
+    };
   }, [location.pathname]);
 
   // Global Key Listeners

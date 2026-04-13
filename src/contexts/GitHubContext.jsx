@@ -54,6 +54,7 @@ export const GitHubProvider = ({ children }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGitHub = () => {
     const context = useContext(GitHubContext);
     if (!context) {

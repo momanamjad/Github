@@ -9,6 +9,11 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# Environment variables — NEVER commit secrets
+.env
+.env.local
+.env.*.local
 dist-ssr
 *.local
 
@@ -37,3 +42,4 @@ documentation/
 *.ppt
 *.xlsx
 *.xls
+README.md

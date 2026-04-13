@@ -12,6 +12,7 @@ export const TabsProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTabsContext = () => {
   const context = useContext(TabsContext);
   if (!context) {
