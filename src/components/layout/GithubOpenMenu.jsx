@@ -89,8 +89,14 @@ const GithubOpenMenu = React.memo(() => {
         setIsOpen(false);
       }
     };
-    if (isOpen) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClick);
+      document.addEventListener("touchstart", handleClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
+    };
   }, [isOpen]);
 
   useEffect(() => {

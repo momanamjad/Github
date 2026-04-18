@@ -37,8 +37,14 @@ const CreateNew = () => {
       }
     };
 
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    if (open) {
+      document.addEventListener("mousedown", handler);
+      document.addEventListener("touchstart", handler);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
   }, [open]);
 
   React.useEffect(() => {
@@ -82,33 +88,33 @@ const CreateNew = () => {
   return (
     <>
       <div className="relative" ref={menuRef}>
-        <div
-          label=" "
-          onClick={toggleMenu}
+        <button
           ref={buttonRef}
-          className="border rounded-md pt-1 cursor-pointer"
+          onClick={toggleMenu}
+          aria-label="Create new"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          className="border rounded-md pt-1 cursor-pointer hover:bg-gray-100 transition-colors p-0"
         >
-          <button className="">
-            <svg
-              viewBox="0 0 48 24"
-              width="48"
-              height="24"
-              fill=""
+          <svg
+            viewBox="0 0 48 24"
+            width="48"
+            height="24"
+            fill=""
+            stroke="#59636E"
+            strokeWidth={1.6}
+            xmlns="http://www.w3.org"
+          >
+            <path
+              d="M12 6V18M6 12H18"
               stroke="#59636E"
+              fill=""
               strokeWidth={1.6}
-              xmlns="http://www.w3.org"
-            >
-              <path
-                d="M12 6V18M6 12H18"
-                stroke="#59636E"
-                fill=""
-                strokeWidth={1.6}
-              />
+            />
 
-              <path d="M30 10L35 15L40 10" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
+            <path d="M30 10L35 15L40 10" fill="currentColor" />
+          </svg>
+        </button>
 
         {open && (
           <div

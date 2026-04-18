@@ -150,11 +150,11 @@ const NewRepoPage = () => {
     <div className="min-h-screen bg-[white] py-8 px-4">
       <div className="max-w-[1012px] mx-auto">
         {successMessage && (
-          <div className="mb-6 ml-20 p-4 bg-green-50 border border-green-200 rounded-md">
+          <div className="mb-6 sm:ml-20 p-4 bg-green-50 border border-green-200 rounded-md">
             <p className="text-green-800">{successMessage}</p>
           </div>
         )}
-        <header className="mb-6 ml-20 flex flex-col ">
+        <header className="mb-6 sm:ml-20 flex flex-col ">
           <h1 className="text-xl font-semibold text-[black] mb-2">
             Create a new repository
           </h1>

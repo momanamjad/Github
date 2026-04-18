@@ -11,7 +11,11 @@ const FilterMenu = ({ label, value, options, onChange }) => {
       if (!ref.current?.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
   }, []);
 
   return (
