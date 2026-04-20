@@ -367,6 +367,10 @@ export default function Buddy() {
                 </div>
             )}
 
+
+
+
+
             {/* ── FAB Toggle ── */}
             {!open && (
                 <button
