@@ -175,7 +175,7 @@ const Home = React.memo(() => {
               </div>
               <span className="text-sm">
                 <span className="font-bold text-[#1f2328]">
-                  hiteshchoudhary
+                  Dummy User
                 </span>{" "}
                 <span className="text-[#59636e]">created a repository</span>
               </span>
@@ -185,7 +185,7 @@ const Home = React.memo(() => {
             <div className="rounded-lg p-3 sm:p-4 bg-[#F6F8FA]">
               <div className="flex justify-between items-start mb-2 gap-2">
                 <h3 className="text-blue-600 font-bold hover:underline cursor-pointer text-sm sm:text-base truncate">
-                  hiteshchoudhary/vibe-translator
+                  DummyUser/vibe-translator
                 </h3>
                 <div className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs border border-[#d0d7de] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0] shrink-0">
                   <Star size={16} /> Star{" "}
