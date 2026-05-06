@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { addRepository } from "@services/storageService.js";
+import { addRepository, getStoredRepositories } from "@services/storageService.js";
 
 const ADJECTIVES = [
   "glorious", "stunning", "crisp", "super", "bug-free", "urban", "solid", "shiny", 
@@ -35,6 +35,7 @@ const NewRepoPage = () => {
   const [showLicenseDropdown, setShowLicenseDropdown] = useState(false);
   const [visibilityOpen, setVisibilityOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [nameError, setNameError] = useState("");
   const visibilityRef = useRef(null);
   const gitignoreTemplates = [
     "None",
@@ -66,6 +67,22 @@ const NewRepoPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    if (name === "repoName") {
+      const cleanedValue = value.trim();
+      if (cleanedValue) {
+        const repos = getStoredRepositories();
+        const exists = repos.some(r => r.name.toLowerCase() === cleanedValue.toLowerCase());
+        if (exists) {
+          setNameError(`The repository ${cleanedValue} already exists on this account.`);
+        } else {
+          setNameError("");
+        }
+      } else {
+        setNameError("");
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -112,7 +129,12 @@ const NewRepoPage = () => {
     };
     
     // Add to localStorage
-    addRepository(newRepo);
+    try {
+      addRepository(newRepo);
+    } catch (error) {
+      setNameError(error.message);
+      return;
+    }
     
     // Show success message
     setSuccessMessage(`✅ Repository "${formData.repoName}" created successfully!`);
@@ -135,6 +157,13 @@ const NewRepoPage = () => {
   };
 
   const suggestRepoName = () => {
+    const repos = getStoredRepositories();
+    const exists = repos.some(r => r.name.toLowerCase() === suggestedRepoName.toLowerCase());
+    if (exists) {
+      setNameError(`The repository ${suggestedRepoName} already exists on this account.`);
+    } else {
+      setNameError("");
+    }
     setFormData((prev) => ({ ...prev, repoName: suggestedRepoName }));
   };
   useEffect(() => {
@@ -222,9 +251,17 @@ const NewRepoPage = () => {
                     name="repoName"
                     value={formData.repoName}
                     onChange={handleInputChange}
-                    className="w-full bg-[] border border-[#C8D1DA] rounded-md px-3 py-2 text-sm  focus:outline-[#0969DA]    "
+                    className={`w-full bg-[] border ${nameError ? 'border-red-500' : '#C8D1DA'} rounded-md px-3 py-2 text-sm focus:outline-none ${nameError ? 'focus:border-red-500' : 'focus:outline-[#0969DA]'}`}
                     required
                   />
+                  {nameError && (
+                    <p className="mt-2 text-sm text-[#d1242f] font-medium flex items-center gap-1">
+                      <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="fill-current">
+                        <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.03 11.315c.602 1.13-.203 2.485-1.413 2.485H1.84c-1.21 0-2.015-1.355-1.413-2.485ZM8.82 11h-1.64v1.64h1.64Zm0-6.56H7.18v4.92h1.64Z"></path>
+                      </svg>
+                      {nameError}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="">
@@ -507,10 +544,10 @@ const NewRepoPage = () => {
 
              
            <div className="flex justify-end ">
-             <button
+              <button
               type="submit"
-              disabled={!formData.repoName.trim()}
-              className="bg-[#238636] hover:bg-[#2ea043]  text-white font-semibold px-4 py-2 rounded-md text-sm transition-colors disabled:bg-[green] disabled:text-[white] disabled:cursor-not-allowed"
+              disabled={!formData.repoName.trim() || !!nameError}
+              className="bg-[#238636] hover:bg-[#2ea043]  text-white font-semibold px-4 py-2 rounded-md text-sm transition-colors disabled:bg-[#94d3a2] disabled:text-white disabled:cursor-not-allowed"
             >
               Create repository
             </button>

@@ -177,7 +177,13 @@ export const getStoredRepositories = () => {
 export const addRepository = (newRepo) => {
   try {
     const repos = getStoredRepositories();
-    const user  = getStoredUser();
+    const user = getStoredUser();
+
+    // Check if repository already exists (case-insensitive)
+    const exists = repos.some(r => r.name.toLowerCase() === newRepo.name.toLowerCase());
+    if (exists) {
+      throw new Error(`The repository "${newRepo.name}" already exists on this account.`);
+    }
 
     // Use incrementing numeric ID for compatibility, but a UUID for node_id
     const newId = repos.length > 0 ? Math.max(...repos.map(r => r.id)) + 1 : 1;

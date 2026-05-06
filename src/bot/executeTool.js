@@ -8,10 +8,14 @@ import {
 export function executeTool(toolName, toolArgs) {
     if (toolName === "createRepo") {
         const newRepo = { name: toolArgs.name, description: "" };
-        addRepository(newRepo);
-        window.dispatchEvent(new CustomEvent('github_repos_updated'));
-        window.dispatchEvent(new CustomEvent('github_navigate', { detail: { path: '/repositories' } }));
-        return `Repo "${toolArgs.name}" created successfully. Navigating to repositories...`;
+        try {
+            addRepository(newRepo);
+            window.dispatchEvent(new CustomEvent('github_repos_updated'));
+            window.dispatchEvent(new CustomEvent('github_navigate', { detail: { path: '/repositories' } }));
+            return `Repo "${toolArgs.name}" created successfully. Navigating to repositories...`;
+        } catch (error) {
+            return `Failed to create repository: ${error.message}`;
+        }
     }
 
     if (toolName === "deleteRepo") {
