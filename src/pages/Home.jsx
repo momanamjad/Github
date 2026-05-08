@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Star } from "lucide-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
+import { useGitHub } from "@/contexts/GitHubContext";
 import FilterModal from "@/components/FilterModal";
 import StarsIcon from "../../public/customIcons/StarsIcon";
 import FilterIcon from "../../public/customIcons/FilterIcon";
@@ -11,30 +12,14 @@ import { useNavigate } from "react-router-dom";
 const INITIAL_REPO_COUNT = 4;
 
 const Home = React.memo(() => {
-  const [allRepos, setAllRepos] = useState([]);
+  const { repositories: allRepos } = useGitHub();
   const [filterOpen, setFilterOpen] = useState(false);
   const [, setFilterValue] = useState();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const repos = await getRepos("momanamjad");
-        if (!mounted) return;
-        setAllRepos(repos || []);
-      } catch (err) {
-        console.error("Failed to load sidebar repos:", err);
-        if (mounted) setAllRepos([]);
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+
 
   // Filter repos based on search query
   const filteredRepos = useMemo(() => {
@@ -60,6 +45,12 @@ const Home = React.memo(() => {
     const owner = repo.owner?.login || "momanamjad";
     navigate(`/${owner}/${repo.name}`);
   };
+
+  const recentRepos = useMemo(() => {
+    return [...allRepos]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 3);
+  }, [allRepos]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#ffffff] font-sans text-[#1f2328]">
@@ -163,50 +154,68 @@ const Home = React.memo(() => {
             )}
           </div>
 
-          {/* Feed Card */}
-          <div className="p-3 sm:p-5 border border-[#d0d7de] rounded-lg bg-white mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 bg-gray-800 rounded-full overflow-hidden">
-                <img
-                  className="object-cover"
-                  src="profile.webp"
-                  alt="User avatar"
-                />
-              </div>
-              <span className="text-sm">
-                <span className="font-bold text-[#1f2328]">
-                  Dummy User
-                </span>{" "}
-                <span className="text-[#59636e]">created a repository</span>
-              </span>
+          {/* Dynamic Feed Content */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-[#1F2328]">Recent activity</h3>
+              <button className="text-xs text-[#0969da] hover:underline">All activity</button>
             </div>
-            <span className="text-xs text-gray-500 ml-8">17 hours ago</span>
 
-            <div className="rounded-lg p-3 sm:p-4 bg-[#F6F8FA]">
-              <div className="flex justify-between items-start mb-2 gap-2">
-                <h3 className="text-blue-600 font-bold hover:underline cursor-pointer text-sm sm:text-base truncate">
-                  DummyUser/vibe-translator
-                </h3>
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs border border-[#d0d7de] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0] shrink-0">
-                  <Star size={16} /> Star{" "}
-                  <span>
-                    <button type="button">
-                      <ChevronDownIcon />
-                    </button>
-                  </span>
+            {recentRepos.length > 0 ? (
+              recentRepos.map((repo) => (
+                <div key={repo.id || repo.name} className="p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm transition-hover hover:border-[#8c959f]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 rounded-full overflow-hidden">
+                      <img src="profile.webp" alt="Avatar" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-xs text-[#1f2328] font-medium">momanamjad</span>
+                    <span className="text-xs text-[#636c76]">created a repository</span>
+                    <span className="text-xs text-[#636c76] ml-auto">
+                      {new Date(repo.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <div className="rounded-lg p-3 bg-[#F6F8FA]">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4
+                        onClick={() => handleRepoClick(repo)}
+                        className="text-[#0969da] font-bold hover:underline cursor-pointer text-sm truncate"
+                      >
+                        momanamjad/{repo.name}
+                      </h4>
+                      <div className="flex items-center gap-1 px-2 py-0.5 text-xs border border-[#d0d7de] rounded-md bg-white hover:bg-[#f6f8fa] cursor-pointer">
+                        <Star size={14} className="text-[#636c76]" />
+                        <span className="text-[#1f2328] font-medium">Star</span>
+                      </div>
+                    </div>
+                    {repo.description && (
+                      <p className="text-xs text-[#636c76] mb-2 line-clamp-1">{repo.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-[11px] text-[#636c76]">
+                      {repo.language && (
+                        <div className="flex items-center gap-1">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#3178c6]"></span>
+                          <span>{repo.language}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <StarsIcon />
+                        <span>{repo.stargazers_count || 0}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="p-6 border border-[#d0d7de] border-dashed rounded-lg bg-[#f6f8fa] text-center">
+                <p className="text-sm text-[#636c76]">No recent activity to show.</p>
+                <button
+                   onClick={() => navigate("/new")}
+                   className="mt-2 text-sm text-[#0969da] hover:underline font-medium"
+                >
+                  Create your first repository
+                </button>
               </div>
-              <p className="text-sm font-semibold mb-2">vibe-translator</p>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 bg-yellow-400 rounded-full"></span>{" "}
-                  Shell
-                </span>
-                <span className="flex items-center gap-1">
-                  <StarsIcon /> 5
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

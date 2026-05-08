@@ -16,6 +16,7 @@ import IssuesIcon from "../ui/icons/IssuesIcon";
 import HomeIcon from "../ui/icons/HomeIcon";
 import MCPRegistoryIcon from "../ui/icons/MCPRegistoryIcon";
 import MenuIcon from "../ui/icons/MenuIcon";
+import { useGitHub } from "@/contexts/GitHubContext";
 import CrossIcon from "../ui/icons/CrossIcon";
 
 const Icons = {
@@ -43,22 +44,19 @@ const GithubOpenMenu = React.memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [topRepos, setTopRepos] = useState([]);
+  const { repositories: allRepos } = useGitHub();
+
+  const topRepos = useMemo(() => {
+    return [...allRepos].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5);
+  }, [allRepos]);
 
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isOpen) return;
-    // Run asynchronously so we don't call setState synchronously in an effect
-    const id = setTimeout(() => {
-      const repos = getStoredRepositories();
-      const sorted = [...repos].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-      setTopRepos(sorted.slice(0, 5));
-      setSearchQuery("");
-      setShowSearch(false);
-    }, 0);
-    return () => clearTimeout(id);
+    setSearchQuery("");
+    setShowSearch(false);
   }, [isOpen]);
 
   const filteredRepos = useMemo(() => {

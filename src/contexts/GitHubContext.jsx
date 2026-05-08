@@ -1,12 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus } from '../services/storageService';
+import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories } from '../services/storageService';
 
 const GitHubContext = createContext();
 
 export const GitHubProvider = ({ children }) => {
     const [user, setUser] = useState(() => getStoredUser());
     const [status, setStatus] = useState(() => getStoredStatus());
+    const [repositories, setRepositories] = useState([]);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+
+    const refreshRepos = useCallback(() => {
+        setRepositories(getStoredRepositories());
+    }, []);
+
+    // Initial fetch
+    useEffect(() => {
+        refreshRepos();
+    }, [refreshRepos]);
 
     // Sync with other components/tabs
     useEffect(() => {
@@ -14,15 +24,18 @@ export const GitHubProvider = ({ children }) => {
             if (e.detail) setStatus(e.detail);
         };
         const handleOpenStatusModal = () => setIsStatusModalOpen(true);
+        const handleReposUpdate = () => refreshRepos();
 
         window.addEventListener('github_status_updated', handleStatusUpdate);
         window.addEventListener('github_open_status_modal', handleOpenStatusModal);
+        window.addEventListener('github_repos_updated', handleReposUpdate);
 
         return () => {
             window.removeEventListener('github_status_updated', handleStatusUpdate);
             window.removeEventListener('github_open_status_modal', handleOpenStatusModal);
+            window.removeEventListener('github_repos_updated', handleReposUpdate);
         };
-    }, []);
+    }, [refreshRepos]);
 
     const updateStatus = useCallback((newStatus) => {
         const success = updateStoredStatus(newStatus);
@@ -41,11 +54,13 @@ export const GitHubProvider = ({ children }) => {
     const value = useMemo(() => ({
         user,
         status,
+        repositories,
+        refreshRepos,
         updateStatus,
         updateUser,
         isStatusModalOpen,
         setIsStatusModalOpen
-    }), [user, status, updateStatus, updateUser, isStatusModalOpen]);
+    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen]);
 
     return (
         <GitHubContext.Provider value={value}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGitHub } from "@/contexts/GitHubContext";
 import { addRepository, getStoredRepositories } from "@services/storageService.js";
 
 const ADJECTIVES = [
@@ -20,6 +21,7 @@ const generateRandomRepoName = () => {
 
 const NewRepoPage = () => {
   const navigate = useNavigate();
+  const { refreshRepos } = useGitHub();
   const [formData, setFormData] = useState({
     owner: "momanamjad",
     repoName: "",
@@ -131,6 +133,7 @@ const NewRepoPage = () => {
     // Add to localStorage
     try {
       addRepository(newRepo);
+      refreshRepos(); // Trigger global update
     } catch (error) {
       setNameError(error.message);
       return;

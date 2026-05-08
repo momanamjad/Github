@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { IoLogoGithub } from "react-icons/io";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Search } from "lucide-react";
 import LoadingBar from "react-top-loading-bar";
 import GitHubUserMenu from "@features/GitHubUserMenu";
@@ -34,10 +34,27 @@ const Navbar = () => {
     "MCP Registry": "/mcp-registry",
   }), []);
 
+  const params = useParams();
+
   const currentPathName = useMemo(() => {
+    // If we are in a repo route (/:username/:repo), show owner/repo
+    if (params.username && params.repo) {
+      return (
+        <div className="flex items-center gap-1">
+          <Link to={`/${params.username}`} className="hover:underline text-[#0969da]">
+            {params.username}
+          </Link>
+          <span className="text-[#59636e] font-normal">/</span>
+          <Link to={`/${params.username}/${params.repo}`} className="font-semibold hover:underline">
+            {params.repo}
+          </Link>
+        </div>
+      );
+    }
+
     const found = Object.keys(routeMap).find((key) => routeMap[key] === location.pathname);
-    return found || "momanamjad";
-  }, [location.pathname, routeMap]);
+    return found || params.username || "momanamjad";
+  }, [location.pathname, routeMap, params]);
 
   // Handle Route Transition Progress — use setTimeout to avoid
   // synchronous setState inside effect body (react-hooks/set-state-in-effect)
@@ -94,7 +111,7 @@ const Navbar = () => {
             </Link>
             {/* Dashboard text — hidden on small screens */}
             <div className="hidden sm:block hover:bg-[#ebeff6] px-2 py-1 rounded-md transition-colors cursor-pointer">
-              <span className="font-semibold text-sm whitespace-nowrap">
+              <span className="font-semibold text-sm whitespace-nowrap flex items-center">
                 {currentPathName}
               </span>
             </div>

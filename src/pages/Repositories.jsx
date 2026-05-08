@@ -15,20 +15,46 @@ import {
 } from "lucide-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
-import { Link } from "react-router-dom";
+import { useGitHub } from "@/contexts/GitHubContext";
+import { Link, useSearchParams } from "react-router-dom";
 import ActivityGraphIcon from "../components/ui/icons/ActivityGraphIcon";
 import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 import PullRequestIcon from "../components/ui/icons/PullRequestIcon";
 import StarsIcon from "../components/ui/icons/StarsIcon";
 import IssuesIcon from "../components/ui/icons/IssuesIcon";
 import EmptyStateSearchIcon from "../components/ui/icons/EmptyStateSearchIcon";
+import { getStoredStarredRepos, starRepository, unstarRepository } from "@services/storageService.js";
 
 export default function Repositories() {
-  const [activeTab, setActiveTab] = useState("my-contributions");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "my-contributions";
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("list"); // 'list' or 'grid'
   const [isRelevanceOpen, setIsRelevanceOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState("relevance");
+  const [starredFullNames, setStarredFullNames] = useState([]);
+
+  useEffect(() => {
+    const starred = getStoredStarredRepos();
+    setStarredFullNames(starred.map(r => r.full_name));
+  }, []);
+
+  const handleStarToggle = (repo) => {
+    const isCurrentlyStarred = starredFullNames.includes(repo.full_name);
+    if (isCurrentlyStarred) {
+      unstarRepository(repo.full_name);
+      setStarredFullNames(prev => prev.filter(name => name !== repo.full_name));
+    } else {
+      starRepository(repo);
+      setStarredFullNames(prev => [...prev, repo.full_name]);
+    }
+    // Dispatch event for other components
+    window.dispatchEvent(new CustomEvent('github_repos_updated'));
+  };
 
   const clearSearch = () => {
     setSearchQuery("");
@@ -56,24 +82,9 @@ export default function Repositories() {
     { value: "stars", label: "Stars", icon: Users },
   ];
 
-  const [repositories, setRepositories] = useState([]);
+  const { repositories } = useGitHub();
 
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const repos = await getRepos("momanamjad");
-        if (mounted) setRepositories(repos);
-      } catch (err) {
-        console.error("Failed to load repositories:", err);
-        if (mounted) setRepositories([]);
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+
 
   const getRepositoryCount = () => {
     if (activeTab === "my-forks") return 0;
@@ -304,9 +315,23 @@ export default function Repositories() {
                             {repo.private ? "Private" : "Public"}
                           </span>
                         </div>
-                        <div className="w-16 h-8">
-                          {/* Activity graph placeholder */}
-                          <ActivityGraphIcon className="w-full h-full" />
+                        <div className="flex items-center gap-2">
+                           <button
+                            onClick={() => handleStarToggle(repo)}
+                            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium border border-gray-300 rounded-md transition-all ${
+                              starredFullNames.includes(repo.full_name) ? "bg-[#F6F8FA]" : "bg-white hover:bg-gray-50"
+                            }`}
+                          >
+                            <Star
+                              size={14}
+                              className={starredFullNames.includes(repo.full_name) ? "fill-[#e3b341] text-[#e3b341]" : "text-gray-600"}
+                            />
+                            {starredFullNames.includes(repo.full_name) ? "Starred" : "Star"}
+                          </button>
+                          <div className="w-16 h-8 ml-2">
+                            {/* Activity graph placeholder */}
+                            <ActivityGraphIcon className="w-full h-full" />
+                          </div>
                         </div>
                       </div>
 
@@ -329,7 +354,7 @@ export default function Repositories() {
                         </div>
                         <div className="flex items-center gap-1">
                           <StarsIcon className="w-3 h-3" fill="currentColor" />
-                          <span>{repo.stars}</span>
+                          <span>{(repo.stars || 0) + (starredFullNames.includes(repo.full_name) ? 1 : 0)}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <IssuesIcon className="w-3 h-3" fill="currentColor" />

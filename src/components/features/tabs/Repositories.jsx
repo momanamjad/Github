@@ -1,26 +1,40 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { getRepos } from "@services/GithubApi.jsx";
+import { useGitHub } from "@/contexts/GitHubContext";
 import RepoList from "@features/RepoList";
 import RepoFilterBar from "@features/RepoFilterBar";
 
 const Repositories = () => {
   const { username } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { repositories: allRepos } = useGitHub();
 
-  const [repos, setRepos] = useState([]);
-  const [search, setSearch] = useState("");
-  const [language, setLanguage] = useState("All");
-  const [sort, setSort] = useState("updated");
-  const [type, setType] = useState("all");
+  // Filter out repos not owned by the current profile user
+  const repos = useMemo(() => {
+    return allRepos.filter(r => (r.owner?.login || "momanamjad").toLowerCase() === username.toLowerCase());
+  }, [allRepos, username]);
 
-  useEffect(() => {
-    const fetchRepos = () => getRepos(username).then(setRepos);
-    
-    fetchRepos(); // Initial fetch
+  const search = searchParams.get("q") || "";
+  const language = searchParams.get("language") || "All";
+  const sort = searchParams.get("sort") || "updated";
+  const type = searchParams.get("type") || "all";
 
-    window.addEventListener('github_repos_updated', fetchRepos);
-    return () => window.removeEventListener('github_repos_updated', fetchRepos);
-  }, [username]);
+  const updateFilters = (updates) => {
+    const nextParams = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value !== "All" && value !== "all" && value !== "updated") {
+        nextParams.set(key, value);
+      } else {
+        nextParams.delete(key);
+      }
+    });
+    setSearchParams(nextParams);
+  };
+
+  const setSearch = (val) => updateFilters({ q: val });
+  const setLanguage = (val) => updateFilters({ language: val });
+  const setSort = (val) => updateFilters({ sort: val });
+  const setType = (val) => updateFilters({ type: val });
 
   const filteredRepos = useMemo(() => {
     let result = [...repos];

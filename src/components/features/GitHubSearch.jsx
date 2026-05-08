@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, X, Book, FileText, FileCode2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getRepos } from '@services/GithubApi.jsx';
+import { useGitHub } from '@/contexts/GitHubContext';
 import ReposotoryIcon from '../../../public/customIcons/ReposotoryIcon';
 
 export default function GitHubSearch({ isOpen, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [repos, setRepos] = useState([]);
+  const { repositories: repos } = useGitHub();
   const modalRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -17,9 +18,6 @@ export default function GitHubSearch({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       if (inputRef.current) inputRef.current.focus();
-      getRepos(username)
-        .then((res) => setRepos(res || []))
-        .catch(() => setRepos([]));
 
       // Auto-prefill search query async so we don't call setState directly in effect
       const pathParts = location.pathname.split('/').filter(Boolean);
