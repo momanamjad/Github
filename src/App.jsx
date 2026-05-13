@@ -46,6 +46,7 @@ const App = () => {
               <Route path="/explore"       element={<Pages.Explore />} />
               <Route path="/marketplace"   element={<Pages.Marketplace />} />
               <Route path="/mcp-registry"  element={<Pages.MCPRegistry />} />
+              <Route path="/terminal"      element={<Pages.Terminal />} />
               <Route path="/new"           element={<NewRepoPage />} />
               <Route path="/profile/stars" element={<Stars />} />
               <Route path="/stars"         element={<Navigate to="/momanamjad/stars" replace />} />

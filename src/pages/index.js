@@ -15,3 +15,4 @@ export const Copilot = lazy(() => import('./Copilot'));
 export const Explore = lazy(() => import('./Explore'));
 export const Marketplace = lazy(() => import('./Marketplace'));
 export const MCPRegistry = lazy(() => import('./MCPRegistry'));
+export const Terminal = lazy(() => import('./Terminal'));

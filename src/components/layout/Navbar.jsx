@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { IoLogoGithub } from "react-icons/io";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, TerminalSquare } from "lucide-react";
 import LoadingBar from "react-top-loading-bar";
 import GitHubUserMenu from "@features/GitHubUserMenu";
 import GitHubSearch from "@features/GitHubSearch";
@@ -165,6 +165,13 @@ const Navbar = () => {
             />
 
             <div className="flex items-center gap-1 md:gap-2">
+              <Link
+                to="/terminal"
+                aria-label="Terminal"
+                className="flex items-center justify-center w-8 h-8 text-[#59636e] border border-[#C8D1DA] hover:bg-[#D1D9E0] rounded-[9px] transition-colors cursor-pointer"
+              >
+                <TerminalSquare size={18} />
+              </Link>
               <TopBarActions />
               <GitHubUserMenu />
             </div>
