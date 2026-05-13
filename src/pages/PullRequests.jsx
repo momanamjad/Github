@@ -98,22 +98,28 @@ const PullRequests = () => {
     }
   };
 
+  const filteredPullRequests = pullRequests.filter(pr => 
+    pr.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    pr.repo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    pr.author.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen   text-[#e6edf3] font-sans">
+    <div className="min-h-screen text-[#e6edf3] font-sans">
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4  mb-4">
-          <div className="border  rounded-md  border-github-border ">
-            <nav className="flex   overflow-x-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+          <div className="border rounded-md border-github-border">
+            <nav className="flex overflow-x-auto">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setSelectedTab(tab.id)}
                   className={`
-                  py-2 px-4  font-semibold text-[14px] whitespace-nowrap
+                  py-2 px-4 font-semibold text-[14px] whitespace-nowrap
                   ${
                     selectedTab === tab.id
-                      ? "bg-[#0969DA] text-[white] border border-github-border"
-                      : "text-[black] hover:bg-[#F6F8FA] border border-github-border  "
+                      ? "bg-[#0969DA] text-white border border-github-border"
+                      : "text-black hover:bg-[#F6F8FA] border border-github-border"
                   }
                 `}
                 >
@@ -134,15 +140,15 @@ const PullRequests = () => {
           </div>
         </div>
 
-        <div className="border border-github-border  rounded-lg overflow-hidden ">
+        <div className="border border-github-border rounded-lg overflow-hidden">
           <div className="bg-[#F6F8FA] px-4 py-3 border-b border-github-border flex items-center gap-3 text-sm">
-            <StatusOpenIcon className="w-4 h-4 text-[black]" />
-            <span className="text-[black]">{pullRequests.length} Open</span>
+            <StatusOpenIcon className="w-4 h-4 text-black" />
+            <span className="text-black">{filteredPullRequests.length} Results</span>
             <div className="flex gap-3">
-              <Check className="w-4 h-4 text-[black]" />
-              <span className="text-[black]">
+              <Check className="w-4 h-4 text-black" />
+              <span className="text-black">
                 {
-                  pullRequests.filter(
+                  filteredPullRequests.filter(
                     (pr) => pr.status === "closed" || pr.status === "merged",
                   ).length
                 }{" "}
@@ -151,48 +157,55 @@ const PullRequests = () => {
             </div>
           </div>
 
-          {pullRequests.map((pr) => (
-            <div
-              key={pr.id}
-              className="px-4 py-3 border-b border-github-border last:border-0  flex items-start gap-3"
-            >
-              <div className="flex-shrink-0 mt-1">
-                <StatusIcon status={pr.status} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex text-[#59636e] flex-wrap items-center gap-2">
-                  <PullRequestSidebarIcon className="w-4 h-4 text-[#59636e]" />
-                  <a
-                    href="#"
-                    className="font-semibold hover:text-[#2f81f7] text-base"
-                  >
-                    {pr.title}
-                  </a>
-                  <h2 className=" text-xl text-[black] font-semibold">
-                    {" "}
-                    change title
-                  </h2>
+          {filteredPullRequests.length > 0 ? (
+            filteredPullRequests.map((pr) => (
+              <div
+                key={pr.id}
+                className="px-4 py-3 border-b border-github-border last:border-0 flex items-start gap-3"
+              >
+                <div className="flex-shrink-0 mt-1">
+                  <StatusIcon status={pr.status} />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#848d97] mt-1">
-                  <span>#{pr.number}</span>
-                  <span>by {pr.author}</span>
-                  <span>updated {pr.updated}</span>
-                  <span className="flex items-center gap-1">
-                    <CommentsIcon className="w-4 h-4" />
-                    {pr.comments}
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex text-[#59636e] flex-wrap items-center gap-2">
+                    <PullRequestSidebarIcon className="w-4 h-4 text-[#59636e]" />
+                    <a
+                      href="#"
+                      className="font-semibold hover:text-[#2f81f7] text-base text-github-link"
+                    >
+                      {pr.title}
+                    </a>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#848d97] mt-1">
+                    <span className="font-medium text-[#1f2328]">{pr.repo}</span>
+                    <span>#{pr.number}</span>
+                    <span>by {pr.author}</span>
+                    <span>updated {pr.updated}</span>
+                    <span className="flex items-center gap-1">
+                      <CommentsIcon className="w-4 h-4" />
+                      {pr.comments}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 text-xs hidden sm:block">
+                  <PullRequestSidebarIcon className="w-4 h-4" />
                 </div>
               </div>
-
-              <div className="flex-shrink-0 text-xs  hidden sm:block">
-                <PullRequestSidebarIcon className="w-4 h-4" />
-              </div>
+            ))
+          ) : (
+            <div className="py-20 text-center bg-white">
+              <h3 className="text-xl font-normal text-[#24292f] mb-2">
+                No pull requests matched your search.
+              </h3>
+              <p className="text-sm text-[#57606a]">
+                Try a different search query or filter.
+              </p>
             </div>
-          ))}
+          )}
         </div>
-
       </main>
       <div>
          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6">

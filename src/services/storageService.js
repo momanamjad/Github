@@ -192,6 +192,7 @@ export const addRepository = (newRepo) => {
       ...newRepo,
       id: newId,
       node_id: crypto.randomUUID(),
+      full_name: `${user?.login}/${newRepo.name}`,
       owner: {
         login: user?.login,
         id: user?.id,
@@ -355,6 +356,15 @@ export const starRepository = (repo) => {
     starredRepos.push(repo);
     writeCached(STORAGE_KEYS.STARRED_REPOS, starredRepos);
 
+    // Also update the stargazers_count in the main repositories list
+    const repos = getStoredRepositories();
+    const updatedRepos = repos.map(r => 
+      r.full_name === repo.full_name 
+        ? { ...r, stargazers_count: (r.stargazers_count || 0) + 1 }
+        : r
+    );
+    writeCached(STORAGE_KEYS.REPOSITORIES, updatedRepos);
+
     return starredRepos;
   } catch (error) {
     console.error('Error starring repository:', error);
@@ -373,6 +383,15 @@ export const unstarRepository = (repoFullName) => {
     const filteredRepos = starredRepos.filter(repo => repo.full_name !== repoFullName);
 
     writeCached(STORAGE_KEYS.STARRED_REPOS, filteredRepos);
+
+    // Also update the stargazers_count in the main repositories list
+    const repos = getStoredRepositories();
+    const updatedRepos = repos.map(r => 
+      r.full_name === repoFullName 
+        ? { ...r, stargazers_count: Math.max(0, (r.stargazers_count || 0) - 1) }
+        : r
+    );
+    writeCached(STORAGE_KEYS.REPOSITORIES, updatedRepos);
 
     return filteredRepos;
   } catch (error) {

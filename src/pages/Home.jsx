@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Star } from "lucide-react";
+import StarButton from "@/components/common/StarButton";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { getRepos } from "@services/GithubApi.jsx";
 import { useGitHub } from "@/contexts/GitHubContext";
@@ -182,10 +183,7 @@ const Home = React.memo(() => {
                       >
                         momanamjad/{repo.name}
                       </h4>
-                      <div className="flex items-center gap-1 px-2 py-0.5 text-xs border border-[#d0d7de] rounded-md bg-white hover:bg-[#f6f8fa] cursor-pointer">
-                        <Star size={14} className="text-[#636c76]" />
-                        <span className="text-[#1f2328] font-medium">Star</span>
-                      </div>
+                      <StarButton repo={repo} />
                     </div>
                     {repo.description && (
                       <p className="text-xs text-[#636c76] mb-2 line-clamp-1">{repo.description}</p>

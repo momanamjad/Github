@@ -97,16 +97,28 @@ const RepoList = ({ repos }) => {
 
   // Load initial starred/pinned state asynchronously to avoid
   // synchronous setState inside effect body (react-hooks/set-state-in-effect)
-  useEffect(() => {
-    const id = setTimeout(() => {
-      const starred = getStoredStarredRepos();
-      setStarredFullNames(starred.map(r => r.full_name));
+  const refreshData = useCallback(() => {
+    const starred = getStoredStarredRepos();
+    setStarredFullNames(starred.map(r => r.full_name));
 
-      const pinned = getStoredPinnedRepos();
-      setPinnedNames(pinned.map(r => r.name));
-    }, 0);
-    return () => clearTimeout(id);
+    const pinned = getStoredPinnedRepos();
+    setPinnedNames(pinned.map(r => r.name));
   }, []);
+
+  useEffect(() => {
+    refreshData();
+
+    // Listen to custom events from other components (like StarButton or PinnedRepoCard)
+    window.addEventListener('github_repos_updated', refreshData);
+    window.addEventListener('github_starred_updated', refreshData);
+    window.addEventListener('github_pinned_updated', refreshData);
+
+    return () => {
+      window.removeEventListener('github_repos_updated', refreshData);
+      window.removeEventListener('github_starred_updated', refreshData);
+      window.removeEventListener('github_pinned_updated', refreshData);
+    };
+  }, [refreshData]);
 
   const handleStarToggle = useCallback((repo) => {
     setStarredFullNames(prev => {

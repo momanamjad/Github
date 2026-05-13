@@ -1,5 +1,6 @@
-import { Star, GitFork, Eye, Lock, Globe } from "lucide-react";
+import { GitFork, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import StarButton from "@common/StarButton";
 
 const RepoHeader = ({ repo }) => {
   if (!repo) return null;
@@ -23,10 +24,7 @@ const RepoHeader = ({ repo }) => {
           </Link>
         </h1>
         <span className={`text-[11px] px-[7px] py-[1px] border rounded-full font-medium
-          ${isPrivate
-            ? "border-[#d0d7de] text-[#636c76]"
-            : "border-[#d0d7de] text-[#636c76]"
-          }`}
+          border-[#d0d7de] text-[#636c76]`}
         >
           {isPrivate ? "Private" : "Public"}
         </span>
@@ -34,18 +32,12 @@ const RepoHeader = ({ repo }) => {
 
       {/* Stats row */}
       <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-3 text-[13px]">
-        <button className="flex items-center gap-1.5 px-3 py-[3px] text-[#24292f] border border-[#d0d7de] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0] transition-colors">
-          <Star size={14} />
-          <span className="font-medium">Star</span>
-          <span className="ml-1 px-[6px] py-[1px] bg-white border border-[#d0d7de] rounded-full text-[11px] font-semibold">
-            {repo.stargazers_count || 0}
-          </span>
-        </button>
+        <StarButton repo={repo} />
 
         <button className="flex items-center gap-1.5 px-3 py-[3px] text-[#24292f] border border-[#d0d7de] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0] transition-colors">
           <GitFork size={14} />
           <span className="font-medium">Fork</span>
-          <span className="ml-1 px-[6px] py-[1px] bg-white border border-[#d0d7de] rounded-full text-[11px] font-semibold">
+          <span className="ml-1 px-[6px] py-[1px] bg-white border border-[#d0d7de] rounded-full text-[11px] font-semibold text-[#636c76]">
             {repo.forks_count || 0}
           </span>
         </button>

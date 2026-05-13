@@ -15,11 +15,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['profile.webp', 'customIcons/**/*'],
+      includeAssets: ['logo.png', 'customIcons/**/*'],
       manifest: false, // we use our own public/manifest.json
       workbox: {
         // Cache-first for all static assets (JS/CSS/fonts/images)
-        globPatterns: ['**/*.{js,css,html,ico,webp,svg,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,webp,png,svg,woff,woff2}'],
         runtimeCaching: [
           {
             // Gemini API — network-first with graceful offline fallback

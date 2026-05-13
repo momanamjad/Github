@@ -12,9 +12,7 @@ import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 
 export default function GitHubIssues() {
   const [activeTab, setActiveTab] = useState("assigned");
-  const [searchQuery, setSearchQuery] = useState(
-    "is:issue state:open archived:false assignee:@me sort:updated-desc",
-  );
+  const [searchQuery, setSearchQuery] = useState("");
 
   const tabs = [
     { id: "assigned", label: "Assigned to me", icon: "user" },
@@ -22,6 +20,45 @@ export default function GitHubIssues() {
     { id: "mentioned", label: "Mentioned", icon: "at" },
     { id: "recent", label: "Recent activity", icon: "clock" },
   ];
+
+  const issues = [
+    {
+      id: 1,
+      title: "Broken link in footer",
+      repo: "main-site",
+      number: 45,
+      status: "open",
+      author: "momanamjad",
+      updated: "2 hours ago",
+      labels: ["bug"],
+    },
+    {
+      id: 2,
+      title: "Add dark mode support",
+      repo: "github-clone",
+      number: 89,
+      status: "open",
+      author: "alice",
+      updated: "5 hours ago",
+      labels: ["enhancement"],
+    },
+    {
+      id: 3,
+      title: "Fix responsive layout on mobile",
+      repo: "github-clone",
+      number: 92,
+      status: "open",
+      author: "bob",
+      updated: "yesterday",
+      labels: ["bug", "ui"],
+    }
+  ];
+
+  const filteredIssues = issues.filter(issue => 
+    issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    issue.repo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    issue.author.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-[white]">
@@ -31,6 +68,7 @@ export default function GitHubIssues() {
             <nav className="space-y-1">
               {tabs.map((tab) => (
                 <div
+                  key={tab.id}
                   className={`p-1.1 relative transition-all ${
                     activeTab === tab.id
                       ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md"
@@ -79,9 +117,9 @@ export default function GitHubIssues() {
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-semibold text-[#24292f]">
-                Assigned to me
+                {tabs.find(t => t.id === activeTab)?.label}
               </h1>
-              <button className="bg-[#1C8139] hover:bg-[#2c974b] text-white px-4 py-2 rounded-md text-sm font-medium">
+              <button className="bg-[#1C8139] hover:bg-[#2c974b] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
                 New issue
               </button>
             </div>
@@ -93,20 +131,21 @@ export default function GitHubIssues() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 px-3 py-2 text-sm focus:outline-none"
+                  placeholder="Search all issues..."
                 />
-                <button className="px-3 py-2 hover:bg-[#D1D9E0] bg-[#EFF2F5] border border-github-border rounded-r-md">
+                <button className="px-3 py-2 hover:bg-[#D1D9E0] bg-[#EFF2F5] border border-github-border rounded-r-md transition-colors">
                   <Search className="w-5 h-5 text-[#57606a] " />
                 </button>
               </div>
             </div>
 
-            <div className="bg-white border border-[#d0d7de] rounded-t-md">
+            <div className="bg-white border border-[#d0d7de] rounded-md overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b bg-[#F6F8FA] border-[#d0d7de]">
                 <div className="text-sm text-[#57606a]">
-                  <span className="font-semibold ">0 results</span>
+                  <span className="font-semibold ">{filteredIssues.length} results</span>
                 </div>
-                <div className="flex items-center rounded-md  hover:bg-[#D1D9E0] gap-3">
-                  <button className="flex items-center gap-2 px-3 py-1.5 text-sm  rounded-md">
+                <div className="flex items-center rounded-md hover:bg-[#D1D9E0] gap-3">
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors">
                       <IssuesVariantIcon className="w-4 h-4" />
                     <span>Updated</span>
                     <ChevronDown className="w-4 h-4" />
@@ -114,14 +153,41 @@ export default function GitHubIssues() {
                 </div>
               </div>
 
-              <div className="py-20 text-center">
-                <h3 className="text-2xl font-normal text-[#24292f] mb-2">
-                  No results
-                </h3>
-                <p className="text-base text-[#57606a]">
-                  Try adjusting your search filters.
-                </p>
-              </div>
+              {filteredIssues.length > 0 ? (
+                <div className="divide-y divide-[#d0d7de]">
+                  {filteredIssues.map((issue) => (
+                    <div key={issue.id} className="flex items-start gap-3 p-4 hover:bg-[#f6f8fa] transition-colors group">
+                      <div className="mt-1 text-[#1a7f37]">
+                        <TabCircleIcon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <a href="#" className="font-semibold text-[#1f2328] hover:text-[#0969da] transition-colors">
+                            {issue.title}
+                          </a>
+                          {issue.labels.map(label => (
+                            <span key={label} className="px-2 py-0.5 text-xs font-medium border border-[#d0d7de] rounded-full text-[#636c76]">
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="mt-1 text-xs text-[#636c76]">
+                          #{issue.number} opened {issue.updated} by {issue.author} in {issue.repo}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-20 text-center">
+                  <h3 className="text-2xl font-normal text-[#24292f] mb-2">
+                    No results
+                  </h3>
+                  <p className="text-base text-[#57606a]">
+                    Try adjusting your search filters.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </main>
