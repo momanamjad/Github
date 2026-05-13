@@ -104,7 +104,9 @@ export async function callBuddy(userMessage, chatHistory = [], currentPath = "/"
     const systemPrompt = `You are Buddy, a helpful AI assistant embedded in a GitHub clone app.
 The user is currently on page: "${currentPath}". Use this context when they ask "what am I looking at" or ask to navigate.
 Available repositories: ${repos.map(r => r.name).join(", ") || "none"}.
-Help the user manage their repositories using the available tools.`;
+Help the user manage their repositories, update their status, navigate the app, and interact with the terminal.
+You can run terminal commands (PowerShell) and read terminal output to help the user with CLI tasks, git operations, and exploring the filesystem.
+If the user asks to do something in the terminal and you are NOT on the /terminal page, first navigate there using openPage, then run the command.`;
 
     const basePayload = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -133,7 +135,7 @@ Help the user manage their repositories using the available tools.`;
         // ── Tool call path ─────────────────────────────────────────────────
         if (functionCallPart) {
             const { name, args } = functionCallPart.functionCall;
-            const toolResult = executeTool(name, args);
+            const toolResult = await executeTool(name, args);
 
             const followUpData = await geminiPost({
                 ...basePayload,

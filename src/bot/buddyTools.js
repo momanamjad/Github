@@ -87,13 +87,32 @@ export const buddyTools = [
     },
     {
         name: "openPage",
-        description: "Navigates the user to a specific page within the app. Available paths: / (home), /repositories, /projects, /issues, /pull-requests, /profile/stars, /momanamjad (overview), /new (create repo page)",
+        description: "Navigates the user to a specific page within the app. Available paths: / (home), /repositories, /projects, /issues, /pull-requests, /profile/stars, /momanamjad (overview), /new (create repo page), /terminal (terminal page)",
         parameters: {
             type: "object",
             properties: {
                 path: { type: "string", description: "The URL path to navigate to" }
             },
             required: ["path"]
+        }
+    },
+    {
+        name: "runTerminalCommand",
+        description: "Runs a command in the terminal (PowerShell). Use this to help the user with CLI tasks, git, or exploring files.",
+        parameters: {
+            type: "object",
+            properties: {
+                command: { type: "string", description: "The command to run (e.g. 'git status', 'ls -la', 'npm install')" }
+            },
+            required: ["command"]
+        }
+    },
+    {
+        name: "getTerminalOutput",
+        description: "Retrieves the current visible content from the terminal to understand the context or results of commands.",
+        parameters: {
+            type: "object",
+            properties: {}
         }
     }
 ]

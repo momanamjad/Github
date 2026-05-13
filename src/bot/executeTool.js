@@ -5,7 +5,7 @@ import {
     updateStoredStatus
 } from "../services/storageService";
 
-export function executeTool(toolName, toolArgs) {
+export async function executeTool(toolName, toolArgs) {
     if (toolName === "createRepo") {
         const newRepo = { name: toolArgs.name, description: "" };
         try {
@@ -78,6 +78,30 @@ export function executeTool(toolName, toolArgs) {
     if (toolName === "openPage") {
         window.dispatchEvent(new CustomEvent('github_navigate', { detail: { path: toolArgs.path } }));
         return `Navigating to ${toolArgs.path}...`;
+    }
+
+    if (toolName === "runTerminalCommand") {
+        window.dispatchEvent(new CustomEvent('buddy_terminal_command', { detail: { command: toolArgs.command } }));
+        // We wait a bit to let the command run before potentially returning.
+        // In a real app, we might want to wait for a completion event.
+        return `Command "${toolArgs.command}" sent to terminal.`;
+    }
+
+    if (toolName === "getTerminalOutput") {
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                resolve("Failed to get terminal output (timeout). Make sure you are on the /terminal page.");
+            }, 1000);
+
+            window.dispatchEvent(new CustomEvent('buddy_get_output', { 
+                detail: { 
+                    callback: (output) => {
+                        clearTimeout(timeout);
+                        resolve(output || "Terminal is empty.");
+                    } 
+                } 
+            }));
+        });
     }
 
     return "Unknown tool.";

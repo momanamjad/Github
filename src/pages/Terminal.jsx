@@ -37,20 +37,24 @@ const GITHUB_DARK = {
   brightWhite: "#ffffff",
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const WS_URL = import.meta.env.VITE_WS_URL || 
+  (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//localhost:3001';
+
 const TerminalPage = () => {
   const terminalRef = useRef(null);
   const xtermRef = useRef(null);
   const fitAddonRef = useRef(null);
   const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
   const [stats, setStats] = useState(null);
   const [deps, setDeps] = useState(null);
   const [gitStatus, setGitStatus] = useState(null);
   const [wsStatus, setWsStatus] = useState("connecting");
-  const localBufferRef = useRef("");
 
   const fetchStats = async () => {
     try {
-      const res = await fetch("http://localhost:3001/stats");
+      const res = await fetch(`${API_URL}/stats`);
       const data = await res.json();
       setStats(data);
     } catch (err) {
@@ -60,7 +64,7 @@ const TerminalPage = () => {
 
   const fetchDeps = async () => {
     try {
-      const res = await fetch("http://localhost:3001/deps");
+      const res = await fetch(`${API_URL}/deps`);
       const data = await res.json();
       setDeps(data);
     } catch (err) {
@@ -70,7 +74,7 @@ const TerminalPage = () => {
 
   const fetchGitStatus = async () => {
     try {
-      const res = await fetch("http://localhost:3001/git/status");
+      const res = await fetch(`${API_URL}/git/status`);
       const data = await res.json();
       setGitStatus(data);
     } catch (err) {
@@ -84,37 +88,6 @@ const TerminalPage = () => {
     fetchGitStatus();
   }, []);
 
-  const handleCommand = useCallback(async (cmd) => {
-    const trimmedCmd = cmd.trim();
-    const term = xtermRef.current;
-    
-    term.write("\r\n");
-    if (!trimmedCmd) {
-      term.write("\x1b[32mgithub-cli> \x1b[0m");
-      return;
-    }
-
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(trimmedCmd);
-    } else {
-      if (trimmedCmd === "stats") {
-        await fetchStats();
-        term.write("\x1b[32mStats updated!\x1b[0m\r\n");
-      } else if (trimmedCmd === "deps") {
-        await fetchDeps();
-        term.write("\x1b[32mDependencies updated!\x1b[0m\r\n");
-      } else if (trimmedCmd === "git-status" || trimmedCmd === "git status") {
-        await fetchGitStatus();
-        term.write("\x1b[32mGit status updated!\x1b[0m\r\n");
-      } else if (trimmedCmd === "help") {
-        term.write("Available commands (REST fallback): stats, deps, git-status, help\r\n");
-      } else {
-        term.write(`\x1b[31mError: WebSocket disconnected and command '${trimmedCmd}' not supported in fallback mode.\x1b[0m\r\n`);
-      }
-      term.write("\x1b[32mgithub-cli> \x1b[0m");
-    }
-  }, []);
-
   useEffect(() => {
     if (!terminalRef.current) return;
 
@@ -124,7 +97,7 @@ const TerminalPage = () => {
       fontSize: 14,
       cursorBlink: true,
       convertEol: true,
-      rows: 24,
+      allowProposedApi: true,
     });
 
     const fitAddon = new FitAddon();
@@ -139,60 +112,55 @@ const TerminalPage = () => {
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    term.write("\x1b[32mWelcome to github-cli. Type help for commands.\x1b[0m\r\n");
-    term.write("\x1b[32mgithub-cli> \x1b[0m");
-
     const connectWS = () => {
-      const ws = new WebSocket("ws://localhost:3001/ws");
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+
+      const ws = new WebSocket(`${WS_URL}/ws`);
+      ws.binaryType = "blob";
       wsRef.current = ws;
 
-      ws.onopen = () => setWsStatus("connected");
-      ws.onmessage = (event) => {
-        term.write(event.data + "\r\n");
-        term.write("\x1b[32mgithub-cli> \x1b[0m");
+      ws.onopen = () => {
+        setWsStatus("connected");
+        ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
       };
-      ws.onclose = () => setWsStatus("disconnected");
-      ws.onerror = () => setWsStatus("error");
+
+      ws.onmessage = async (event) => {
+        if (event.data instanceof Blob) {
+          const buffer = await event.data.arrayBuffer();
+          term.write(new Uint8Array(buffer));
+        } else {
+          term.write(event.data);
+        }
+      };
+
+      ws.onclose = () => {
+        setWsStatus("disconnected");
+        // Try to reconnect after 3 seconds
+        reconnectTimeoutRef.current = setTimeout(() => {
+          setWsStatus("connecting");
+          connectWS();
+        }, 3000);
+      };
+
+      ws.onerror = () => {
+        setWsStatus("error");
+        ws.close();
+      };
     };
 
     connectWS();
 
-    // Handle terminal input and pastes
     term.onData((data) => {
-      // If data is more than one character, it's likely a paste
-      if (data.length > 1) {
-        // Remove any carraige returns or newlines from the paste for the buffer
-        // but detect if it ended with one to auto-execute
-        const cleanData = data.replace(/\r?\n/g, "");
-        const hadNewline = /\r?\n/.test(data);
-        
-        term.write(cleanData);
-        localBufferRef.current += cleanData;
-        
-        if (hadNewline) {
-          handleCommand(localBufferRef.current);
-          localBufferRef.current = "";
-        }
-        return;
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(data);
       }
+    });
 
-      // Handle single character input (typing)
-      const code = data.charCodeAt(0);
-      if (code === 13) { // Enter
-        handleCommand(localBufferRef.current);
-        localBufferRef.current = "";
-      } else if (code === 127) { // Backspace
-        if (localBufferRef.current.length > 0) {
-          localBufferRef.current = localBufferRef.current.slice(0, -1);
-          term.write("\b \b");
-        }
-      } else if (code === 27) {
-        // Ignore escape sequences (arrows, etc)
-      } else if (code < 32) {
-        // Ignore other control codes
-      } else {
-        localBufferRef.current += data;
-        term.write(data);
+    term.onResize(({ cols, rows }) => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "resize", cols, rows }));
       }
     });
 
@@ -201,12 +169,52 @@ const TerminalPage = () => {
     };
     window.addEventListener("resize", handleResize);
 
+    // Use ResizeObserver for container-level responsiveness (e.g. when sidebar hides)
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
+
+    const handleBuddyCommand = (e) => {
+      const { command } = e.detail;
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        // Send command with enter
+        wsRef.current.send(command + "\r");
+      }
+    };
+
+    const handleBuddyGetOutput = (e) => {
+      if (!xtermRef.current) return;
+      const term = xtermRef.current;
+      // Get the last 50 lines of output
+      const buffer = term.buffer.active;
+      let output = "";
+      for (let i = Math.max(0, buffer.baseY + buffer.viewportY - 50); i < buffer.baseY + buffer.viewportY + term.rows; i++) {
+        const line = buffer.getLine(i);
+        if (line) output += line.translateToString(true) + "\n";
+      }
+      
+      const callback = e.detail?.callback;
+      if (callback) callback(output);
+    };
+
+    window.addEventListener("buddy_terminal_command", handleBuddyCommand);
+    window.addEventListener("buddy_get_output", handleBuddyGetOutput);
+
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("buddy_terminal_command", handleBuddyCommand);
+      window.removeEventListener("buddy_get_output", handleBuddyGetOutput);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      resizeObserver.disconnect();
       term.dispose();
       if (wsRef.current) wsRef.current.close();
     };
-  }, [handleCommand]);
+  }, []);
 
   const renderStats = () => {
     if (!stats) return <div className="animate-pulse h-40 bg-[#161b22] rounded-lg"></div>;
@@ -355,9 +363,9 @@ const TerminalPage = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0d1117] text-[#e6edf3] font-sans">
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - Dashboard */}
-        <div className="w-[380px] border-r border-[#30363d] bg-[#0d1117] overflow-y-auto p-6 space-y-6">
+      <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
+        {/* Left Panel - Dashboard (Hidden on smaller screens by default, or you can make it a toggle) */}
+        <div className="hidden lg:block w-[380px] border-r border-[#30363d] bg-[#0d1117] overflow-y-auto p-6 space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <Activity size={20} className="text-[#3fb950]" />
             <h2 className="text-lg font-bold">Live Dashboard</h2>
@@ -379,11 +387,11 @@ const TerminalPage = () => {
         </div>
 
         {/* Right Panel - Xterm */}
-        <div className="flex-1 flex flex-col bg-[#0d1117]">
-          <div className="h-12 border-b border-[#30363d] flex items-center justify-between px-6 bg-[#161b22]">
+        <div className="flex-1 flex flex-col bg-[#0d1117] min-w-0 overflow-hidden">
+          <div className="h-12 border-b border-[#30363d] flex items-center justify-between px-4 sm:px-6 bg-[#161b22] shrink-0">
             <div className="flex items-center gap-3">
               <TerminalSquare size={18} className="text-[#8b949e]" />
-              <span className="text-[13px] font-medium text-[#c9d1d9]">github-cli — terminal</span>
+              <span className="text-[13px] font-medium text-[#c9d1d9] truncate">github-cli — terminal</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
@@ -395,10 +403,10 @@ const TerminalPage = () => {
               </span>
             </div>
           </div>
-          <div className="flex-1 p-4 relative">
+          <div className="flex-1 p-2 sm:p-4 relative min-h-0 overflow-hidden">
             <div 
               ref={terminalRef} 
-              className="absolute inset-4 overflow-hidden rounded-lg border border-[#30363d]"
+              className="absolute inset-2 sm:inset-4 overflow-hidden rounded-lg border border-[#30363d] bg-[#0d1117]"
             />
           </div>
         </div>

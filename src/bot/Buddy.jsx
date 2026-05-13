@@ -375,10 +375,14 @@ export default function Buddy() {
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
-                    className="flex items-center justify-center w-14 h-14 bg-github-panel border border-github-border text-github-text rounded-full shadow-lg cursor-pointer hover:bg-github-panelHover transition-colors"
+                    className={`flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-full shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95 border border-github-border ${
+                        location.pathname === "/terminal" 
+                            ? "bg-white text-github-text shadow-[0_0_15px_rgba(255,255,255,0.3)]" 
+                            : "bg-github-panel text-github-text hover:bg-github-panelHover"
+                    }`}
                     title="Open Buddy"
                 >
-                    <Bot className="w-7 h-7" />
+                    <Bot className="w-5 h-5 sm:w-7 sm:h-7" />
                 </button>
             )}
         </div>
