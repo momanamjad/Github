@@ -1,0 +1,9 @@
+{
+  "routes": [
+    "/",
+    "/copilot",
+    "/repositories",
+    "/momanamjad/repositories"
+  ],
+  "output": "./src/bones"
+}

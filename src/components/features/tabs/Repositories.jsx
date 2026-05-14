@@ -3,11 +3,20 @@ import { useEffect, useMemo, useState } from "react";
 import { useGitHub } from "@/contexts/GitHubContext";
 import RepoList from "@features/RepoList";
 import RepoFilterBar from "@features/RepoFilterBar";
+import { Skeleton } from 'boneyard-js/react';
+import { RepoSkeleton } from "@features/RepoSkeleton";
 
 const Repositories = () => {
   const { username } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { repositories: allRepos } = useGitHub();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate loading delay for skeleton demonstration
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, [username]);
 
   // Filter out repos not owned by the current profile user
   const repos = useMemo(() => {
@@ -91,6 +100,16 @@ const Repositories = () => {
     ...new Set(repos.map(r => r.language).filter(Boolean)),
   ];
 
+  // Fixture for boneyard build step
+  const fixture = (
+    <div className="flex flex-col">
+      <RepoSkeleton />
+      <RepoSkeleton />
+      <RepoSkeleton />
+      <RepoSkeleton />
+    </div>
+  );
+
   return (
     <>
       <RepoFilterBar
@@ -103,10 +122,15 @@ const Repositories = () => {
         type={type}
         setType={setType}
         languages={languages}
-       
       />
 
-      <RepoList repos={filteredRepos} />
+      <Skeleton 
+        name="repo-list" 
+        loading={isLoading} 
+        fixture={fixture}
+      >
+        <RepoList repos={filteredRepos} />
+      </Skeleton>
     </>
   );
 };

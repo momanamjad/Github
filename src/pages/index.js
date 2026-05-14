@@ -1,8 +1,5 @@
 import { lazy } from 'react';
 
-// Lazy-load every page so only the active route's bundle is fetched.
-// This dramatically reduces the initial JavaScript payload and improves
-// First Contentful Paint, Largest Contentful Paint, and Total Blocking Time.
 
 export const Home = lazy(() => import('./Home'));
 export const Issues = lazy(() => import('./Issues'));

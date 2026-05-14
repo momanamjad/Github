@@ -12,10 +12,19 @@ import { useSearchParams } from "react-router-dom";
 import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 import RepoList from "@/components/features/RepoList";
 import RepoFilterBar from "@/components/features/RepoFilterBar";
+import { Skeleton } from 'boneyard-js/react';
+import { RepoSkeleton } from "@features/RepoSkeleton";
 
 export default function Repositories() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "my-repositories";
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate loading delay for skeleton demonstration
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -176,8 +185,21 @@ export default function Repositories() {
               </p>
             </div>
 
-            {/* Repositories List Component */}
-            <RepoList repos={filteredRepositories} />
+            {/* Repositories List Component with Skeleton */}
+            <Skeleton 
+              name="global-repo-list" 
+              loading={isLoading} 
+              fixture={
+                <div className="flex flex-col">
+                  <RepoSkeleton />
+                  <RepoSkeleton />
+                  <RepoSkeleton />
+                  <RepoSkeleton />
+                </div>
+              }
+            >
+              <RepoList repos={filteredRepositories} />
+            </Skeleton>
           </div>
         </div>
       </div>

@@ -2,10 +2,12 @@ import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import * as Pages from "./pages";
 import OpenMenuLayout from "./layout/OpenMenuLayout";
-import { initializeStorage } from "@services/storageService.js";
+import { initializeStorage } from "@services/storageService";
 import { GitHubProvider } from "@contexts/GitHubContext";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
 import Buddy from "./bot/Buddy";
+import "./bones/registry";
+
 
 const Profile       = lazy(() => import("@pages/Profile"));
 const ProfileLayout = lazy(() => import("@pages/ProfileLayout"));
@@ -17,7 +19,6 @@ const NewRepoPage   = lazy(() => import("@features/NewRepoPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="w-8 h-8 border-3 border-[#d0d7de] border-t-[#0969da] rounded-full animate-spin" />
   </div>
 );
 

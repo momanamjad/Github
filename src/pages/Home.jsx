@@ -9,6 +9,9 @@ import StarsIcon from "../../public/customIcons/StarsIcon";
 import FilterIcon from "../../public/customIcons/FilterIcon";
 import ChevronDownIcon from "../../public/customIcons/ChevronDownIcon";
 import { useNavigate } from "react-router-dom";
+import { Skeleton } from 'boneyard-js/react';
+import { HomeSidebarSkeleton, HomeFeedSkeleton } from "@features/HomeSkeleton";
+
 
 const INITIAL_REPO_COUNT = 4;
 
@@ -18,7 +21,13 @@ const Home = React.memo(() => {
   const [, setFilterValue] = useState();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
 
 
@@ -83,34 +92,40 @@ const Home = React.memo(() => {
         </div>
 
         {/* Repository List */}
-        <ul className="space-y-1">
-          {displayedRepos.length === 0 ? (
-            <li className="text-sm text-[#636c76] py-2">
-              {searchQuery.trim()
-                ? "No repositories match your search."
-                : "No repositories found."}
-            </li>
-          ) : (
-            displayedRepos.map((repo) => (
-              <li
-                key={repo.id || repo.name}
-                onClick={() => handleRepoClick(repo)}
-                className="flex items-center gap-2 text-[14px] py-[6px] hover:underline cursor-pointer text-[#1f2328] group"
-              >
-                <span className="w-4 h-4 rounded-full inline-block overflow-hidden shrink-0">
-                  <img
-                    className="w-full h-full object-cover"
-                    src="profile.webp"
-                    alt="Repository owner avatar"
-                  />
-                </span>
-                <span className="truncate">
-                  {repo.full_name || `momanamjad/${repo.name}`}
-                </span>
+        <Skeleton 
+          name="home-sidebar" 
+          loading={isLoading} 
+          fixture={<HomeSidebarSkeleton />}
+        >
+          <ul className="space-y-1">
+            {displayedRepos.length === 0 ? (
+              <li className="text-sm text-[#636c76] py-2">
+                {searchQuery.trim()
+                  ? "No repositories match your search."
+                  : "No repositories found."}
               </li>
-            ))
-          )}
-        </ul>
+            ) : (
+              displayedRepos.map((repo) => (
+                <li
+                  key={repo.id || repo.name}
+                  onClick={() => handleRepoClick(repo)}
+                  className="flex items-center gap-2 text-[14px] py-[6px] hover:underline cursor-pointer text-[#1f2328] group"
+                >
+                  <span className="w-4 h-4 rounded-full inline-block overflow-hidden shrink-0">
+                    <img
+                      className="w-full h-full object-cover"
+                      src="profile.webp"
+                      alt="Repository owner avatar"
+                    />
+                  </span>
+                  <span className="truncate">
+                    {repo.full_name || `momanamjad/${repo.name}`}
+                  </span>
+                </li>
+              ))
+            )}
+          </ul>
+        </Skeleton>
 
         {/* Show more / Show less button */}
         {!searchQuery.trim() && hasMoreRepos && (
@@ -156,65 +171,71 @@ const Home = React.memo(() => {
           </div>
 
           {/* Dynamic Feed Content */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-[#1F2328]">Recent activity</h3>
-              <button className="text-xs text-[#0969da] hover:underline">All activity</button>
-            </div>
+          <Skeleton 
+            name="home-feed" 
+            loading={isLoading} 
+            fixture={<HomeFeedSkeleton />}
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-[#1F2328]">Recent activity</h3>
+                <button className="text-xs text-[#0969da] hover:underline">All activity</button>
+              </div>
 
-            {recentRepos.length > 0 ? (
-              recentRepos.map((repo) => (
-                <div key={repo.id || repo.name} className="p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm transition-hover hover:border-[#8c959f]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 rounded-full overflow-hidden">
-                      <img src="profile.webp" alt="Avatar" className="w-full h-full object-cover" />
+              {recentRepos.length > 0 ? (
+                recentRepos.map((repo) => (
+                  <div key={repo.id || repo.name} className="p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm transition-hover hover:border-[#8c959f]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-full overflow-hidden">
+                        <img src="profile.webp" alt="Avatar" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-xs text-[#1f2328] font-medium">momanamjad</span>
+                      <span className="text-xs text-[#636c76]">created a repository</span>
+                      <span className="text-xs text-[#636c76] ml-auto">
+                        {new Date(repo.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
                     </div>
-                    <span className="text-xs text-[#1f2328] font-medium">momanamjad</span>
-                    <span className="text-xs text-[#636c76]">created a repository</span>
-                    <span className="text-xs text-[#636c76] ml-auto">
-                      {new Date(repo.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <div className="rounded-lg p-3 bg-[#F6F8FA]">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4
-                        onClick={() => handleRepoClick(repo)}
-                        className="text-[#0969da] font-bold hover:underline cursor-pointer text-sm truncate"
-                      >
-                        momanamjad/{repo.name}
-                      </h4>
-                      <StarButton repo={repo} />
-                    </div>
-                    {repo.description && (
-                      <p className="text-xs text-[#636c76] mb-2 line-clamp-1">{repo.description}</p>
-                    )}
-                    <div className="flex items-center gap-3 text-[11px] text-[#636c76]">
-                      {repo.language && (
-                        <div className="flex items-center gap-1">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#3178c6]"></span>
-                          <span>{repo.language}</span>
-                        </div>
+                    <div className="rounded-lg p-3 bg-[#F6F8FA]">
+                      <div className="flex justify-between items-start mb-1">
+                        <h4
+                          onClick={() => handleRepoClick(repo)}
+                          className="text-[#0969da] font-bold hover:underline cursor-pointer text-sm truncate"
+                        >
+                          momanamjad/{repo.name}
+                        </h4>
+                        <StarButton repo={repo} />
+                      </div>
+                      {repo.description && (
+                        <p className="text-xs text-[#636c76] mb-2 line-clamp-1">{repo.description}</p>
                       )}
-                      <div className="flex items-center gap-1">
-                        <StarsIcon />
-                        <span>{repo.stargazers_count || 0}</span>
+                      <div className="flex items-center gap-3 text-[11px] text-[#636c76]">
+                        {repo.language && (
+                          <div className="flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#3178c6]"></span>
+                            <span>{repo.language}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <StarsIcon />
+                          <span>{repo.stargazers_count || 0}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="p-6 border border-[#d0d7de] border-dashed rounded-lg bg-[#f6f8fa] text-center">
+                  <p className="text-sm text-[#636c76]">No recent activity to show.</p>
+                  <button
+                     onClick={() => navigate("/new")}
+                     className="mt-2 text-sm text-[#0969da] hover:underline font-medium"
+                  >
+                    Create your first repository
+                  </button>
                 </div>
-              ))
-            ) : (
-              <div className="p-6 border border-[#d0d7de] border-dashed rounded-lg bg-[#f6f8fa] text-center">
-                <p className="text-sm text-[#636c76]">No recent activity to show.</p>
-                <button
-                   onClick={() => navigate("/new")}
-                   className="mt-2 text-sm text-[#0969da] hover:underline font-medium"
-                >
-                  Create your first repository
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </Skeleton>
         </div>
       </main>
 
