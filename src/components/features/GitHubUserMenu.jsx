@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGitHub } from "@contexts/GitHubContext";
 import { useClickOutside } from "@hooks/useGitHub_hooks";
+import { useScrollLock } from "../../hooks/useScrollLock";
+
 
 // Icons (assuming paths are correct relative to components/features)
 import ProfileIcon from '../../../public/customIcons/ProfileIcon';
@@ -31,6 +33,9 @@ const GitHubUserMenu = () => {
 
   // Hooks
   useClickOutside([menuRef, buttonRef], closeMenu);
+  useScrollLock(isOpen);
+
+
 
   const handleStatusClick = () => {
     setIsStatusModalOpen(true);

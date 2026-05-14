@@ -1,7 +1,10 @@
 import React from "react";
 import CloseIcon from "../../public/customIcons/CloseIcon";
+import { useScrollLock } from "../hooks/useScrollLock";
+
 
 export default function FilterModal({ open, onClose, title, options = [], onSelect }) {
+  useScrollLock(open);
   if (!open) return null;
 
   return (

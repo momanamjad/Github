@@ -4,6 +4,8 @@ import CloseIcon from "../../../public/customIcons/CloseIcon";
 import GithubLogoIcon from "../../../public/customIcons/GithubLogoIcon";
 import ReposotoryIcon from "../../../public/customIcons/ReposotoryIcon";
 import SearchIconSvg from "../../../public/customIcons/SearchIconSvg";
+import { useScrollLock } from "../../hooks/useScrollLock";
+
 // navItems defined for future use — prefixed with _ to suppress lint warning
 const _navItems = [
   { icon: "M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2Z", label: "Home", path: "M" },
@@ -63,6 +65,9 @@ const Icons = {
 export default function GitHubSidebarModal() {
   const [isOpen, setIsOpen] = useState(false);
   const sidebarRef = useRef(null);
+
+  useScrollLock(isOpen);
+
 
   // Close on outside click
   useEffect(() => {

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { callBuddy } from "./callBuddy";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Bot, Send, X, User, Trash2, Volume2, VolumeX, Mic, MicOff, Settings, ArrowLeft } from "lucide-react";
+import { useScrollLock } from "../hooks/useScrollLock";
+
 import { getStoredUser } from "../services/storageService";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
@@ -129,6 +131,10 @@ export default function Buddy() {
             document.removeEventListener("touchstart", handleClickOutside);
         };
     }, [open]);
+
+    useScrollLock(open);
+
+
 
     // ── Voice helpers ──────────────────────────────────────────────
     const handleVoiceChange = useCallback((e) => {

@@ -18,6 +18,8 @@ import MCPRegistoryIcon from "../ui/icons/MCPRegistoryIcon";
 import MenuIcon from "../ui/icons/MenuIcon";
 import { useGitHub } from "@/contexts/GitHubContext";
 import CrossIcon from "../ui/icons/CrossIcon";
+import { useScrollLock } from "../../hooks/useScrollLock";
+
 
 const Icons = {
   search: <SearchIcon />,
@@ -45,6 +47,9 @@ const GithubOpenMenu = React.memo(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const { repositories: allRepos } = useGitHub();
+  
+  useScrollLock(isOpen);
+
 
   const topRepos = useMemo(() => {
     return [...allRepos].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5);

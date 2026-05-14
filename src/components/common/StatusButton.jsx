@@ -4,6 +4,8 @@ import { useClickOutside, useInterval } from '@hooks/useGitHub_hooks';
 import { PRESET_STATUSES, EXPIRATION_OPTIONS } from '../../constants/githubConstants';
 import EmojiPicker from './EmojiPicker';
 import XIcon from '../../../public/customIcons/XIcon';
+import { useScrollLock } from '../../hooks/useScrollLock';
+
 
 const StatusButton = ({ hidden = false }) => {
   const { status, updateStatus, isStatusModalOpen, setIsStatusModalOpen } = useGitHub();
@@ -13,6 +15,9 @@ const StatusButton = ({ hidden = false }) => {
   const [localIsBusy, setLocalIsBusy] = useState(status.isBusy || false);
   const [expiration, setExpiration] = useState('never');
   const [expirationTime, setExpirationTime] = useState(null);
+  
+  useScrollLock(isStatusModalOpen);
+
 
   const [isHovered, setIsHovered] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);

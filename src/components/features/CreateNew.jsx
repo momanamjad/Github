@@ -3,6 +3,8 @@ import { PlusIcon, TriangleDownIcon } from "@primer/octicons-react";
 import OpenIssueModal from "./OpenIssueModal";
 import NewRepoPage from "./NewRepoPage";
 import { useNavigate } from "react-router-dom";
+import { useScrollLock } from "../../hooks/useScrollLock";
+
 const IconButton = React.forwardRef(({ children, label, onClick }, ref) => (
   <button
     ref={ref}
@@ -23,6 +25,9 @@ const CreateNew = () => {
   const itemRefs = React.useRef([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
   const navigate = useNavigate();
+  useScrollLock(open);
+
+
   const handleNewRepoClick = () => {
     navigate("/new");
     closeMenu();

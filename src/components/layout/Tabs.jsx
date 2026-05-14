@@ -5,6 +5,8 @@ import LoadingBar from 'react-top-loading-bar';
 import { useEffect, useState, useRef } from "react";
 import { useTabsContext } from "@/contexts/TabsContext";
 import { getRepos } from "@services/GithubApi.jsx";
+import { useScrollLock } from "../../hooks/useScrollLock";
+
 
 const Tabs = ({ username }) => {
   const [progress, setProgress] = useState(0);
@@ -14,6 +16,10 @@ const Tabs = ({ username }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { setHasTabsComponent } = useTabsContext();
+
+  useScrollLock(moreOpen);
+
+
 
   useEffect(() => {
     setHasTabsComponent(true);

@@ -3,9 +3,15 @@ import { TriangleDownIcon, CheckIcon } from "@primer/octicons-react";
 
 import NewRepoBtn from "../common/NewRepoBtn";
 import CloseIcon from "../../../public/customIcons/CloseIcon";
+import { useScrollLock } from "../../hooks/useScrollLock";
+
 const FilterMenu = ({ label, value, options, onChange }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef();
+
+  // Only lock scroll on mobile (sm breakpoint is usually 640px)
+  useScrollLock(open && window.innerWidth < 640);
+
 
   useEffect(() => {
     const handler = (e) => {

@@ -1,10 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { TriangleDownIcon, CheckIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
+import { useScrollLock } from "../hooks/useScrollLock";
 // import { useLocation } from "react-router-dom";
+
 const FilterMenu = ({ label, value, options, onChange }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef();
+
+  // Only lock scroll on mobile
+  useScrollLock(open && window.innerWidth < 640);
+
 
   useEffect(() => {
     const handler = (e) => {

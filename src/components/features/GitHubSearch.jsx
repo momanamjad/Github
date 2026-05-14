@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getRepos } from '@services/GithubApi.jsx';
 import { useGitHub } from '@/contexts/GitHubContext';
 import ReposotoryIcon from '../../../public/customIcons/ReposotoryIcon';
+import { useScrollLock } from '../../hooks/useScrollLock';
+
 
 export default function GitHubSearch({ isOpen, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,6 +14,9 @@ export default function GitHubSearch({ isOpen, onClose }) {
   const inputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useScrollLock(isOpen);
+
 
   const username = "momanamjad";
 
@@ -45,14 +50,13 @@ export default function GitHubSearch({ isOpen, onClose }) {
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
+
 
   const handleOwnerClick = () => {
     onClose();

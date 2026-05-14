@@ -3,6 +3,8 @@ import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
 import { getStarredRepos } from "@services/GithubApi";
 import { starRepository, unstarRepository } from "@services/storageService.js";
 import { useParams, Link } from 'react-router-dom';
+import { useScrollLock } from '../../../hooks/useScrollLock';
+
 
 const Stars = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +32,10 @@ const Stars = () => {
   const [lists, setLists] = useState([
     { id: 1, name: 'Future ideas', emoji: '💡' }
   ]);
+
+  // Scroll locks
+  useScrollLock(isCreateListOpen || (isTypeOpen || isLanguageOpen || isSortOpen || isListSortOpen));
+
 
   // Load data on component mount
   const params = useParams();
