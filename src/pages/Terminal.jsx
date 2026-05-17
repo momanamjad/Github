@@ -102,6 +102,52 @@ const TerminalPage = () => {
       macOptionIsMeta: true,
     });
 
+    const container = terminalRef.current;
+
+    const handleKeydown = (e) => {
+      // Ctrl+Shift+V → paste
+      if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.code === 'KeyV')) {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.readText().then((text) => {
+          if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(text);
+          }
+        }).catch(() => {});
+        return;
+      }
+      // Ctrl+Shift+C → copy
+      if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.code === 'KeyC')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const sel = term.getSelection();
+        if (sel) navigator.clipboard.writeText(sel).catch(() => {});
+        return;
+      }
+      // Ctrl+C with selection
+      if (e.ctrlKey && !e.shiftKey && (e.key === 'C' || e.code === 'KeyC')) {
+        const sel = term.getSelection();
+        if (sel) {
+          e.preventDefault();
+          e.stopPropagation();
+          navigator.clipboard.writeText(sel).catch(() => {});
+          term.clearSelection();
+          return;
+        }
+      }
+    };
+    container.addEventListener('keydown', handleKeydown, true);
+
+    const handleRightClick = (e) => {
+      e.preventDefault();
+      navigator.clipboard.readText().then((text) => {
+        if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(text);
+        }
+      }).catch(() => {});
+    };
+    container.addEventListener('contextmenu', handleRightClick);
+
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.loadAddon(new WebLinksAddon());
@@ -113,52 +159,6 @@ const TerminalPage = () => {
 
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
-
-    term.attachCustomKeyEventHandler((e) => {
-      // Must be keydown only
-      if (e.type !== 'keydown') return true;
-
-      // Ctrl+Shift+C → copy
-      if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
-        const sel = term.getSelection();
-        if (sel) navigator.clipboard.writeText(sel).catch(() => {});
-        return false; // prevent xterm from processing
-      }
-
-      // Ctrl+Shift+V → paste
-      if (e.ctrlKey && e.shiftKey && e.code === 'KeyV') {
-        navigator.clipboard.readText().then((text) => {
-          if (text && wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(text);
-          }
-        }).catch(() => {});
-        return false; // prevent xterm from processing
-      }
-
-      // Ctrl+C with selection → copy, without selection → SIGINT (let through)
-      if (e.ctrlKey && !e.shiftKey && e.code === 'KeyC') {
-        const sel = term.getSelection();
-        if (sel) {
-          navigator.clipboard.writeText(sel).catch(() => {});
-          term.clearSelection();
-          return false;
-        }
-        return true; // send ^C to shell
-      }
-
-      return true;
-    });
-
-    const container = terminalRef.current;
-    const handleRightClick = (e) => {
-      e.preventDefault();
-      navigator.clipboard.readText().then((text) => {
-        if (text && wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(text);
-        }
-      }).catch(() => {});
-    };
-    container.addEventListener('contextmenu', handleRightClick);
 
     const connectWS = () => {
       if (reconnectTimeoutRef.current) {
@@ -258,6 +258,7 @@ const TerminalPage = () => {
       window.removeEventListener("buddy_terminal_command", handleBuddyCommand);
       window.removeEventListener("buddy_get_output", handleBuddyGetOutput);
       if (container) {
+        container.removeEventListener('keydown', handleKeydown, true);
         container.removeEventListener('contextmenu', handleRightClick);
       }
       if (reconnectTimeoutRef.current) {
