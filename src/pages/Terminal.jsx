@@ -98,6 +98,8 @@ const TerminalPage = () => {
       cursorBlink: true,
       convertEol: true,
       allowProposedApi: true,
+      rightClickSelectsWord: false,
+      macOptionIsMeta: true,
     });
 
     const fitAddon = new FitAddon();
@@ -111,6 +113,47 @@ const TerminalPage = () => {
 
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
+
+    term.attachCustomKeyEventHandler((e) => {
+      // Ctrl+Shift+C → copy selection
+      if (e.type === 'keydown' && e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
+        const selection = term.getSelection();
+        if (selection) {
+          navigator.clipboard.writeText(selection).catch(() => {});
+        }
+        return false;
+      }
+      // Ctrl+Shift+V → paste from clipboard
+      if (e.type === 'keydown' && e.ctrlKey && e.shiftKey && e.code === 'KeyV') {
+        navigator.clipboard.readText().then((text) => {
+          if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(text);
+          }
+        }).catch(() => {});
+        return false;
+      }
+      // Ctrl+C → if text selected, copy it; otherwise send SIGINT
+      if (e.type === 'keydown' && e.ctrlKey && !e.shiftKey && e.code === 'KeyC') {
+        const selection = term.getSelection();
+        if (selection) {
+          navigator.clipboard.writeText(selection).catch(() => {});
+          term.clearSelection();
+          return false;
+        }
+        // No selection → let xterm send ^C naturally (SIGINT)
+        return true;
+      }
+      return true;
+    });
+
+    terminalRef.current.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      navigator.clipboard.readText().then((text) => {
+        if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(text);
+        }
+      }).catch(() => {});
+    });
 
     const connectWS = () => {
       if (reconnectTimeoutRef.current) {
