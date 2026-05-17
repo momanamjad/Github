@@ -115,45 +115,50 @@ const TerminalPage = () => {
     fitAddonRef.current = fitAddon;
 
     term.attachCustomKeyEventHandler((e) => {
-      // Ctrl+Shift+C → copy selection
-      if (e.type === 'keydown' && e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
-        const selection = term.getSelection();
-        if (selection) {
-          navigator.clipboard.writeText(selection).catch(() => {});
-        }
-        return false;
+      // Must be keydown only
+      if (e.type !== 'keydown') return true;
+
+      // Ctrl+Shift+C → copy
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
+        const sel = term.getSelection();
+        if (sel) navigator.clipboard.writeText(sel).catch(() => {});
+        return false; // prevent xterm from processing
       }
-      // Ctrl+Shift+V → paste from clipboard
-      if (e.type === 'keydown' && e.ctrlKey && e.shiftKey && e.code === 'KeyV') {
+
+      // Ctrl+Shift+V → paste
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyV') {
         navigator.clipboard.readText().then((text) => {
           if (text && wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(text);
           }
         }).catch(() => {});
-        return false;
+        return false; // prevent xterm from processing
       }
-      // Ctrl+C → if text selected, copy it; otherwise send SIGINT
-      if (e.type === 'keydown' && e.ctrlKey && !e.shiftKey && e.code === 'KeyC') {
-        const selection = term.getSelection();
-        if (selection) {
-          navigator.clipboard.writeText(selection).catch(() => {});
+
+      // Ctrl+C with selection → copy, without selection → SIGINT (let through)
+      if (e.ctrlKey && !e.shiftKey && e.code === 'KeyC') {
+        const sel = term.getSelection();
+        if (sel) {
+          navigator.clipboard.writeText(sel).catch(() => {});
           term.clearSelection();
           return false;
         }
-        // No selection → let xterm send ^C naturally (SIGINT)
-        return true;
+        return true; // send ^C to shell
       }
+
       return true;
     });
 
-    terminalRef.current.addEventListener('contextmenu', (e) => {
+    const container = terminalRef.current;
+    const handleRightClick = (e) => {
       e.preventDefault();
       navigator.clipboard.readText().then((text) => {
         if (text && wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(text);
         }
       }).catch(() => {});
-    });
+    };
+    container.addEventListener('contextmenu', handleRightClick);
 
     const connectWS = () => {
       if (reconnectTimeoutRef.current) {
@@ -196,6 +201,8 @@ const TerminalPage = () => {
     connectWS();
 
     term.onData((data) => {
+      // Ctrl+Shift+V is \x16 in some terminals - block it
+      if (data === '\x16') return; // block raw paste char
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(data);
       }
@@ -250,6 +257,9 @@ const TerminalPage = () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("buddy_terminal_command", handleBuddyCommand);
       window.removeEventListener("buddy_get_output", handleBuddyGetOutput);
+      if (container) {
+        container.removeEventListener('contextmenu', handleRightClick);
+      }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
