@@ -108,14 +108,23 @@ export const FileExplorer = ({ wsRef }) => {
   );
 };
 
-// --- Command Palette ---
+// --- Command Palette (Fix 2) ---
 export const CommandPalette = ({ visible, onClose, wsRef }) => {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
 
   const commands = [
-    "git status", "git log --oneline -10", "git branch", "ls",
-    "npm run build", "npm run dev", "cat package.json",
+    "git status",
+    "git log --oneline -10",
+    "git branch -a",
+    "git diff",
+    "ls -la",
+    "cat package.json",
+    "npm run build",
+    "npm run dev",
+    "npm install",
+    "pwd",
+    "clear",
   ];
 
   useEffect(() => {
@@ -128,7 +137,7 @@ export const CommandPalette = ({ visible, onClose, wsRef }) => {
 
   const run = (cmd) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(cmd + "\r");
+      wsRef.current.send(cmd + "\n");
     }
     onClose();
     setQuery("");
@@ -158,10 +167,10 @@ export const CommandPalette = ({ visible, onClose, wsRef }) => {
   );
 };
 
-// --- Terminal Toolbar ---
+// --- Terminal Toolbar (Fix 1) ---
 export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen, commandHistory, setShowHistory, showHistory }) => {
   const handleClear = () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send("clear\r");
+    if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send("clear\n");
   };
   const handleCopy = () => {
     if (xtermRef.current) {
@@ -189,7 +198,7 @@ export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen
         {showHistory && commandHistory.length > 0 && (
           <div className="absolute right-0 top-full mt-1 w-[260px] bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl z-30 py-1 max-h-[200px] overflow-y-auto">
             {commandHistory.map((cmd, i) => (
-              <button key={i} onClick={() => { if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(cmd + "\r"); setShowHistory(false); }}
+              <button key={i} onClick={() => { if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(cmd + "\n"); setShowHistory(false); }}
                 className="w-full text-left px-3 py-1.5 text-[12px] font-mono text-[#c9d1d9] hover:bg-[#21262d] truncate transition-colors">
                 <span className="text-[#484f58] mr-2">$</span>{cmd}
               </button>
@@ -201,15 +210,41 @@ export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen
   );
 };
 
-// --- Tab Bar ---
-export const TabBar = () => (
+// --- Tab Bar (Fix 3) ---
+export const TabBar = ({ tabs, activeTabId, onSelectTab, onNewTab, onCloseTab }) => (
   <div className="h-9 border-b border-[#30363d] flex items-center px-2 bg-[#0d1117] shrink-0">
-    <div className="flex items-center gap-0.5">
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161b22] border border-[#30363d] border-b-transparent rounded-t-md text-[12px] text-[#e6edf3] font-medium">
-        <div className="w-2 h-2 rounded-full bg-[#3fb950]" />
-        bash
-      </div>
-      <button className="flex items-center justify-center w-7 h-7 text-[#484f58] hover:text-[#8b949e] hover:bg-[#21262d] rounded transition-colors" title="New tab">
+    <div className="flex items-center gap-0.5 w-full overflow-x-auto overflow-y-hidden scrollbar-none">
+      {tabs && tabs.map(tab => (
+        <div 
+          key={tab.id}
+          onClick={() => onSelectTab(tab.id)}
+          className={`flex items-center gap-2 px-3 py-1.5 border border-[#30363d] border-b-transparent rounded-t-md text-[12px] font-medium cursor-pointer transition-colors shrink-0 group ${
+            tab.id === activeTabId 
+              ? "bg-[#161b22] text-[#e6edf3]" 
+              : "bg-[#0d1117] text-[#8b949e] hover:bg-[#161b22]/50 hover:text-[#e6edf3]"
+          }`}
+        >
+          <div className="w-2 h-2 rounded-full bg-[#3fb950]" />
+          <span>{tab.label}</span>
+          {tabs.length > 1 && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onCloseTab(tab.id);
+              }}
+              className="ml-1.5 p-0.5 rounded-full text-[#484f58] hover:text-[#e6edf3] hover:bg-[#21262d] transition-colors flex items-center justify-center"
+              title="Close tab"
+            >
+              <X size={10} />
+            </button>
+          )}
+        </div>
+      ))}
+      <button 
+        onClick={onNewTab}
+        className="flex items-center justify-center w-7 h-7 text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors shrink-0" 
+        title="New tab"
+      >
         <Plus size={14} />
       </button>
     </div>

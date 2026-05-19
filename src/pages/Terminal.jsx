@@ -44,12 +44,12 @@ const SESSION_KEY = "terminal_session_lines";
 const MAX_SESSION_LINES = 200;
 
 const TerminalPage = () => {
-  const terminalRef = useRef(null);
-  const xtermRef = useRef(null);
-  const fitAddonRef = useRef(null);
-  const wsRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
+  const terminalRefs = useRef({});
+  const tabsRef = useRef({});
+  const activeXtermRef = useRef(null);
+  const activeWsRef = useRef(null);
   const fontSizeRef = useRef(14);
+  
   const [stats, setStats] = useState(null);
   const [deps, setDeps] = useState(null);
   const [gitStatus, setGitStatus] = useState(null);
@@ -59,6 +59,21 @@ const TerminalPage = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [cmdRunning, setCmdRunning] = useState(false);
+
+  // Dynamic Tabs State (Fix 3)
+  const [tabs, setTabs] = useState([{ id: 1, label: "bash" }]);
+  const [activeTabId, setActiveTabId] = useState(1);
+  const activeTabIdRef = useRef(activeTabId);
+  const nextTabId = useRef(2);
+
+  // Keep activeTabIdRef updated
+  useEffect(() => {
+    activeTabIdRef.current = activeTabId;
+  }, [activeTabId]);
+
+  // Track command history (Fix 1)
+  const historyRef = useRef([]);
+  const currentLineRef = useRef('');
 
   const { user } = useGitHub();
   const isLoggedIn = !!user;
@@ -101,7 +116,7 @@ const TerminalPage = () => {
 
   useEffect(() => { fetchStats(); fetchDeps(); fetchGitStatus(); }, []);
 
-  // --- Command palette global shortcut ---
+  // --- Command palette global shortcut (Fix 2) ---
   useEffect(() => {
     const handler = (e) => {
       if (e.ctrlKey && e.key === "p") { e.preventDefault(); setShowPalette(v => !v); }
@@ -110,185 +125,369 @@ const TerminalPage = () => {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // --- Terminal init (only when authenticated) ---
-  useEffect(() => {
-    if (!terminalRef.current || !isLoggedIn) return;
+  // New tab and Close tab functions (Fix 3)
+  const handleNewTab = () => {
+    const newId = nextTabId.current++;
+    const newLabel = `bash ${newId}`;
+    setTabs(prev => [...prev, { id: newId, label: newLabel }]);
+    setActiveTabId(newId);
+  };
 
-    const term = new XTerm({
-      theme: GITHUB_DARK,
-      fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
-      fontSize: fontSizeRef.current,
-      cursorBlink: true,
-      convertEol: true,
-      allowProposedApi: true,
-      rightClickSelectsWord: false,
-      macOptionIsMeta: true,
+  const handleCloseTab = (tabId) => {
+    setTabs(prev => {
+      const nextTabs = prev.filter(t => t.id !== tabId);
+      if (nextTabs.length === 0) {
+        const newId = nextTabId.current++;
+        const newLabel = `bash ${newId}`;
+        setActiveTabId(newId);
+        return [{ id: newId, label: newLabel }];
+      }
+      if (tabId === activeTabId) {
+        const closedIdx = prev.findIndex(t => t.id === tabId);
+        const newActiveIdx = Math.min(nextTabs.length - 1, Math.max(0, closedIdx - 1));
+        setActiveTabId(nextTabs[newActiveIdx].id);
+      }
+      return nextTabs;
     });
+  };
 
-    const container = terminalRef.current;
+  // Switch tabs & update references
+  useEffect(() => {
+    const activeTab = tabsRef.current[activeTabId];
+    activeXtermRef.current = activeTab ? activeTab.term : null;
+    activeWsRef.current = activeTab ? activeTab.ws : null;
 
-    // DOM-level keyboard capture BEFORE xterm
-    const handleKeydown = (e) => {
-      // Font size
-      if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
-        e.preventDefault(); e.stopPropagation();
-        fontSizeRef.current = Math.min(28, fontSizeRef.current + 1);
-        term.options.fontSize = fontSizeRef.current;
-        if (fitAddonRef.current) fitAddonRef.current.fit();
-        return;
+    if (activeTab) {
+      if (activeTab.ws) {
+        if (activeTab.ws.readyState === WebSocket.OPEN) {
+          setWsStatus("connected");
+        } else if (activeTab.ws.readyState === WebSocket.CONNECTING) {
+          setWsStatus("connecting");
+        } else {
+          setWsStatus("disconnected");
+        }
+      } else {
+        setWsStatus("connecting");
       }
-      if (e.ctrlKey && e.key === "-") {
-        e.preventDefault(); e.stopPropagation();
-        fontSizeRef.current = Math.max(8, fontSizeRef.current - 1);
-        term.options.fontSize = fontSizeRef.current;
-        if (fitAddonRef.current) fitAddonRef.current.fit();
-        return;
-      }
-      // Ctrl+Shift+V → paste
-      if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.code === 'KeyV')) {
-        e.preventDefault(); e.stopPropagation();
-        navigator.clipboard.readText().then(text => {
-          if (text && wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(text);
-        }).catch(() => {});
-        return;
-      }
-      // Ctrl+Shift+C → copy
-      if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.code === 'KeyC')) {
-        e.preventDefault(); e.stopPropagation();
-        const sel = term.getSelection();
-        if (sel) navigator.clipboard.writeText(sel).catch(() => {});
-        return;
-      }
-      // Ctrl+C with selection
-      if (e.ctrlKey && !e.shiftKey && (e.key === 'C' || e.code === 'KeyC')) {
-        const sel = term.getSelection();
-        if (sel) {
+
+      setTimeout(() => {
+        if (activeTab.fitAddon) activeTab.fitAddon.fit();
+        if (activeTab.term) activeTab.term.focus();
+      }, 100);
+    }
+  }, [activeTabId, tabs]);
+
+  // Terminal instances initialization for each tab
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    tabs.forEach(tab => {
+      if (tabsRef.current[tab.id]) return; // already initialized!
+
+      const container = terminalRefs.current[tab.id];
+      if (!container) return;
+
+      const term = new XTerm({
+        theme: GITHUB_DARK,
+        fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
+        fontSize: fontSizeRef.current,
+        cursorBlink: true,
+        convertEol: true,
+        allowProposedApi: true,
+        rightClickSelectsWord: false,
+        macOptionIsMeta: true,
+      });
+
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.loadAddon(new WebLinksAddon());
+      term.open(container);
+
+      // Replay saved session before WS connects
+      replaySession(term);
+
+      setTimeout(() => fitAddon.fit(), 100);
+
+      // Welcome banner
+      term.writeln("\x1b[1;36m╔══════════════════════════════════════════════════╗\x1b[0m");
+      term.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;37mgithub-cli\x1b[0m — \x1b[32mProduction Terminal\x1b[0m                 \x1b[1;36m║\x1b[0m");
+      term.writeln("\x1b[1;36m║\x1b[0m  \x1b[33mvim, nano, git, node, npm available\x1b[0m             \x1b[1;36m║\x1b[0m");
+      term.writeln("\x1b[1;36m║\x1b[0m  \x1b[2mCtrl+P: Command Palette | Ctrl+±: Font Size\x1b[0m    \x1b[1;36m║\x1b[0m");
+      term.writeln("\x1b[1;36m╚══════════════════════════════════════════════════╝\x1b[0m");
+      term.writeln("");
+
+      let currentLine = "";
+      let reconnectTimeout = null;
+      let ws = null;
+
+      const connectWS = () => {
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        const newWs = new WebSocket(`${WS_URL}/ws`);
+        newWs.binaryType = "blob";
+        ws = newWs;
+        
+        if (tabsRef.current[tab.id]) {
+          tabsRef.current[tab.id].ws = newWs;
+        }
+        if (tab.id === activeTabIdRef.current) {
+          activeWsRef.current = newWs;
+        }
+
+        newWs.onopen = () => {
+          if (tab.id === activeTabIdRef.current) {
+            setWsStatus("connected");
+          }
+          newWs.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+        };
+
+        newWs.onmessage = async (event) => {
+          let text;
+          if (event.data instanceof Blob) {
+            const buf = await event.data.arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            term.write(bytes);
+            text = new TextDecoder().decode(bytes);
+          } else {
+            term.write(event.data);
+            text = event.data;
+          }
+          // Prompt detection
+          currentLine += text;
+          if (/[$#]\s*$/.test(currentLine.split("\n").pop())) {
+            if (tab.id === activeTabIdRef.current) {
+              setCmdRunning(false);
+            }
+            currentLine = "";
+          }
+          // Save session
+          saveSession(term);
+        };
+
+        newWs.onclose = () => {
+          if (tab.id === activeTabIdRef.current) {
+            setWsStatus("disconnected");
+          }
+          reconnectTimeout = setTimeout(() => {
+            if (tab.id === activeTabIdRef.current) {
+              setWsStatus("connecting");
+            }
+            connectWS();
+          }, 3000);
+          if (tabsRef.current[tab.id]) {
+            tabsRef.current[tab.id].reconnectTimeout = reconnectTimeout;
+          }
+        };
+
+        newWs.onerror = () => {
+          if (tab.id === activeTabIdRef.current) {
+            setWsStatus("error");
+          }
+          newWs.close();
+        };
+      };
+
+      connectWS();
+
+      // DOM-level keyboard capture BEFORE xterm
+      const handleKeydown = (e) => {
+        // Font size
+        if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
           e.preventDefault(); e.stopPropagation();
-          navigator.clipboard.writeText(sel).catch(() => {});
-          term.clearSelection();
+          fontSizeRef.current = Math.min(28, fontSizeRef.current + 1);
+          Object.values(tabsRef.current).forEach(tInfo => {
+            if (tInfo.term) {
+              tInfo.term.options.fontSize = fontSizeRef.current;
+              if (tInfo.fitAddon) tInfo.fitAddon.fit();
+            }
+          });
           return;
         }
-      }
-    };
-    container.addEventListener('keydown', handleKeydown, true);
-
-    const handleRightClick = (e) => {
-      e.preventDefault();
-      navigator.clipboard.readText().then(text => {
-        if (text && wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(text);
-      }).catch(() => {});
-    };
-    container.addEventListener('contextmenu', handleRightClick);
-
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.loadAddon(new WebLinksAddon());
-    term.open(container);
-
-    // Replay saved session before WS connects
-    replaySession(term);
-
-    setTimeout(() => fitAddon.fit(), 100);
-    xtermRef.current = term;
-    fitAddonRef.current = fitAddon;
-
-    // Welcome banner
-    term.writeln("\x1b[1;36m╔══════════════════════════════════════════════════╗\x1b[0m");
-    term.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;37mgithub-cli\x1b[0m — \x1b[32mProduction Terminal\x1b[0m                 \x1b[1;36m║\x1b[0m");
-    term.writeln("\x1b[1;36m║\x1b[0m  \x1b[33mvim, nano, git, node, npm available\x1b[0m             \x1b[1;36m║\x1b[0m");
-    term.writeln("\x1b[1;36m║\x1b[0m  \x1b[2mCtrl+P: Command Palette | Ctrl+±: Font Size\x1b[0m    \x1b[1;36m║\x1b[0m");
-    term.writeln("\x1b[1;36m╚══════════════════════════════════════════════════╝\x1b[0m");
-    term.writeln("");
-
-    // --- Prompt detection for spinner ---
-    let currentLine = "";
-
-    const connectWS = () => {
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      const ws = new WebSocket(`${WS_URL}/ws`);
-      ws.binaryType = "blob";
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setWsStatus("connected");
-        ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
-      };
-      ws.onmessage = async (event) => {
-        let text;
-        if (event.data instanceof Blob) {
-          const buf = await event.data.arrayBuffer();
-          const bytes = new Uint8Array(buf);
-          term.write(bytes);
-          text = new TextDecoder().decode(bytes);
-        } else {
-          term.write(event.data);
-          text = event.data;
-        }
-        // Prompt detection
-        currentLine += text;
-        if (/[$#]\s*$/.test(currentLine.split("\n").pop())) {
-          setCmdRunning(false);
-          currentLine = "";
-        }
-        // Save session periodically
-        saveSession(term);
-      };
-      ws.onclose = () => {
-        setWsStatus("disconnected");
-        reconnectTimeoutRef.current = setTimeout(() => { setWsStatus("connecting"); connectWS(); }, 3000);
-      };
-      ws.onerror = () => { setWsStatus("error"); ws.close(); };
-    };
-
-    connectWS();
-
-    // Track commands for history + spinner
-    let inputBuffer = "";
-    term.onData((data) => {
-      if (data === '\x16') return;
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(data);
-      }
-      // Track Enter to detect commands
-      if (data === '\r' || data === '\n') {
-        const cmd = inputBuffer.trim();
-        if (cmd) {
-          setCmdRunning(true);
-          setCommandHistory(prev => {
-            const next = [cmd, ...prev.filter(c => c !== cmd)].slice(0, 10);
-            return next;
+        if (e.ctrlKey && e.key === "-") {
+          e.preventDefault(); e.stopPropagation();
+          fontSizeRef.current = Math.max(8, fontSizeRef.current - 1);
+          Object.values(tabsRef.current).forEach(tInfo => {
+            if (tInfo.term) {
+              tInfo.term.options.fontSize = fontSizeRef.current;
+              if (tInfo.fitAddon) tInfo.fitAddon.fit();
+            }
           });
+          return;
         }
-        inputBuffer = "";
-      } else if (data === '\x7f') {
-        inputBuffer = inputBuffer.slice(0, -1);
-      } else if (data.length === 1 && data.charCodeAt(0) >= 32) {
-        inputBuffer += data;
+        // Ctrl+Shift+V → paste
+        if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.code === 'KeyV')) {
+          e.preventDefault(); e.stopPropagation();
+          navigator.clipboard.readText().then(text => {
+            const activeWs = tabsRef.current[tab.id]?.ws;
+            if (text && activeWs?.readyState === WebSocket.OPEN) activeWs.send(text);
+          }).catch(() => {});
+          return;
+        }
+        // Ctrl+Shift+C → copy
+        if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.code === 'KeyC')) {
+          e.preventDefault(); e.stopPropagation();
+          const sel = term.getSelection();
+          if (sel) navigator.clipboard.writeText(sel).catch(() => {});
+          return;
+        }
+        // Ctrl+C with selection
+        if (e.ctrlKey && !e.shiftKey && (e.key === 'C' || e.code === 'KeyC')) {
+          const sel = term.getSelection();
+          if (sel) {
+            e.preventDefault(); e.stopPropagation();
+            navigator.clipboard.writeText(sel).catch(() => {});
+            term.clearSelection();
+            return;
+          }
+        }
+
+        // --- Fix 4 — Real terminal keyboard shortcuts ---
+        const activeWs = tabsRef.current[tab.id]?.ws;
+        // Ctrl+L → clear screen
+        if (e.ctrlKey && !e.shiftKey && e.key === 'l') {
+          e.preventDefault();
+          term.clear();
+          activeWs?.send('\x0c'); // send Ctrl+L to shell too
+          return;
+        }
+        // Ctrl+U → clear current line (send to shell)
+        if (e.ctrlKey && e.key === 'u') {
+          e.preventDefault();
+          activeWs?.send('\x15');
+          return;
+        }
+        // Ctrl+A → go to start of line
+        if (e.ctrlKey && e.key === 'a') {
+          e.preventDefault();
+          activeWs?.send('\x01');
+          return;
+        }
+        // Ctrl+E → go to end of line
+        if (e.ctrlKey && e.key === 'e') {
+          e.preventDefault();
+          activeWs?.send('\x05');
+          return;
+        }
+        // Ctrl+W → delete word before cursor
+        if (e.ctrlKey && e.key === 'w') {
+          e.preventDefault();
+          activeWs?.send('\x17');
+          return;
+        }
+        // Ctrl+R → reverse history search (send to shell)
+        if (e.ctrlKey && e.key === 'r') {
+          e.preventDefault();
+          activeWs?.send('\x12');
+          return;
+        }
+      };
+      container.addEventListener('keydown', handleKeydown, true);
+
+      const handleRightClick = (e) => {
+        e.preventDefault();
+        navigator.clipboard.readText().then(text => {
+          const activeWs = tabsRef.current[tab.id]?.ws;
+          if (text && activeWs?.readyState === WebSocket.OPEN) activeWs.send(text);
+        }).catch(() => {});
+      };
+      container.addEventListener('contextmenu', handleRightClick);
+
+      // --- Fix 1 & 5: data input handling ---
+      term.onData((data) => {
+        if (data === '\x16') return;
+        const activeWs = tabsRef.current[tab.id]?.ws;
+        if (activeWs?.readyState === WebSocket.OPEN) {
+          activeWs.send(data);
+        }
+        // Track command history via currentLineRef / historyRef (Fix 1)
+        if (data.length === 1 && data.charCodeAt(0) >= 32) {
+          currentLineRef.current += data;
+        } else if (data === '\r') {
+          const cmd = currentLineRef.current.trim();
+          if (cmd) {
+            setCmdRunning(true);
+            historyRef.current.push(cmd);
+            setCommandHistory([...historyRef.current]);
+          }
+          currentLineRef.current = "";
+        } else if (data === '\x7f') {
+          currentLineRef.current = currentLineRef.current.slice(0, -1);
+        }
+      });
+
+      // --- Fix 5 — Up/Down arrow key history in shell: ---
+      term.attachCustomKeyEventHandler((e) => {
+        // Always let arrow keys through
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          return true;
+        }
+      });
+
+      term.onResize(({ cols, rows }) => {
+        const activeWs = tabsRef.current[tab.id]?.ws;
+        if (activeWs?.readyState === WebSocket.OPEN) {
+          activeWs.send(JSON.stringify({ type: "resize", cols, rows }));
+        }
+      });
+
+      tabsRef.current[tab.id] = {
+        term,
+        fitAddon,
+        ws,
+        reconnectTimeout,
+        container,
+        handleKeydown,
+        handleRightClick
+      };
+    });
+
+    // Cleanup closed tabs
+    Object.keys(tabsRef.current).forEach(idStr => {
+      const id = parseInt(idStr, 10);
+      if (!tabs.find(t => t.id === id)) {
+        const tInfo = tabsRef.current[id];
+        if (tInfo) {
+          if (tInfo.reconnectTimeout) clearTimeout(tInfo.reconnectTimeout);
+          if (tInfo.ws) tInfo.ws.close();
+          if (tInfo.container) {
+            tInfo.container.removeEventListener('keydown', tInfo.handleKeydown, true);
+            tInfo.container.removeEventListener('contextmenu', tInfo.handleRightClick);
+          }
+          if (tInfo.term) tInfo.term.dispose();
+        }
+        delete tabsRef.current[id];
       }
     });
 
-    term.onResize(({ cols, rows }) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: "resize", cols, rows }));
-      }
-    });
+  }, [tabs, isLoggedIn]);
 
-    const handleResize = () => { if (fitAddonRef.current) fitAddonRef.current.fit(); };
+  // Window resize handler
+  useEffect(() => {
+    const handleResize = () => {
+      Object.values(tabsRef.current).forEach(tInfo => {
+        if (tInfo.fitAddon) tInfo.fitAddon.fit();
+      });
+    };
     window.addEventListener("resize", handleResize);
 
-    const resizeObserver = new ResizeObserver(() => handleResize());
-    if (terminalRef.current) resizeObserver.observe(terminalRef.current);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
+  // Global listeners for buddy extension (modified to target active tab)
+  useEffect(() => {
     const handleBuddyCommand = (e) => {
       const { command } = e.detail;
-      if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(command + "\r");
+      const activeWs = activeWsRef.current;
+      if (activeWs?.readyState === WebSocket.OPEN) activeWs.send(command + "\r");
     };
+
     const handleBuddyGetOutput = (e) => {
-      if (!xtermRef.current) return;
-      const t = xtermRef.current;
-      const buffer = t.buffer.active;
+      const activeTerm = activeXtermRef.current;
+      if (!activeTerm) return;
+      const buffer = activeTerm.buffer.active;
       let output = "";
-      for (let i = Math.max(0, buffer.baseY + buffer.viewportY - 50); i < buffer.baseY + buffer.viewportY + t.rows; i++) {
+      for (let i = Math.max(0, buffer.baseY + buffer.viewportY - 50); i < buffer.baseY + buffer.viewportY + activeTerm.rows; i++) {
         const line = buffer.getLine(i);
         if (line) output += line.translateToString(true) + "\n";
       }
@@ -300,20 +499,28 @@ const TerminalPage = () => {
     window.addEventListener("buddy_get_output", handleBuddyGetOutput);
 
     return () => {
-      saveSession(term);
-      window.removeEventListener("resize", handleResize);
       window.removeEventListener("buddy_terminal_command", handleBuddyCommand);
       window.removeEventListener("buddy_get_output", handleBuddyGetOutput);
-      if (container) {
-        container.removeEventListener('keydown', handleKeydown, true);
-        container.removeEventListener('contextmenu', handleRightClick);
-      }
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      resizeObserver.disconnect();
-      term.dispose();
-      if (wsRef.current) wsRef.current.close();
     };
-  }, [isLoggedIn]);
+  }, []);
+
+  // Cleanup all sessions/connections on component unmount
+  useEffect(() => {
+    return () => {
+      Object.values(tabsRef.current).forEach(tInfo => {
+        if (tInfo.reconnectTimeout) clearTimeout(tInfo.reconnectTimeout);
+        if (tInfo.ws) tInfo.ws.close();
+        if (tInfo.container) {
+          tInfo.container.removeEventListener('keydown', tInfo.handleKeydown, true);
+          tInfo.container.removeEventListener('contextmenu', tInfo.handleRightClick);
+        }
+        if (tInfo.term) {
+          saveSession(tInfo.term);
+          tInfo.term.dispose();
+        }
+      });
+    };
+  }, [saveSession]);
 
   // Close history dropdown on outside click
   useEffect(() => {
@@ -323,7 +530,6 @@ const TerminalPage = () => {
     return () => window.removeEventListener("click", close);
   }, [showHistory]);
 
-  // --- Dashboard Renderers (unchanged logic) ---
   const renderStats = () => {
     if (!stats) return <div className="animate-pulse h-40 bg-[#161b22] rounded-lg"></div>;
     const total = stats.total_files || 0;
@@ -439,7 +645,6 @@ const TerminalPage = () => {
     );
   };
 
-  // --- Render ---
   if (!isLoggedIn) {
     return (
       <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0d1117] text-[#e6edf3] font-sans">
@@ -467,7 +672,7 @@ const TerminalPage = () => {
               <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderDeps()}</section>
               <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderGit()}</section>
               <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
-                <FileExplorer wsRef={wsRef} />
+                <FileExplorer wsRef={activeWsRef} />
               </section>
             </div>
           </div>
@@ -490,22 +695,31 @@ const TerminalPage = () => {
             </div>
           </div>
           {/* Tab Bar */}
-          <TabBar />
+          <TabBar 
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSelectTab={setActiveTabId}
+            onNewTab={handleNewTab}
+            onCloseTab={handleCloseTab}
+          />
           {/* Toolbar */}
           <TerminalToolbar
-            wsRef={wsRef} xtermRef={xtermRef}
+            wsRef={activeWsRef} xtermRef={activeXtermRef}
             isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen}
-            commandHistory={commandHistory}
+            commandHistory={commandHistory.slice(-10).reverse()}
             showHistory={showHistory} setShowHistory={setShowHistory}
           />
           {/* Terminal */}
           <div className="flex-1 p-2 sm:p-4 relative min-h-0 overflow-hidden">
             <SpinnerIndicator running={cmdRunning} />
-            <CommandPalette visible={showPalette} onClose={() => setShowPalette(false)} wsRef={wsRef} />
-            <div 
-              ref={terminalRef} 
-              className="absolute inset-2 sm:inset-4 overflow-hidden rounded-lg border border-[#30363d] bg-[#0d1117]"
-            />
+            <CommandPalette visible={showPalette} onClose={() => setShowPalette(false)} wsRef={activeWsRef} />
+            {tabs.map(tab => (
+              <div 
+                key={tab.id}
+                ref={el => { terminalRefs.current[tab.id] = el; }}
+                className={`absolute inset-2 sm:inset-4 overflow-hidden rounded-lg border border-[#30363d] bg-[#0d1117] ${tab.id === activeTabId ? 'block' : 'hidden'}`}
+              />
+            ))}
           </div>
         </div>
       </div>
