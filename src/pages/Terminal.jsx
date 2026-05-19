@@ -72,15 +72,20 @@ const TerminalPage = () => {
   }, [activeTabId]);
 
   // Track command history (Fix 1)
-  const historyRef = useRef([]);
-  const currentLineRef = useRef('');
+  const commandHistoryRef = useRef([]);
+  const currentCommandRef = useRef('');
 
   const { user } = useGitHub();
   const isLoggedIn = !!user;
 
   // --- Session persistence helpers ---
-  const saveSession = useCallback((term) => {
+  const lastSaveTimeRef = useRef(0);
+  const saveSession = useCallback((term, force = false) => {
     if (!term) return;
+    const now = Date.now();
+    if (!force && now - lastSaveTimeRef.current < 5000) return;
+    lastSaveTimeRef.current = now;
+
     const buf = term.buffer.active;
     const lines = [];
     const start = Math.max(0, buf.length - MAX_SESSION_LINES);
@@ -100,6 +105,7 @@ const TerminalPage = () => {
         lines.forEach(l => term.writeln(l));
         term.writeln("\x1b[2m--- session restored ---\x1b[0m");
       }
+      sessionStorage.removeItem(SESSION_KEY);
     } catch {}
   }, []);
 
@@ -181,7 +187,7 @@ const TerminalPage = () => {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    tabs.forEach(tab => {
+    tabs.forEach((tab, index) => {
       if (tabsRef.current[tab.id]) return; // already initialized!
 
       const container = terminalRefs.current[tab.id];
@@ -204,7 +210,9 @@ const TerminalPage = () => {
       term.open(container);
 
       // Replay saved session before WS connects
-      replaySession(term);
+      if (index === 0) {
+        replaySession(term);
+      }
 
       setTimeout(() => fitAddon.fit(), 100);
 
@@ -393,24 +401,31 @@ const TerminalPage = () => {
 
       // --- Fix 1 & 5: data input handling ---
       term.onData((data) => {
-        if (data === '\x16') return;
+        // Build current command string
+        if (data === '\r') {
+          // Enter pressed — save command if not empty
+          const cmd = currentCommandRef.current.trim();
+          if (cmd) {
+            setCmdRunning(true);
+            if (cmd !== commandHistoryRef.current[0]) {
+              commandHistoryRef.current = [cmd, ...commandHistoryRef.current].slice(0, 50);
+              // Update history dropdown state
+              setCommandHistory([...commandHistoryRef.current]);
+            }
+          }
+          currentCommandRef.current = '';
+        } else if (data === '\x7f') {
+          // Backspace
+          currentCommandRef.current = currentCommandRef.current.slice(0, -1);
+        } else if (data >= ' ' || data === '\t') {
+          // Printable character
+          currentCommandRef.current += data;
+        }
+
+        // Send to WebSocket as before
         const activeWs = tabsRef.current[tab.id]?.ws;
         if (activeWs?.readyState === WebSocket.OPEN) {
           activeWs.send(data);
-        }
-        // Track command history via currentLineRef / historyRef (Fix 1)
-        if (data.length === 1 && data.charCodeAt(0) >= 32) {
-          currentLineRef.current += data;
-        } else if (data === '\r') {
-          const cmd = currentLineRef.current.trim();
-          if (cmd) {
-            setCmdRunning(true);
-            historyRef.current.push(cmd);
-            setCommandHistory([...historyRef.current]);
-          }
-          currentLineRef.current = "";
-        } else if (data === '\x7f') {
-          currentLineRef.current = currentLineRef.current.slice(0, -1);
         }
       });
 
@@ -706,7 +721,7 @@ const TerminalPage = () => {
           <TerminalToolbar
             wsRef={activeWsRef} xtermRef={activeXtermRef}
             isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen}
-            commandHistory={commandHistory.slice(-10).reverse()}
+            commandHistory={commandHistory.slice(0, 10)}
             showHistory={showHistory} setShowHistory={setShowHistory}
           />
           {/* Terminal */}

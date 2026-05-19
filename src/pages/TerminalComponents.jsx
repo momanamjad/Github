@@ -195,14 +195,18 @@ export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen
         <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors">
           <ChevronDown size={12} /> History
         </button>
-        {showHistory && commandHistory.length > 0 && (
+        {showHistory && (
           <div className="absolute right-0 top-full mt-1 w-[260px] bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl z-30 py-1 max-h-[200px] overflow-y-auto">
-            {commandHistory.map((cmd, i) => (
-              <button key={i} onClick={() => { if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(cmd + "\n"); setShowHistory(false); }}
-                className="w-full text-left px-3 py-1.5 text-[12px] font-mono text-[#c9d1d9] hover:bg-[#21262d] truncate transition-colors">
-                <span className="text-[#484f58] mr-2">$</span>{cmd}
-              </button>
-            ))}
+            {commandHistory && commandHistory.length > 0 ? (
+              commandHistory.map((cmd, i) => (
+                <button key={i} onClick={() => { if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(cmd + "\r"); setShowHistory(false); }}
+                  className="w-full text-left px-3 py-1.5 text-[12px] font-mono text-[#c9d1d9] hover:bg-[#21262d] truncate transition-colors">
+                  <span className="text-[#484f58] mr-2">$</span>{cmd}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-[12px] text-[#8b949e] italic text-center">No commands yet</div>
+            )}
           </div>
         )}
       </div>
