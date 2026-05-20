@@ -78,11 +78,13 @@ const TerminalPage = () => {
   const { user } = useGitHub();
   const isLoggedIn = !!user;
 
-  // --- Session persistence helpers ---
+  const hasRestoredRef = useRef(false);
   const lastSaveTimeRef = useRef(0);
+
   const saveSession = useCallback((term, force = false) => {
-    if (!term) return;
+    if (!term || !isLoggedIn) return;
     const now = Date.now();
+    // Only save every 5 seconds
     if (!force && now - lastSaveTimeRef.current < 5000) return;
     lastSaveTimeRef.current = now;
 
@@ -93,20 +95,30 @@ const TerminalPage = () => {
       const line = buf.getLine(i);
       if (line) lines.push(line.translateToString(true));
     }
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(lines)); } catch {}
-  }, []);
+    try { 
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(lines)); 
+    } catch (e) {
+      console.warn("Failed to save terminal session", e);
+    }
+  }, [isLoggedIn]);
 
   const replaySession = useCallback((term) => {
+    if (hasRestoredRef.current) return false;
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
-      if (!raw) return;
+      if (!raw) return false;
       const lines = JSON.parse(raw);
       if (Array.isArray(lines) && lines.length) {
         lines.forEach(l => term.writeln(l));
         term.writeln("\x1b[2m--- session restored ---\x1b[0m");
+        hasRestoredRef.current = true;
+        sessionStorage.removeItem(SESSION_KEY);
+        return true;
       }
-      sessionStorage.removeItem(SESSION_KEY);
-    } catch {}
+    } catch (e) {
+      console.error("Failed to replay session", e);
+    }
+    return false;
   }, []);
 
   // --- Dashboard fetches ---
@@ -209,20 +221,23 @@ const TerminalPage = () => {
       term.loadAddon(new WebLinksAddon());
       term.open(container);
 
-      // Replay saved session before WS connects
+      // Replay saved session before WS connects - ONLY for the very first tab
+      let restored = false;
       if (index === 0) {
-        replaySession(term);
+        restored = replaySession(term);
       }
 
       setTimeout(() => fitAddon.fit(), 100);
 
-      // Welcome banner
-      term.writeln("\x1b[1;36m╔══════════════════════════════════════════════════╗\x1b[0m");
-      term.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;37mgithub-cli\x1b[0m — \x1b[32mProduction Terminal\x1b[0m                 \x1b[1;36m║\x1b[0m");
-      term.writeln("\x1b[1;36m║\x1b[0m  \x1b[33mvim, nano, git, node, npm available\x1b[0m             \x1b[1;36m║\x1b[0m");
-      term.writeln("\x1b[1;36m║\x1b[0m  \x1b[2mCtrl+P: Command Palette | Ctrl+±: Font Size\x1b[0m    \x1b[1;36m║\x1b[0m");
-      term.writeln("\x1b[1;36m╚══════════════════════════════════════════════════╝\x1b[0m");
-      term.writeln("");
+      // Only show welcome banner for new tabs or if no session was restored
+      if (!restored) {
+        term.writeln("\x1b[1;36m╔══════════════════════════════════════════════════╗\x1b[0m");
+        term.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;37mgithub-cli\x1b[0m — \x1b[32mProduction Terminal\x1b[0m                 \x1b[1;36m║\x1b[0m");
+        term.writeln("\x1b[1;36m║\x1b[0m  \x1b[33mvim, nano, git, node, npm available\x1b[0m             \x1b[1;36m║\x1b[0m");
+        term.writeln("\x1b[1;36m║\x1b[0m  \x1b[2mCtrl+P: Command Palette | Ctrl+±: Font Size\x1b[0m    \x1b[1;36m║\x1b[0m");
+        term.writeln("\x1b[1;36m╚══════════════════════════════════════════════════╝\x1b[0m");
+        term.writeln("");
+      }
 
       let currentLine = "";
       let reconnectTimeout = null;
@@ -267,7 +282,7 @@ const TerminalPage = () => {
             }
             currentLine = "";
           }
-          // Save session
+          // Save session (throttled internally)
           saveSession(term);
         };
 
@@ -325,8 +340,7 @@ const TerminalPage = () => {
         if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.code === 'KeyV')) {
           e.preventDefault(); e.stopPropagation();
           navigator.clipboard.readText().then(text => {
-            const activeWs = tabsRef.current[tab.id]?.ws;
-            if (text && activeWs?.readyState === WebSocket.OPEN) activeWs.send(text);
+            if (text && ws?.readyState === WebSocket.OPEN) ws.send(text);
           }).catch(() => {});
           return;
         }
@@ -348,43 +362,42 @@ const TerminalPage = () => {
           }
         }
 
-        // --- Fix 4 — Real terminal keyboard shortcuts ---
-        const activeWs = tabsRef.current[tab.id]?.ws;
+        // --- Real terminal keyboard shortcuts ---
         // Ctrl+L → clear screen
         if (e.ctrlKey && !e.shiftKey && e.key === 'l') {
           e.preventDefault();
           term.clear();
-          activeWs?.send('\x0c'); // send Ctrl+L to shell too
+          ws?.send('\x0c'); // send Ctrl+L to shell too
           return;
         }
         // Ctrl+U → clear current line (send to shell)
         if (e.ctrlKey && e.key === 'u') {
           e.preventDefault();
-          activeWs?.send('\x15');
+          ws?.send('\x15');
           return;
         }
         // Ctrl+A → go to start of line
         if (e.ctrlKey && e.key === 'a') {
           e.preventDefault();
-          activeWs?.send('\x01');
+          ws?.send('\x01');
           return;
         }
         // Ctrl+E → go to end of line
         if (e.ctrlKey && e.key === 'e') {
           e.preventDefault();
-          activeWs?.send('\x05');
+          ws?.send('\x05');
           return;
         }
         // Ctrl+W → delete word before cursor
         if (e.ctrlKey && e.key === 'w') {
           e.preventDefault();
-          activeWs?.send('\x17');
+          ws?.send('\x17');
           return;
         }
         // Ctrl+R → reverse history search (send to shell)
         if (e.ctrlKey && e.key === 'r') {
           e.preventDefault();
-          activeWs?.send('\x12');
+          ws?.send('\x12');
           return;
         }
       };
@@ -393,25 +406,22 @@ const TerminalPage = () => {
       const handleRightClick = (e) => {
         e.preventDefault();
         navigator.clipboard.readText().then(text => {
-          const activeWs = tabsRef.current[tab.id]?.ws;
-          if (text && activeWs?.readyState === WebSocket.OPEN) activeWs.send(text);
+          if (text && ws?.readyState === WebSocket.OPEN) ws.send(text);
         }).catch(() => {});
       };
       container.addEventListener('contextmenu', handleRightClick);
 
-      // --- Fix 1 & 5: data input handling ---
+      // --- Fix 2: data input handling and history tracking ---
       term.onData((data) => {
         // Build current command string
         if (data === '\r') {
           // Enter pressed — save command if not empty
           const cmd = currentCommandRef.current.trim();
-          if (cmd) {
+          if (cmd && cmd !== commandHistoryRef.current[0]) {
+            commandHistoryRef.current = [cmd, ...commandHistoryRef.current].slice(0, 50);
+            // Update history dropdown state
+            setCommandHistory([...commandHistoryRef.current]);
             setCmdRunning(true);
-            if (cmd !== commandHistoryRef.current[0]) {
-              commandHistoryRef.current = [cmd, ...commandHistoryRef.current].slice(0, 50);
-              // Update history dropdown state
-              setCommandHistory([...commandHistoryRef.current]);
-            }
           }
           currentCommandRef.current = '';
         } else if (data === '\x7f') {
@@ -422,10 +432,9 @@ const TerminalPage = () => {
           currentCommandRef.current += data;
         }
 
-        // Send to WebSocket as before
-        const activeWs = tabsRef.current[tab.id]?.ws;
-        if (activeWs?.readyState === WebSocket.OPEN) {
-          activeWs.send(data);
+        // Send to WebSocket
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(data);
         }
       });
 
