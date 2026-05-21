@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   FolderOpen, File, ChevronRight, Search, X, Maximize2, Minimize2,
-  Trash2, Copy, ChevronDown, Plus, Lock, Columns, Palette,
-  ChevronUp, CaseSensitive, Save, ArrowUp, ArrowDown, Unlock
+  Trash2, Copy, ChevronDown, Plus, Columns, Palette,
+  ChevronUp, CaseSensitive, Save, ArrowUp, ArrowDown, Lock
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 
@@ -28,10 +28,6 @@ export const TERMINAL_THEMES = {
     black: '#073642', red: '#dc322f', green: '#859900', yellow: '#b58900', blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5',
     brightBlack: '#002b36', brightRed: '#cb4b16', brightGreen: '#586e75', brightYellow: '#657b83', brightBlue: '#839496', brightMagenta: '#6c71c4', brightCyan: '#93a1a1', brightWhite: '#fdf6e3' },
 };
-
-// =============================================
-// PIN LOCK SYSTEM (Upgrade 5)
-// =============================================
 
 // --- Locked Screen (Login required) ---
 export const LockedScreen = ({ onLogin }) => (

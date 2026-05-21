@@ -41,6 +41,12 @@ const TerminalPage = () => {
   const [showPalette, setShowPalette] = useState(false);
   const [cmdRunning, setCmdRunning] = useState(false);
 
+  // Reactive dashboard state
+  const [currentPath, setCurrentPath] = useState('~');
+  const currentPathRef = useRef('~');
+  const outputBufferRef = useRef('');
+  const [dashboardUpdating, setDashboardUpdating] = useState(false);
+
   // Dynamic Tabs State
   const [tabs, setTabs] = useState([{ id: 1, label: "bash" }]);
   const [activeTabId, setActiveTabId] = useState(1);
@@ -155,8 +161,12 @@ const TerminalPage = () => {
   }, []);
 
   // --- Dashboard fetches ---
-  const fetchStats = async () => {
-    try { const r = await fetch(`${API_URL}/stats`); setStats(await r.json()); } catch {}
+  const fetchStats = async (path) => {
+    try {
+      const url = path ? `${API_URL}/stats?path=${encodeURIComponent(path)}` : `${API_URL}/stats`;
+      const r = await fetch(url);
+      setStats(await r.json());
+    } catch {}
   };
   const fetchDeps = async () => {
     try { const r = await fetch(`${API_URL}/deps`); setDeps(await r.json()); } catch {}
@@ -164,6 +174,27 @@ const TerminalPage = () => {
   const fetchGitStatus = async () => {
     try { const r = await fetch(`${API_URL}/git/status`); setGitStatus(await r.json()); } catch {}
   };
+
+  // Reactive dashboard refresh on cd
+  const refreshDashboard = useCallback(async (termPath) => {
+    // Map terminal path to API path
+    const projectRoot = '/workspace/project';
+    let relativePath = termPath.startsWith(projectRoot)
+      ? termPath.slice(projectRoot.length) || '.'
+      : termPath;
+    if (relativePath.startsWith('/')) relativePath = relativePath.slice(1);
+    const apiPath = relativePath || '.';
+
+    // Flash animation
+    setDashboardUpdating(true);
+    setTimeout(() => setDashboardUpdating(false), 500);
+
+    // Fetch all dashboard data in parallel
+    await Promise.all([
+      fetchStats(termPath),
+      fetchGitStatus(),
+    ]);
+  }, []);
 
   useEffect(() => { fetchStats(); fetchDeps(); fetchGitStatus(); }, []);
 
@@ -322,6 +353,25 @@ const TerminalPage = () => {
             }
             currentLine = "";
           }
+
+          // Reactive dashboard: detect cwd from bash prompt
+          outputBufferRef.current += text;
+          const promptRegex = /[\w-]+@[\w.-]+:([^#$\x1b]+)[#$]/;
+          const promptMatch = outputBufferRef.current.match(promptRegex);
+          if (promptMatch) {
+            const newPath = promptMatch[1].trim();
+            if (newPath && newPath !== currentPathRef.current) {
+              currentPathRef.current = newPath;
+              setCurrentPath(newPath);
+              refreshDashboard(newPath);
+            }
+            outputBufferRef.current = '';
+          }
+          // Keep buffer from growing unbounded
+          if (outputBufferRef.current.length > 4096) {
+            outputBufferRef.current = outputBufferRef.current.slice(-2048);
+          }
+
           saveSession(term);
         };
 
@@ -910,11 +960,31 @@ const TerminalPage = () => {
               <Activity size={20} className="text-[#3fb950]" />
               <h2 className="text-lg font-bold">Live Dashboard</h2>
             </div>
+            {/* Breadcrumb showing current terminal path */}
+            <div className="flex items-center gap-1 text-xs text-[#8b949e] px-3 py-2 border border-[#30363d] rounded-lg bg-[#161b22]">
+              <span>📍</span>
+              {currentPath.split('/').filter(Boolean).map((part, i, arr) => (
+                <span key={i} className="flex items-center gap-1">
+                  <span
+                    className="hover:text-[#58a6ff] cursor-pointer transition-colors"
+                    onClick={() => {
+                      const path = '/' + arr.slice(0, i + 1).join('/');
+                      if (activeWsRef.current?.readyState === WebSocket.OPEN) {
+                        activeWsRef.current.send(`cd ${path}\r`);
+                      }
+                    }}
+                  >
+                    {part}
+                  </span>
+                  {i < arr.length - 1 && <span className="text-[#484f58]">/</span>}
+                </span>
+              ))}
+            </div>
             <div className="space-y-6">
-              <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderStats()}</section>
-              <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderDeps()}</section>
-              <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderGit()}</section>
-              <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
+              <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>{renderStats()}</section>
+              <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>{renderDeps()}</section>
+              <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>{renderGit()}</section>
+              <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>
                 <FileExplorer wsRef={activeWsRef} onOpenFile={handleOpenFile} />
               </section>
             </div>
