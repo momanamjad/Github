@@ -1,9 +1,209 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FolderOpen, File, ChevronRight, Search, X, Maximize2, Minimize2, Trash2, Copy, ChevronDown, Plus, Lock } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  FolderOpen, File, ChevronRight, Search, X, Maximize2, Minimize2,
+  Trash2, Copy, ChevronDown, Plus, Lock, Columns, Palette,
+  ChevronUp, CaseSensitive, Save, ArrowUp, ArrowDown, Unlock
+} from "lucide-react";
+import Editor from "@monaco-editor/react";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-// --- Locked Screen ---
+// =============================================
+// TERMINAL THEMES (Upgrade 3)
+// =============================================
+export const TERMINAL_THEMES = {
+  'GitHub Dark': { background: '#0d1117', foreground: '#e6edf3', cursor: '#58a6ff', selection: '#264f78',
+    black: '#484f58', red: '#ff7b72', green: '#3fb950', yellow: '#d29922', blue: '#58a6ff', magenta: '#bc8cff', cyan: '#39c5cf', white: '#b1bac4',
+    brightBlack: '#6e7681', brightRed: '#ffa198', brightGreen: '#56d364', brightYellow: '#e3b341', brightBlue: '#79c0ff', brightMagenta: '#d2a8ff', brightCyan: '#56d4dd', brightWhite: '#ffffff' },
+  'Dracula': { background: '#282a36', foreground: '#f8f8f2', cursor: '#ff79c6', selection: '#44475a',
+    black: '#21222c', red: '#ff5555', green: '#50fa7b', yellow: '#f1fa8c', blue: '#bd93f9', magenta: '#ff79c6', cyan: '#8be9fd', white: '#f8f8f2',
+    brightBlack: '#6272a4', brightRed: '#ff6e6e', brightGreen: '#69ff94', brightYellow: '#ffffa5', brightBlue: '#d6acff', brightMagenta: '#ff92df', brightCyan: '#a4ffff', brightWhite: '#ffffff' },
+  'Monokai': { background: '#272822', foreground: '#f8f8f2', cursor: '#f8f8f2', selection: '#49483e',
+    black: '#272822', red: '#f92672', green: '#a6e22e', yellow: '#f4bf75', blue: '#66d9ef', magenta: '#ae81ff', cyan: '#a1efe4', white: '#f8f8f2',
+    brightBlack: '#75715e', brightRed: '#f92672', brightGreen: '#a6e22e', brightYellow: '#f4bf75', brightBlue: '#66d9ef', brightMagenta: '#ae81ff', brightCyan: '#a1efe4', brightWhite: '#f9f8f5' },
+  'One Dark': { background: '#282c34', foreground: '#abb2bf', cursor: '#528bff', selection: '#3e4451',
+    black: '#282c34', red: '#e06c75', green: '#98c379', yellow: '#d19a66', blue: '#61afef', magenta: '#c678dd', cyan: '#56b6c2', white: '#abb2bf',
+    brightBlack: '#5c6370', brightRed: '#e06c75', brightGreen: '#98c379', brightYellow: '#d19a66', brightBlue: '#61afef', brightMagenta: '#c678dd', brightCyan: '#56b6c2', brightWhite: '#ffffff' },
+  'Solarized Dark': { background: '#002b36', foreground: '#839496', cursor: '#268bd2', selection: '#073642',
+    black: '#073642', red: '#dc322f', green: '#859900', yellow: '#b58900', blue: '#268bd2', magenta: '#d33682', cyan: '#2aa198', white: '#eee8d5',
+    brightBlack: '#002b36', brightRed: '#cb4b16', brightGreen: '#586e75', brightYellow: '#657b83', brightBlue: '#839496', brightMagenta: '#6c71c4', brightCyan: '#93a1a1', brightWhite: '#fdf6e3' },
+};
+
+// =============================================
+// PIN LOCK SYSTEM (Upgrade 5)
+// =============================================
+const hashPin = (pin) => {
+  let hash = 0;
+  for (let i = 0; i < pin.length; i++) {
+    const char = pin.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36);
+};
+
+export const PinLockScreen = ({ onUnlock }) => {
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [isSettingPin, setIsSettingPin] = useState(!localStorage.getItem('terminal_pin_hash'));
+  const [error, setError] = useState('');
+  const [attempts, setAttempts] = useState(0);
+  const [lockUntil, setLockUntil] = useState(0);
+  const [step, setStep] = useState('enter'); // 'enter' | 'confirm'
+
+  useEffect(() => {
+    const storedLock = localStorage.getItem('terminal_lock_until');
+    if (storedLock && Date.now() < parseInt(storedLock)) {
+      setLockUntil(parseInt(storedLock));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (lockUntil <= Date.now()) return;
+    const timer = setInterval(() => {
+      if (Date.now() >= lockUntil) {
+        setLockUntil(0);
+        setAttempts(0);
+        localStorage.removeItem('terminal_lock_until');
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockUntil]);
+
+  const handleNumpad = (num) => {
+    if (lockUntil > Date.now()) return;
+    if (isSettingPin) {
+      if (step === 'enter') {
+        if (pin.length < 4) setPin(prev => prev + num);
+      } else {
+        if (confirmPin.length < 4) setConfirmPin(prev => prev + num);
+      }
+    } else {
+      if (pin.length < 4) setPin(prev => prev + num);
+    }
+  };
+
+  const handleBackspace = () => {
+    if (isSettingPin && step === 'confirm') {
+      setConfirmPin(prev => prev.slice(0, -1));
+    } else {
+      setPin(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleSubmit = () => {
+    if (lockUntil > Date.now()) return;
+    setError('');
+
+    if (isSettingPin) {
+      if (step === 'enter') {
+        if (pin.length !== 4) { setError('PIN must be 4 digits'); return; }
+        setStep('confirm');
+        return;
+      }
+      // confirm step
+      if (confirmPin !== pin) {
+        setError('PINs do not match');
+        setConfirmPin('');
+        return;
+      }
+      localStorage.setItem('terminal_pin_hash', hashPin(pin));
+      onUnlock();
+    } else {
+      if (pin.length !== 4) { setError('Enter 4-digit PIN'); return; }
+      const stored = localStorage.getItem('terminal_pin_hash');
+      if (hashPin(pin) === stored) {
+        setAttempts(0);
+        onUnlock();
+      } else {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        setPin('');
+        if (newAttempts >= 3) {
+          const until = Date.now() + 30000;
+          setLockUntil(until);
+          localStorage.setItem('terminal_lock_until', until.toString());
+          setError('Too many attempts. Locked for 30 seconds.');
+        } else {
+          setError(`Wrong PIN (${3 - newAttempts} attempts left)`);
+        }
+      }
+    }
+  };
+
+  // Auto-submit when 4 digits entered
+  useEffect(() => {
+    if (!isSettingPin && pin.length === 4) handleSubmit();
+  }, [pin]);
+
+  useEffect(() => {
+    if (isSettingPin && step === 'confirm' && confirmPin.length === 4) handleSubmit();
+  }, [confirmPin]);
+
+  const remainingLock = lockUntil > Date.now() ? Math.ceil((lockUntil - Date.now()) / 1000) : 0;
+  const currentPin = isSettingPin && step === 'confirm' ? confirmPin : pin;
+
+  return (
+    <div className="flex-1 flex items-center justify-center bg-[#0d1117]">
+      <div className="text-center space-y-6 p-8 bg-[#161b22] rounded-2xl border border-[#30363d] shadow-2xl max-w-sm w-full mx-4">
+        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#238636] to-[#1a7f37] flex items-center justify-center shadow-lg shadow-[#238636]/20">
+          <Lock size={36} className="text-white" />
+        </div>
+        <h2 className="text-xl font-bold text-[#e6edf3]">
+          {isSettingPin ? (step === 'enter' ? 'Set Your PIN' : 'Confirm PIN') : 'Enter PIN'}
+        </h2>
+        <p className="text-[#8b949e] text-sm">
+          {isSettingPin ? (step === 'enter' ? 'Choose a 4-digit PIN to protect your terminal' : 'Re-enter your PIN to confirm') : 'Enter your 4-digit PIN to unlock the terminal'}
+        </p>
+
+        {/* PIN dots */}
+        <div className="flex justify-center gap-3 py-2">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+              i < currentPin.length
+                ? 'bg-[#58a6ff] border-[#58a6ff] shadow-[0_0_8px_#58a6ff55]'
+                : 'border-[#30363d] bg-transparent'
+            }`} />
+          ))}
+        </div>
+
+        {error && (
+          <div className="text-[#f85149] text-sm font-medium animate-pulse">{error}</div>
+        )}
+        {remainingLock > 0 && (
+          <div className="text-[#d29922] text-sm">Locked for {remainingLock}s</div>
+        )}
+
+        {/* Numpad */}
+        <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
+          {[1,2,3,4,5,6,7,8,9].map(n => (
+            <button key={n} onClick={() => handleNumpad(n.toString())}
+              disabled={remainingLock > 0}
+              className="h-14 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-[#e6edf3] text-xl font-semibold transition-all duration-150 active:scale-95 disabled:opacity-30 border border-[#30363d] hover:border-[#484f58]">
+              {n}
+            </button>
+          ))}
+          <button onClick={handleBackspace}
+            className="h-14 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] text-sm font-medium transition-all duration-150 active:scale-95 border border-[#30363d]">
+            ←
+          </button>
+          <button onClick={() => handleNumpad('0')}
+            disabled={remainingLock > 0}
+            className="h-14 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-[#e6edf3] text-xl font-semibold transition-all duration-150 active:scale-95 disabled:opacity-30 border border-[#30363d]">
+            0
+          </button>
+          <button onClick={handleSubmit}
+            disabled={remainingLock > 0}
+            className="h-14 rounded-xl bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold transition-all duration-150 active:scale-95 disabled:opacity-30">
+            {isSettingPin ? '✓' : '→'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Locked Screen (Login required) ---
 export const LockedScreen = ({ onLogin }) => (
   <div className="flex-1 flex items-center justify-center bg-[#0d1117]">
     <div className="text-center space-y-6 p-8 bg-[#161b22] rounded-2xl border border-[#30363d] shadow-2xl max-w-md w-full mx-4">
@@ -25,8 +225,10 @@ export const LockedScreen = ({ onLogin }) => (
   </div>
 );
 
-// --- File Explorer ---
-export const FileExplorer = ({ wsRef }) => {
+// =============================================
+// FILE EXPLORER (updated for Monaco - Upgrade 2)
+// =============================================
+export const FileExplorer = ({ wsRef, onOpenFile }) => {
   const [currentPath, setCurrentPath] = useState(".");
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +259,10 @@ export const FileExplorer = ({ wsRef }) => {
       setCurrentPath(currentPath === "." ? entry.name : `${currentPath}/${entry.name}`);
     } else {
       const filePath = currentPath === "." ? entry.name : `${currentPath}/${entry.name}`;
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
+      // Open in Monaco editor if callback provided
+      if (onOpenFile) {
+        onOpenFile(filePath);
+      } else if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(`cat ${filePath}\r`);
       }
     }
@@ -108,23 +313,14 @@ export const FileExplorer = ({ wsRef }) => {
   );
 };
 
-// --- Command Palette (Fix 2) ---
+// --- Command Palette ---
 export const CommandPalette = ({ visible, onClose, wsRef }) => {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
 
   const commands = [
-    "git status",
-    "git log --oneline -10",
-    "git branch -a",
-    "git diff",
-    "ls -la",
-    "cat package.json",
-    "npm run build",
-    "npm run dev",
-    "npm install",
-    "pwd",
-    "clear",
+    "git status", "git log --oneline -10", "git branch -a", "git diff",
+    "ls -la", "cat package.json", "npm run build", "npm run dev", "npm install", "pwd", "clear",
   ];
 
   useEffect(() => {
@@ -167,8 +363,16 @@ export const CommandPalette = ({ visible, onClose, wsRef }) => {
   );
 };
 
-// --- Terminal Toolbar (Fix 1) ---
-export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen, commandHistory, setShowHistory, showHistory }) => {
+// =============================================
+// TERMINAL TOOLBAR (updated - Upgrade 1,3,5)
+// =============================================
+export const TerminalToolbar = ({
+  wsRef, xtermRef, isFullscreen, setIsFullscreen,
+  commandHistory, setShowHistory, showHistory,
+  onSplit, isSplit, selectedTheme, onThemeChange, onLock
+}) => {
+  const [showThemes, setShowThemes] = useState(false);
+
   const handleClear = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send("clear\n");
   };
@@ -191,6 +395,38 @@ export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen
         {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
         {isFullscreen ? "Exit" : "Fullscreen"}
       </button>
+
+      {/* Split Pane Button (Upgrade 1) */}
+      <button onClick={onSplit} className={`flex items-center gap-1.5 px-2 py-1 text-[11px] ${isSplit ? 'text-[#58a6ff]' : 'text-[#8b949e]'} hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors`} title={isSplit ? "Close Split" : "Split Pane"}>
+        <Columns size={12} /> {isSplit ? "Unsplit" : "Split"}
+      </button>
+
+      {/* Theme Dropdown (Upgrade 3) */}
+      <div className="relative">
+        <button onClick={() => setShowThemes(!showThemes)} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors">
+          <Palette size={12} /> Theme
+        </button>
+        {showThemes && (
+          <div className="absolute left-0 top-full mt-1 w-[180px] bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl z-30 py-1">
+            {Object.keys(TERMINAL_THEMES).map(name => (
+              <button key={name} onClick={() => { onThemeChange(name); setShowThemes(false); }}
+                className={`w-full text-left px-3 py-2 text-[12px] transition-colors flex items-center gap-2 ${
+                  name === selectedTheme ? 'bg-[#21262d] text-[#58a6ff]' : 'text-[#c9d1d9] hover:bg-[#21262d]'
+                }`}>
+                <div className="w-3 h-3 rounded-full border border-[#484f58]" style={{ backgroundColor: TERMINAL_THEMES[name].background }} />
+                {name}
+                {name === selectedTheme && <span className="ml-auto text-[#3fb950]">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lock Button (Upgrade 5) */}
+      <button onClick={onLock} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#f85149] hover:bg-[#21262d] rounded transition-colors" title="Lock Terminal">
+        <Lock size={12} /> Lock
+      </button>
+
       <div className="relative ml-auto">
         <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors">
           <ChevronDown size={12} /> History
@@ -214,7 +450,7 @@ export const TerminalToolbar = ({ wsRef, xtermRef, isFullscreen, setIsFullscreen
   );
 };
 
-// --- Tab Bar (Fix 3) ---
+// --- Tab Bar ---
 export const TabBar = ({ tabs, activeTabId, onSelectTab, onNewTab, onCloseTab }) => (
   <div className="h-9 border-b border-[#30363d] flex items-center px-2 bg-[#0d1117] shrink-0">
     <div className="flex items-center gap-0.5 w-full overflow-x-auto overflow-y-hidden scrollbar-none">
@@ -262,6 +498,235 @@ export const SpinnerIndicator = ({ running }) => {
     <div className="absolute top-2 right-2 z-10 flex items-center gap-2 px-2.5 py-1 bg-[#161b22] border border-[#30363d] rounded-md">
       <div className="w-3 h-3 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
       <span className="text-[11px] text-[#8b949e]">Running...</span>
+    </div>
+  );
+};
+
+// =============================================
+// TERMINAL SEARCH BAR (Upgrade 4)
+// =============================================
+export const TerminalSearchBar = ({ visible, onClose, searchAddonRef }) => {
+  const [query, setQuery] = useState('');
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [resultIndex, setResultIndex] = useState(0);
+  const [resultCount, setResultCount] = useState(0);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (visible && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [visible]);
+
+  const doSearch = useCallback((searchQuery, options = {}) => {
+    if (!searchAddonRef?.current || !searchQuery) {
+      setResultCount(0);
+      setResultIndex(0);
+      return;
+    }
+    const addon = searchAddonRef.current;
+    const found = addon.findNext(searchQuery, {
+      caseSensitive: options.caseSensitive ?? caseSensitive,
+      incremental: true,
+    });
+    // xterm search addon doesn't expose count, so we track approximately
+    if (found) {
+      setResultCount(prev => Math.max(prev, 1));
+    }
+  }, [caseSensitive, searchAddonRef]);
+
+  useEffect(() => {
+    if (query) {
+      doSearch(query);
+    } else if (searchAddonRef?.current) {
+      searchAddonRef.current.clearDecorations();
+      setResultCount(0);
+      setResultIndex(0);
+    }
+  }, [query, caseSensitive, doSearch, searchAddonRef]);
+
+  const handleNext = () => {
+    if (searchAddonRef?.current && query) {
+      searchAddonRef.current.findNext(query, { caseSensitive, incremental: false });
+      setResultIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (searchAddonRef?.current && query) {
+      searchAddonRef.current.findPrevious(query, { caseSensitive });
+      setResultIndex(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleClose = () => {
+    if (searchAddonRef?.current) {
+      searchAddonRef.current.clearDecorations();
+    }
+    setQuery('');
+    setResultCount(0);
+    setResultIndex(0);
+    onClose();
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl"
+      onClick={e => e.stopPropagation()}>
+      <Search size={14} className="text-[#8b949e] shrink-0" />
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); handleNext(); }
+          if (e.key === 'Escape') { e.preventDefault(); handleClose(); }
+        }}
+        className="w-[180px] bg-transparent text-[13px] text-[#e6edf3] outline-none placeholder-[#484f58]"
+        placeholder="Search terminal..."
+      />
+      {query && (
+        <span className="text-[11px] text-[#8b949e] shrink-0 min-w-[40px] text-center">
+          {resultCount > 0 ? `${(resultIndex % resultCount) + 1} of ${resultCount}+` : 'No results'}
+        </span>
+      )}
+      <button onClick={handlePrev} className="p-1 text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors" title="Previous">
+        <ArrowUp size={14} />
+      </button>
+      <button onClick={handleNext} className="p-1 text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors" title="Next">
+        <ArrowDown size={14} />
+      </button>
+      <button onClick={() => setCaseSensitive(!caseSensitive)}
+        className={`p-1 rounded transition-colors ${caseSensitive ? 'text-[#58a6ff] bg-[#21262d]' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d]'}`}
+        title="Case Sensitive">
+        <CaseSensitive size={14} />
+      </button>
+      <button onClick={handleClose} className="p-1 text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors" title="Close">
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
+
+// =============================================
+// MONACO FILE EDITOR (Upgrade 2)
+// =============================================
+const EXT_TO_LANG = {
+  js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
+  py: 'python', rs: 'rust', go: 'go', rb: 'ruby', java: 'java',
+  json: 'json', md: 'markdown', css: 'css', scss: 'scss', html: 'html',
+  xml: 'xml', yaml: 'yaml', yml: 'yaml', toml: 'toml', sql: 'sql',
+  sh: 'shell', bash: 'shell', zsh: 'shell', dockerfile: 'dockerfile',
+  c: 'c', cpp: 'cpp', h: 'c', hpp: 'cpp', cs: 'csharp',
+};
+
+export const MonacoEditor = ({ filePath, onClose }) => {
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
+  const editorRef = useRef(null);
+
+  const ext = filePath.split('.').pop()?.toLowerCase() || '';
+  const language = EXT_TO_LANG[ext] || 'plaintext';
+  const fileName = filePath.split('/').pop();
+
+  useEffect(() => {
+    const fetchFile = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/ls?path=${encodeURIComponent(filePath)}`);
+        const text = await res.text();
+        setContent(text);
+      } catch (e) {
+        setContent(`// Error loading file: ${e.message}`);
+      }
+      setLoading(false);
+    };
+    fetchFile();
+  }, [filePath]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveStatus('');
+    try {
+      const currentContent = editorRef.current?.getValue() || content;
+      const res = await fetch(`${API_URL}/file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath, content: currentContent }),
+      });
+      const data = await res.json();
+      setSaveStatus(data.output || 'Saved');
+      setTimeout(() => setSaveStatus(''), 3000);
+    } catch (e) {
+      setSaveStatus(`Error: ${e.message}`);
+    }
+    setSaving(false);
+  };
+
+  const handleEditorMount = (editor) => {
+    editorRef.current = editor;
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#0d1117] border-l border-[#30363d] animate-slideIn">
+      {/* Editor Toolbar */}
+      <div className="h-10 border-b border-[#30363d] flex items-center justify-between px-4 bg-[#161b22] shrink-0">
+        <div className="flex items-center gap-2">
+          <File size={14} className="text-[#8b949e]" />
+          <span className="text-[13px] text-[#e6edf3] font-medium">{fileName}</span>
+          <span className="text-[11px] text-[#484f58] font-mono">{language}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {saveStatus && (
+            <span className={`text-[11px] ${saveStatus.startsWith('Error') ? 'text-[#f85149]' : 'text-[#3fb950]'}`}>
+              {saveStatus}
+            </span>
+          )}
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-1 text-[11px] text-[#e6edf3] bg-[#238636] hover:bg-[#2ea043] rounded transition-colors disabled:opacity-50">
+            <Save size={12} /> {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button onClick={onClose}
+            className="flex items-center gap-1 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+      {/* Editor Body */}
+      <div className="flex-1 min-h-0">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-6 h-6 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <Editor
+            height="100%"
+            language={language}
+            value={content}
+            theme="vs-dark"
+            onMount={handleEditorMount}
+            onChange={(value) => setContent(value || '')}
+            options={{
+              fontSize: 14,
+              fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
+              minimap: { enabled: true },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              lineNumbers: 'on',
+              renderWhitespace: 'selection',
+              bracketPairColorization: { enabled: true },
+              padding: { top: 8 },
+              smoothScrolling: true,
+              cursorBlinking: 'smooth',
+              cursorSmoothCaretAnimation: 'on',
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };

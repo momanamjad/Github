@@ -2,39 +2,19 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Terminal as XTerm } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { WebLinksAddon } from "xterm-addon-web-links";
+import { SearchAddon } from "xterm-addon-search";
 import "xterm/css/xterm.css";
 import { useGitHub } from "@/contexts/GitHubContext";
 import { 
   TerminalSquare, Activity, Package, GitBranch, AlertCircle,
-  FileCode, Hash, CheckCircle2
+  FileCode, Hash, CheckCircle2, X
 } from "lucide-react";
 import {
   LockedScreen, FileExplorer, CommandPalette,
-  TerminalToolbar, TabBar, SpinnerIndicator
+  TerminalToolbar, TabBar, SpinnerIndicator,
+  PinLockScreen, TerminalSearchBar, MonacoEditor,
+  TERMINAL_THEMES
 } from "./TerminalComponents";
-
-const GITHUB_DARK = {
-  background: "#0d1117",
-  foreground: "#e6edf3",
-  cursor: "#58a6ff",
-  selection: "#334d5c",
-  black: "#484f58",
-  red: "#ff7b72",
-  green: "#3fb950",
-  yellow: "#d29922",
-  blue: "#58a6ff",
-  magenta: "#bc8cff",
-  cyan: "#39c5cf",
-  white: "#b1bac4",
-  brightBlack: "#6e7681",
-  brightRed: "#ffa198",
-  brightGreen: "#56d364",
-  brightYellow: "#e3b341",
-  brightBlue: "#79c0ff",
-  brightMagenta: "#d2a8ff",
-  brightCyan: "#56d4dd",
-  brightWhite: "#ffffff",
-};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const WS_URL = import.meta.env.VITE_WS_URL || 
@@ -42,6 +22,7 @@ const WS_URL = import.meta.env.VITE_WS_URL ||
 
 const SESSION_KEY = "terminal_session_lines";
 const MAX_SESSION_LINES = 200;
+const THEME_KEY = "terminal_selected_theme";
 
 const TerminalPage = () => {
   const terminalRefs = useRef({});
@@ -60,18 +41,44 @@ const TerminalPage = () => {
   const [showPalette, setShowPalette] = useState(false);
   const [cmdRunning, setCmdRunning] = useState(false);
 
-  // Dynamic Tabs State (Fix 3)
+  // Dynamic Tabs State
   const [tabs, setTabs] = useState([{ id: 1, label: "bash" }]);
   const [activeTabId, setActiveTabId] = useState(1);
   const activeTabIdRef = useRef(activeTabId);
   const nextTabId = useRef(2);
+
+  // Upgrade 1: Split pane state
+  const [isSplit, setIsSplit] = useState(false);
+  const [splitFocused, setSplitFocused] = useState('left'); // 'left' | 'right'
+  const [splitRatio, setSplitRatio] = useState(50);
+  const splitTermRef = useRef(null);
+  const splitWsRef = useRef(null);
+  const splitFitRef = useRef(null);
+  const splitSearchRef = useRef(null);
+  const splitContainerRef = useRef(null);
+  const isDraggingRef = useRef(false);
+
+  // Upgrade 2: Monaco editor state
+  const [editorFile, setEditorFile] = useState(null);
+
+  // Upgrade 3: Theme state
+  const [selectedTheme, setSelectedTheme] = useState(() => {
+    return localStorage.getItem(THEME_KEY) || 'GitHub Dark';
+  });
+
+  // Upgrade 4: Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const searchAddonRef = useRef(null);
+
+  // Upgrade 5: PIN lock state
+  const [isPinUnlocked, setIsPinUnlocked] = useState(false);
 
   // Keep activeTabIdRef updated
   useEffect(() => {
     activeTabIdRef.current = activeTabId;
   }, [activeTabId]);
 
-  // Track command history (Fix 1)
+  // Track command history
   const commandHistoryRef = useRef([]);
   const currentCommandRef = useRef('');
 
@@ -81,10 +88,56 @@ const TerminalPage = () => {
   const hasRestoredRef = useRef(false);
   const lastSaveTimeRef = useRef(0);
 
+  // =============================================
+  // Theme application (Upgrade 3)
+  // =============================================
+  const applyThemeToAll = useCallback((themeName) => {
+    const theme = TERMINAL_THEMES[themeName];
+    if (!theme) return;
+    
+    // Apply to all tab terminals
+    Object.values(tabsRef.current).forEach(tInfo => {
+      if (tInfo.term) {
+        tInfo.term.options.theme = theme;
+      }
+    });
+    
+    // Apply to split pane terminal
+    if (splitTermRef.current) {
+      splitTermRef.current.options.theme = theme;
+    }
+    
+    localStorage.setItem(THEME_KEY, themeName);
+  }, []);
+
+  const handleThemeChange = useCallback((themeName) => {
+    setSelectedTheme(themeName);
+    applyThemeToAll(themeName);
+  }, [applyThemeToAll]);
+
+  // =============================================
+  // PIN Lock handlers (Upgrade 5)
+  // =============================================
+  const handleLock = useCallback(() => {
+    setIsPinUnlocked(false);
+    // Disconnect all WebSockets
+    Object.values(tabsRef.current).forEach(tInfo => {
+      if (tInfo.ws) tInfo.ws.close();
+      if (tInfo.reconnectTimeout) clearTimeout(tInfo.reconnectTimeout);
+    });
+    if (splitWsRef.current) splitWsRef.current.close();
+  }, []);
+
+  const handleUnlock = useCallback(() => {
+    setIsPinUnlocked(true);
+  }, []);
+
+  // =============================================
+  // Session save/restore
+  // =============================================
   const saveSession = useCallback((term, force = false) => {
     if (!term || !isLoggedIn) return;
     const now = Date.now();
-    // Only save every 5 seconds
     if (!force && now - lastSaveTimeRef.current < 5000) return;
     lastSaveTimeRef.current = now;
 
@@ -134,7 +187,7 @@ const TerminalPage = () => {
 
   useEffect(() => { fetchStats(); fetchDeps(); fetchGitStatus(); }, []);
 
-  // --- Command palette global shortcut (Fix 2) ---
+  // --- Command palette global shortcut ---
   useEffect(() => {
     const handler = (e) => {
       if (e.ctrlKey && e.key === "p") { e.preventDefault(); setShowPalette(v => !v); }
@@ -143,7 +196,7 @@ const TerminalPage = () => {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // New tab and Close tab functions (Fix 3)
+  // New tab and Close tab functions
   const handleNewTab = () => {
     const newId = nextTabId.current++;
     const newLabel = `bash ${newId}`;
@@ -174,6 +227,7 @@ const TerminalPage = () => {
     const activeTab = tabsRef.current[activeTabId];
     activeXtermRef.current = activeTab ? activeTab.term : null;
     activeWsRef.current = activeTab ? activeTab.ws : null;
+    searchAddonRef.current = activeTab ? activeTab.searchAddon : null;
 
     if (activeTab) {
       if (activeTab.ws) {
@@ -195,18 +249,22 @@ const TerminalPage = () => {
     }
   }, [activeTabId, tabs]);
 
+  // =============================================
   // Terminal instances initialization for each tab
+  // =============================================
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn || !isPinUnlocked) return;
+
+    const currentTheme = TERMINAL_THEMES[selectedTheme] || TERMINAL_THEMES['GitHub Dark'];
 
     tabs.forEach((tab, index) => {
-      if (tabsRef.current[tab.id]) return; // already initialized!
+      if (tabsRef.current[tab.id]) return;
 
       const container = terminalRefs.current[tab.id];
       if (!container) return;
 
       const term = new XTerm({
-        theme: GITHUB_DARK,
+        theme: currentTheme,
         fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
         fontSize: fontSizeRef.current,
         cursorBlink: true,
@@ -217,8 +275,10 @@ const TerminalPage = () => {
       });
 
       const fitAddon = new FitAddon();
+      const searchAddon = new SearchAddon();
       term.loadAddon(fitAddon);
       term.loadAddon(new WebLinksAddon());
+      term.loadAddon(searchAddon);
       term.open(container);
 
       // Replay saved session before WS connects - ONLY for the very first tab
@@ -234,7 +294,7 @@ const TerminalPage = () => {
         term.writeln("\x1b[1;36m╔══════════════════════════════════════════════════╗\x1b[0m");
         term.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;37mgithub-cli\x1b[0m — \x1b[32mProduction Terminal\x1b[0m                 \x1b[1;36m║\x1b[0m");
         term.writeln("\x1b[1;36m║\x1b[0m  \x1b[33mvim, nano, git, node, npm available\x1b[0m             \x1b[1;36m║\x1b[0m");
-        term.writeln("\x1b[1;36m║\x1b[0m  \x1b[2mCtrl+P: Command Palette | Ctrl+±: Font Size\x1b[0m    \x1b[1;36m║\x1b[0m");
+        term.writeln("\x1b[1;36m║\x1b[0m  \x1b[2mCtrl+P: Palette | Ctrl+F: Search | Ctrl+±: Zoom\x1b[0m\x1b[1;36m║\x1b[0m");
         term.writeln("\x1b[1;36m╚══════════════════════════════════════════════════╝\x1b[0m");
         term.writeln("");
       }
@@ -282,7 +342,6 @@ const TerminalPage = () => {
             }
             currentLine = "";
           }
-          // Save session (throttled internally)
           saveSession(term);
         };
 
@@ -313,6 +372,13 @@ const TerminalPage = () => {
 
       // DOM-level keyboard capture BEFORE xterm
       const handleKeydown = (e) => {
+        // Ctrl+F → search (Upgrade 4)
+        if (e.ctrlKey && e.key === 'f') {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowSearch(true);
+          return;
+        }
         // Font size
         if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
           e.preventDefault(); e.stopPropagation();
@@ -323,6 +389,10 @@ const TerminalPage = () => {
               if (tInfo.fitAddon) tInfo.fitAddon.fit();
             }
           });
+          if (splitTermRef.current) {
+            splitTermRef.current.options.fontSize = fontSizeRef.current;
+            if (splitFitRef.current) splitFitRef.current.fit();
+          }
           return;
         }
         if (e.ctrlKey && e.key === "-") {
@@ -334,6 +404,10 @@ const TerminalPage = () => {
               if (tInfo.fitAddon) tInfo.fitAddon.fit();
             }
           });
+          if (splitTermRef.current) {
+            splitTermRef.current.options.fontSize = fontSizeRef.current;
+            if (splitFitRef.current) splitFitRef.current.fit();
+          }
           return;
         }
         // Ctrl+Shift+V → paste
@@ -363,38 +437,32 @@ const TerminalPage = () => {
         }
 
         // --- Real terminal keyboard shortcuts ---
-        // Ctrl+L → clear screen
         if (e.ctrlKey && !e.shiftKey && e.key === 'l') {
           e.preventDefault();
           term.clear();
-          ws?.send('\x0c'); // send Ctrl+L to shell too
+          ws?.send('\x0c');
           return;
         }
-        // Ctrl+U → clear current line (send to shell)
         if (e.ctrlKey && e.key === 'u') {
           e.preventDefault();
           ws?.send('\x15');
           return;
         }
-        // Ctrl+A → go to start of line
         if (e.ctrlKey && e.key === 'a') {
           e.preventDefault();
           ws?.send('\x01');
           return;
         }
-        // Ctrl+E → go to end of line
         if (e.ctrlKey && e.key === 'e') {
           e.preventDefault();
           ws?.send('\x05');
           return;
         }
-        // Ctrl+W → delete word before cursor
         if (e.ctrlKey && e.key === 'w') {
           e.preventDefault();
           ws?.send('\x17');
           return;
         }
-        // Ctrl+R → reverse history search (send to shell)
         if (e.ctrlKey && e.key === 'r') {
           e.preventDefault();
           ws?.send('\x12');
@@ -411,36 +479,28 @@ const TerminalPage = () => {
       };
       container.addEventListener('contextmenu', handleRightClick);
 
-      // --- Fix 2: data input handling and history tracking ---
+      // --- data input handling and history tracking ---
       term.onData((data) => {
-        // Build current command string
         if (data === '\r') {
-          // Enter pressed — save command if not empty
           const cmd = currentCommandRef.current.trim();
           if (cmd && cmd !== commandHistoryRef.current[0]) {
             commandHistoryRef.current = [cmd, ...commandHistoryRef.current].slice(0, 50);
-            // Update history dropdown state
             setCommandHistory([...commandHistoryRef.current]);
             setCmdRunning(true);
           }
           currentCommandRef.current = '';
         } else if (data === '\x7f') {
-          // Backspace
           currentCommandRef.current = currentCommandRef.current.slice(0, -1);
         } else if (data >= ' ' || data === '\t') {
-          // Printable character
           currentCommandRef.current += data;
         }
 
-        // Send to WebSocket
         if (ws?.readyState === WebSocket.OPEN) {
           ws.send(data);
         }
       });
 
-      // --- Fix 5 — Up/Down arrow key history in shell: ---
       term.attachCustomKeyEventHandler((e) => {
-        // Always let arrow keys through
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
           return true;
         }
@@ -456,6 +516,7 @@ const TerminalPage = () => {
       tabsRef.current[tab.id] = {
         term,
         fitAddon,
+        searchAddon,
         ws,
         reconnectTimeout,
         container,
@@ -482,7 +543,167 @@ const TerminalPage = () => {
       }
     });
 
-  }, [tabs, isLoggedIn]);
+  }, [tabs, isLoggedIn, isPinUnlocked]);
+
+  // =============================================
+  // SPLIT PANE LOGIC (Upgrade 1)
+  // =============================================
+  const handleSplitToggle = useCallback(() => {
+    if (isSplit) {
+      // Close split
+      if (splitWsRef.current) splitWsRef.current.close();
+      if (splitTermRef.current) splitTermRef.current.dispose();
+      splitTermRef.current = null;
+      splitWsRef.current = null;
+      splitFitRef.current = null;
+      splitSearchRef.current = null;
+      setIsSplit(false);
+      setSplitRatio(50);
+      // Refit main terminal
+      setTimeout(() => {
+        Object.values(tabsRef.current).forEach(tInfo => {
+          if (tInfo.fitAddon) tInfo.fitAddon.fit();
+        });
+      }, 100);
+    } else {
+      setIsSplit(true);
+    }
+  }, [isSplit]);
+
+  // Initialize split pane terminal
+  useEffect(() => {
+    if (!isSplit || !splitContainerRef.current || !isPinUnlocked) return;
+    if (splitTermRef.current) return; // already initialized
+
+    const currentTheme = TERMINAL_THEMES[selectedTheme] || TERMINAL_THEMES['GitHub Dark'];
+
+    const term = new XTerm({
+      theme: currentTheme,
+      fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
+      fontSize: fontSizeRef.current,
+      cursorBlink: true,
+      convertEol: true,
+      allowProposedApi: true,
+      rightClickSelectsWord: false,
+    });
+
+    const fitAddon = new FitAddon();
+    const searchAddon = new SearchAddon();
+    term.loadAddon(fitAddon);
+    term.loadAddon(new WebLinksAddon());
+    term.loadAddon(searchAddon);
+    term.open(splitContainerRef.current);
+
+    splitTermRef.current = term;
+    splitFitRef.current = fitAddon;
+    splitSearchRef.current = searchAddon;
+
+    setTimeout(() => fitAddon.fit(), 100);
+
+    term.writeln("\x1b[1;35m── Split Pane ──\x1b[0m");
+    term.writeln("");
+
+    // Connect WebSocket for split pane
+    let ws = null;
+    let reconnectTimeout = null;
+
+    const connectSplitWS = () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      const newWs = new WebSocket(`${WS_URL}/ws`);
+      newWs.binaryType = "blob";
+      ws = newWs;
+      splitWsRef.current = newWs;
+
+      newWs.onopen = () => {
+        newWs.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+      };
+
+      newWs.onmessage = async (event) => {
+        if (event.data instanceof Blob) {
+          const buf = await event.data.arrayBuffer();
+          term.write(new Uint8Array(buf));
+        } else {
+          term.write(event.data);
+        }
+      };
+
+      newWs.onclose = () => {
+        reconnectTimeout = setTimeout(connectSplitWS, 3000);
+      };
+
+      newWs.onerror = () => { newWs.close(); };
+    };
+
+    connectSplitWS();
+
+    // Split pane keydown handler
+    const handleKeydown = (e) => {
+      if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault(); e.stopPropagation();
+        setShowSearch(true);
+        return;
+      }
+    };
+    splitContainerRef.current.addEventListener('keydown', handleKeydown, true);
+
+    // Right-click paste
+    const handleRightClick = (e) => {
+      e.preventDefault();
+      navigator.clipboard.readText().then(text => {
+        if (text && ws?.readyState === WebSocket.OPEN) ws.send(text);
+      }).catch(() => {});
+    };
+    splitContainerRef.current.addEventListener('contextmenu', handleRightClick);
+
+    term.onData((data) => {
+      if (ws?.readyState === WebSocket.OPEN) ws.send(data);
+    });
+
+    term.onResize(({ cols, rows }) => {
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "resize", cols, rows }));
+      }
+    });
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
+  }, [isSplit, isPinUnlocked, selectedTheme]);
+
+  // Split pane divider drag handler
+  const handleDividerMouseDown = useCallback((e) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+
+    const startX = e.clientX;
+    const startRatio = splitRatio;
+    const parentEl = e.target.parentElement;
+    const parentWidth = parentEl?.getBoundingClientRect().width || 1;
+
+    const onMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const delta = e.clientX - startX;
+      const deltaPercent = (delta / parentWidth) * 100;
+      const newRatio = Math.max(20, Math.min(80, startRatio + deltaPercent));
+      setSplitRatio(newRatio);
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      // Refit both terminals
+      setTimeout(() => {
+        Object.values(tabsRef.current).forEach(tInfo => {
+          if (tInfo.fitAddon) tInfo.fitAddon.fit();
+        });
+        if (splitFitRef.current) splitFitRef.current.fit();
+      }, 50);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [splitRatio]);
 
   // Window resize handler
   useEffect(() => {
@@ -490,6 +711,7 @@ const TerminalPage = () => {
       Object.values(tabsRef.current).forEach(tInfo => {
         if (tInfo.fitAddon) tInfo.fitAddon.fit();
       });
+      if (splitFitRef.current) splitFitRef.current.fit();
     };
     window.addEventListener("resize", handleResize);
 
@@ -498,7 +720,7 @@ const TerminalPage = () => {
     };
   }, []);
 
-  // Global listeners for buddy extension (modified to target active tab)
+  // Global listeners for buddy extension
   useEffect(() => {
     const handleBuddyCommand = (e) => {
       const { command } = e.detail;
@@ -543,6 +765,8 @@ const TerminalPage = () => {
           tInfo.term.dispose();
         }
       });
+      if (splitWsRef.current) splitWsRef.current.close();
+      if (splitTermRef.current) splitTermRef.current.dispose();
     };
   }, [saveSession]);
 
@@ -554,6 +778,16 @@ const TerminalPage = () => {
     return () => window.removeEventListener("click", close);
   }, [showHistory]);
 
+  // =============================================
+  // Monaco editor open handler (Upgrade 2)
+  // =============================================
+  const handleOpenFile = useCallback((filePath) => {
+    setEditorFile(filePath);
+  }, []);
+
+  // =============================================
+  // Dashboard rendering functions
+  // =============================================
   const renderStats = () => {
     if (!stats) return <div className="animate-pulse h-40 bg-[#161b22] rounded-lg"></div>;
     const total = stats.total_files || 0;
@@ -669,10 +903,24 @@ const TerminalPage = () => {
     );
   };
 
+  // =============================================
+  // RENDER
+  // =============================================
+
+  // Not logged in
   if (!isLoggedIn) {
     return (
       <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0d1117] text-[#e6edf3] font-sans">
         <LockedScreen onLogin={() => window.location.href = "/"} />
+      </div>
+    );
+  }
+
+  // PIN lock check (Upgrade 5)
+  if (!isPinUnlocked) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0d1117] text-[#e6edf3] font-sans">
+        <PinLockScreen onUnlock={handleUnlock} />
       </div>
     );
   }
@@ -696,13 +944,13 @@ const TerminalPage = () => {
               <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderDeps()}</section>
               <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">{renderGit()}</section>
               <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
-                <FileExplorer wsRef={activeWsRef} />
+                <FileExplorer wsRef={activeWsRef} onOpenFile={handleOpenFile} />
               </section>
             </div>
           </div>
         )}
 
-        {/* Right Panel - Terminal */}
+        {/* Right Panel - Terminal + Editor */}
         <div className={terminalPanelClass}>
           {/* Header */}
           <div className="h-12 border-b border-[#30363d] flex items-center justify-between px-4 sm:px-6 bg-[#161b22] shrink-0">
@@ -728,22 +976,105 @@ const TerminalPage = () => {
           />
           {/* Toolbar */}
           <TerminalToolbar
-            wsRef={activeWsRef} xtermRef={activeXtermRef}
+            wsRef={splitFocused === 'right' ? splitWsRef : activeWsRef}
+            xtermRef={splitFocused === 'right' ? splitTermRef : activeXtermRef}
             isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen}
             commandHistory={commandHistory.slice(0, 10)}
             showHistory={showHistory} setShowHistory={setShowHistory}
+            onSplit={handleSplitToggle}
+            isSplit={isSplit}
+            selectedTheme={selectedTheme}
+            onThemeChange={handleThemeChange}
+            onLock={handleLock}
           />
-          {/* Terminal */}
-          <div className="flex-1 p-2 sm:p-4 relative min-h-0 overflow-hidden">
-            <SpinnerIndicator running={cmdRunning} />
-            <CommandPalette visible={showPalette} onClose={() => setShowPalette(false)} wsRef={activeWsRef} />
-            {tabs.map(tab => (
-              <div 
-                key={tab.id}
-                ref={el => { terminalRefs.current[tab.id] = el; }}
-                className={`absolute inset-2 sm:inset-4 overflow-hidden rounded-lg border border-[#30363d] bg-[#0d1117] ${tab.id === activeTabId ? 'block' : 'hidden'}`}
-              />
-            ))}
+
+          {/* Terminal + Editor area */}
+          <div className="flex-1 flex min-h-0 overflow-hidden">
+            {/* Terminal area */}
+            <div className={`flex-1 relative min-h-0 overflow-hidden ${editorFile ? 'w-1/2' : 'w-full'}`} style={editorFile ? { flex: '0 0 50%' } : {}}>
+              <div className="absolute inset-0 p-2 sm:p-4">
+                <SpinnerIndicator running={cmdRunning} />
+                <TerminalSearchBar
+                  visible={showSearch}
+                  onClose={() => setShowSearch(false)}
+                  searchAddonRef={splitFocused === 'right' ? splitSearchRef : searchAddonRef}
+                />
+                <CommandPalette visible={showPalette} onClose={() => setShowPalette(false)} wsRef={activeWsRef} />
+                
+                {/* Split or single pane terminal */}
+                {isSplit ? (
+                  <div className="flex h-full gap-0">
+                    {/* Left Pane */}
+                    <div
+                      style={{ width: `${splitRatio}%` }}
+                      className={`relative overflow-hidden rounded-l-lg border bg-[#0d1117] transition-colors ${
+                        splitFocused === 'left' ? 'border-[#58a6ff]' : 'border-[#30363d]'
+                      }`}
+                      onClick={() => setSplitFocused('left')}
+                    >
+                      {tabs.map(tab => (
+                        <div
+                          key={tab.id}
+                          ref={el => { terminalRefs.current[tab.id] = el; }}
+                          className={`absolute inset-0 overflow-hidden ${tab.id === activeTabId ? 'block' : 'hidden'}`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Divider */}
+                    <div
+                      className="w-1.5 bg-[#21262d] hover:bg-[#58a6ff] cursor-col-resize transition-colors flex items-center justify-center shrink-0"
+                      onMouseDown={handleDividerMouseDown}
+                    >
+                      <div className="w-0.5 h-8 bg-[#484f58] rounded-full" />
+                    </div>
+
+                    {/* Right Pane */}
+                    <div
+                      style={{ width: `${100 - splitRatio}%` }}
+                      className={`relative overflow-hidden rounded-r-lg border bg-[#0d1117] transition-colors ${
+                        splitFocused === 'right' ? 'border-[#58a6ff]' : 'border-[#30363d]'
+                      }`}
+                      onClick={() => setSplitFocused('right')}
+                    >
+                      {/* Close split button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleSplitToggle(); }}
+                        className="absolute top-1 right-1 z-10 p-1 text-[#8b949e] hover:text-[#f85149] hover:bg-[#21262d] rounded transition-colors"
+                        title="Close split pane"
+                      >
+                        <X size={14} />
+                      </button>
+                      <div
+                        ref={splitContainerRef}
+                        className="absolute inset-0 overflow-hidden"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // Single pane
+                  <>
+                    {tabs.map(tab => (
+                      <div 
+                        key={tab.id}
+                        ref={el => { terminalRefs.current[tab.id] = el; }}
+                        className={`absolute inset-2 sm:inset-4 overflow-hidden rounded-lg border border-[#30363d] bg-[#0d1117] ${tab.id === activeTabId ? 'block' : 'hidden'}`}
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Monaco Editor Panel (Upgrade 2) */}
+            {editorFile && (
+              <div className="w-1/2 border-l border-[#30363d]" style={{ flex: '0 0 50%' }}>
+                <MonacoEditor
+                  filePath={editorFile}
+                  onClose={() => setEditorFile(null)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
