@@ -32,176 +32,6 @@ export const TERMINAL_THEMES = {
 // =============================================
 // PIN LOCK SYSTEM (Upgrade 5)
 // =============================================
-const hashPin = (pin) => {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString(36);
-};
-
-export const PinLockScreen = ({ onUnlock }) => {
-  const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [isSettingPin, setIsSettingPin] = useState(!localStorage.getItem('terminal_pin_hash'));
-  const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(0);
-  const [lockUntil, setLockUntil] = useState(0);
-  const [step, setStep] = useState('enter'); // 'enter' | 'confirm'
-
-  useEffect(() => {
-    const storedLock = localStorage.getItem('terminal_lock_until');
-    if (storedLock && Date.now() < parseInt(storedLock)) {
-      setLockUntil(parseInt(storedLock));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (lockUntil <= Date.now()) return;
-    const timer = setInterval(() => {
-      if (Date.now() >= lockUntil) {
-        setLockUntil(0);
-        setAttempts(0);
-        localStorage.removeItem('terminal_lock_until');
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [lockUntil]);
-
-  const handleNumpad = (num) => {
-    if (lockUntil > Date.now()) return;
-    if (isSettingPin) {
-      if (step === 'enter') {
-        if (pin.length < 4) setPin(prev => prev + num);
-      } else {
-        if (confirmPin.length < 4) setConfirmPin(prev => prev + num);
-      }
-    } else {
-      if (pin.length < 4) setPin(prev => prev + num);
-    }
-  };
-
-  const handleBackspace = () => {
-    if (isSettingPin && step === 'confirm') {
-      setConfirmPin(prev => prev.slice(0, -1));
-    } else {
-      setPin(prev => prev.slice(0, -1));
-    }
-  };
-
-  const handleSubmit = () => {
-    if (lockUntil > Date.now()) return;
-    setError('');
-
-    if (isSettingPin) {
-      if (step === 'enter') {
-        if (pin.length !== 4) { setError('PIN must be 4 digits'); return; }
-        setStep('confirm');
-        return;
-      }
-      // confirm step
-      if (confirmPin !== pin) {
-        setError('PINs do not match');
-        setConfirmPin('');
-        return;
-      }
-      localStorage.setItem('terminal_pin_hash', hashPin(pin));
-      onUnlock();
-    } else {
-      if (pin.length !== 4) { setError('Enter 4-digit PIN'); return; }
-      const stored = localStorage.getItem('terminal_pin_hash');
-      if (hashPin(pin) === stored) {
-        setAttempts(0);
-        onUnlock();
-      } else {
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-        setPin('');
-        if (newAttempts >= 3) {
-          const until = Date.now() + 30000;
-          setLockUntil(until);
-          localStorage.setItem('terminal_lock_until', until.toString());
-          setError('Too many attempts. Locked for 30 seconds.');
-        } else {
-          setError(`Wrong PIN (${3 - newAttempts} attempts left)`);
-        }
-      }
-    }
-  };
-
-  // Auto-submit when 4 digits entered
-  useEffect(() => {
-    if (!isSettingPin && pin.length === 4) handleSubmit();
-  }, [pin]);
-
-  useEffect(() => {
-    if (isSettingPin && step === 'confirm' && confirmPin.length === 4) handleSubmit();
-  }, [confirmPin]);
-
-  const remainingLock = lockUntil > Date.now() ? Math.ceil((lockUntil - Date.now()) / 1000) : 0;
-  const currentPin = isSettingPin && step === 'confirm' ? confirmPin : pin;
-
-  return (
-    <div className="flex-1 flex items-center justify-center bg-[#0d1117]">
-      <div className="text-center space-y-6 p-8 bg-[#161b22] rounded-2xl border border-[#30363d] shadow-2xl max-w-sm w-full mx-4">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#238636] to-[#1a7f37] flex items-center justify-center shadow-lg shadow-[#238636]/20">
-          <Lock size={36} className="text-white" />
-        </div>
-        <h2 className="text-xl font-bold text-[#e6edf3]">
-          {isSettingPin ? (step === 'enter' ? 'Set Your PIN' : 'Confirm PIN') : 'Enter PIN'}
-        </h2>
-        <p className="text-[#8b949e] text-sm">
-          {isSettingPin ? (step === 'enter' ? 'Choose a 4-digit PIN to protect your terminal' : 'Re-enter your PIN to confirm') : 'Enter your 4-digit PIN to unlock the terminal'}
-        </p>
-
-        {/* PIN dots */}
-        <div className="flex justify-center gap-3 py-2">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-              i < currentPin.length
-                ? 'bg-[#58a6ff] border-[#58a6ff] shadow-[0_0_8px_#58a6ff55]'
-                : 'border-[#30363d] bg-transparent'
-            }`} />
-          ))}
-        </div>
-
-        {error && (
-          <div className="text-[#f85149] text-sm font-medium animate-pulse">{error}</div>
-        )}
-        {remainingLock > 0 && (
-          <div className="text-[#d29922] text-sm">Locked for {remainingLock}s</div>
-        )}
-
-        {/* Numpad */}
-        <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
-          {[1,2,3,4,5,6,7,8,9].map(n => (
-            <button key={n} onClick={() => handleNumpad(n.toString())}
-              disabled={remainingLock > 0}
-              className="h-14 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-[#e6edf3] text-xl font-semibold transition-all duration-150 active:scale-95 disabled:opacity-30 border border-[#30363d] hover:border-[#484f58]">
-              {n}
-            </button>
-          ))}
-          <button onClick={handleBackspace}
-            className="h-14 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] text-sm font-medium transition-all duration-150 active:scale-95 border border-[#30363d]">
-            ←
-          </button>
-          <button onClick={() => handleNumpad('0')}
-            disabled={remainingLock > 0}
-            className="h-14 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-[#e6edf3] text-xl font-semibold transition-all duration-150 active:scale-95 disabled:opacity-30 border border-[#30363d]">
-            0
-          </button>
-          <button onClick={handleSubmit}
-            disabled={remainingLock > 0}
-            className="h-14 rounded-xl bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold transition-all duration-150 active:scale-95 disabled:opacity-30">
-            {isSettingPin ? '✓' : '→'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // --- Locked Screen (Login required) ---
 export const LockedScreen = ({ onLogin }) => (
@@ -369,7 +199,7 @@ export const CommandPalette = ({ visible, onClose, wsRef }) => {
 export const TerminalToolbar = ({
   wsRef, xtermRef, isFullscreen, setIsFullscreen,
   commandHistory, setShowHistory, showHistory,
-  onSplit, isSplit, selectedTheme, onThemeChange, onLock
+  onSplit, isSplit, selectedTheme, onThemeChange
 }) => {
   const [showThemes, setShowThemes] = useState(false);
 
@@ -421,11 +251,6 @@ export const TerminalToolbar = ({
           </div>
         )}
       </div>
-
-      {/* Lock Button (Upgrade 5) */}
-      <button onClick={onLock} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#f85149] hover:bg-[#21262d] rounded transition-colors" title="Lock Terminal">
-        <Lock size={12} /> Lock
-      </button>
 
       <div className="relative ml-auto">
         <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors">

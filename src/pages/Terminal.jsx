@@ -12,7 +12,7 @@ import {
 import {
   LockedScreen, FileExplorer, CommandPalette,
   TerminalToolbar, TabBar, SpinnerIndicator,
-  PinLockScreen, TerminalSearchBar, MonacoEditor,
+  TerminalSearchBar, MonacoEditor,
   TERMINAL_THEMES
 } from "./TerminalComponents";
 
@@ -70,9 +70,6 @@ const TerminalPage = () => {
   const [showSearch, setShowSearch] = useState(false);
   const searchAddonRef = useRef(null);
 
-  // Upgrade 5: PIN lock state
-  const [isPinUnlocked, setIsPinUnlocked] = useState(false);
-
   // Keep activeTabIdRef updated
   useEffect(() => {
     activeTabIdRef.current = activeTabId;
@@ -114,23 +111,6 @@ const TerminalPage = () => {
     setSelectedTheme(themeName);
     applyThemeToAll(themeName);
   }, [applyThemeToAll]);
-
-  // =============================================
-  // PIN Lock handlers (Upgrade 5)
-  // =============================================
-  const handleLock = useCallback(() => {
-    setIsPinUnlocked(false);
-    // Disconnect all WebSockets
-    Object.values(tabsRef.current).forEach(tInfo => {
-      if (tInfo.ws) tInfo.ws.close();
-      if (tInfo.reconnectTimeout) clearTimeout(tInfo.reconnectTimeout);
-    });
-    if (splitWsRef.current) splitWsRef.current.close();
-  }, []);
-
-  const handleUnlock = useCallback(() => {
-    setIsPinUnlocked(true);
-  }, []);
 
   // =============================================
   // Session save/restore
@@ -253,7 +233,7 @@ const TerminalPage = () => {
   // Terminal instances initialization for each tab
   // =============================================
   useEffect(() => {
-    if (!isLoggedIn || !isPinUnlocked) return;
+    if (!isLoggedIn) return;
 
     const currentTheme = TERMINAL_THEMES[selectedTheme] || TERMINAL_THEMES['GitHub Dark'];
 
@@ -543,7 +523,7 @@ const TerminalPage = () => {
       }
     });
 
-  }, [tabs, isLoggedIn, isPinUnlocked]);
+  }, [tabs, isLoggedIn]);
 
   // =============================================
   // SPLIT PANE LOGIC (Upgrade 1)
@@ -572,7 +552,7 @@ const TerminalPage = () => {
 
   // Initialize split pane terminal
   useEffect(() => {
-    if (!isSplit || !splitContainerRef.current || !isPinUnlocked) return;
+    if (!isSplit || !splitContainerRef.current) return;
     if (splitTermRef.current) return; // already initialized
 
     const currentTheme = TERMINAL_THEMES[selectedTheme] || TERMINAL_THEMES['GitHub Dark'];
@@ -668,7 +648,7 @@ const TerminalPage = () => {
     return () => {
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, [isSplit, isPinUnlocked, selectedTheme]);
+  }, [isSplit, selectedTheme]);
 
   // Split pane divider drag handler
   const handleDividerMouseDown = useCallback((e) => {
@@ -916,15 +896,6 @@ const TerminalPage = () => {
     );
   }
 
-  // PIN lock check (Upgrade 5)
-  if (!isPinUnlocked) {
-    return (
-      <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0d1117] text-[#e6edf3] font-sans">
-        <PinLockScreen onUnlock={handleUnlock} />
-      </div>
-    );
-  }
-
   const terminalPanelClass = isFullscreen
     ? "fixed inset-0 z-40 flex flex-col bg-[#0d1117]"
     : "flex-1 flex flex-col bg-[#0d1117] min-w-0 overflow-hidden";
@@ -985,7 +956,6 @@ const TerminalPage = () => {
             isSplit={isSplit}
             selectedTheme={selectedTheme}
             onThemeChange={handleThemeChange}
-            onLock={handleLock}
           />
 
           {/* Terminal + Editor area */}
