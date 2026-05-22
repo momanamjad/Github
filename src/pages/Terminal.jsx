@@ -177,23 +177,17 @@ const TerminalPage = () => {
 
   // Reactive dashboard refresh on cd
   const refreshDashboard = useCallback(async (termPath) => {
-    // Map terminal path to API path
-    const projectRoot = '/workspace/project';
-    let relativePath = termPath.startsWith(projectRoot)
-      ? termPath.slice(projectRoot.length) || '.'
-      : termPath;
-    if (relativePath.startsWith('/')) relativePath = relativePath.slice(1);
-    const apiPath = relativePath || '.';
-
-    // Flash animation
+    // Flash animation - show spinner for 1 second
     setDashboardUpdating(true);
-    setTimeout(() => setDashboardUpdating(false), 500);
+    const timer = setTimeout(() => setDashboardUpdating(false), 1000);
 
-    // Fetch all dashboard data in parallel
+    // Send full absolute path to stats API
     await Promise.all([
       fetchStats(termPath),
       fetchGitStatus(),
     ]);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => { fetchStats(); fetchDeps(); fetchGitStatus(); }, []);
@@ -361,8 +355,11 @@ const TerminalPage = () => {
           if (promptMatch) {
             const newPath = promptMatch[1].trim();
             if (newPath && newPath !== currentPathRef.current) {
+              // Update ref first
               currentPathRef.current = newPath;
+              // Then update state - this triggers breadcrumb re-render
               setCurrentPath(newPath);
+              // Refresh dashboard with new path
               refreshDashboard(newPath);
             }
             outputBufferRef.current = '';
@@ -956,29 +953,41 @@ const TerminalPage = () => {
         {/* Left Panel - Dashboard */}
         {!isFullscreen && (
           <div className="hidden lg:block w-[380px] border-r border-[#30363d] bg-[#0d1117] overflow-y-auto p-6 space-y-6">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-4">
               <Activity size={20} className="text-[#3fb950]" />
               <h2 className="text-lg font-bold">Live Dashboard</h2>
+              {dashboardUpdating && (
+                <div className="ml-auto animate-spin">
+                  <div className="w-3 h-3 border-2 border-[#58a6ff] border-t-transparent rounded-full" />
+                </div>
+              )}
             </div>
             {/* Breadcrumb showing current terminal path */}
-            <div className="flex items-center gap-1 text-xs text-[#8b949e] px-3 py-2 border border-[#30363d] rounded-lg bg-[#161b22]">
-              <span>📍</span>
-              {currentPath.split('/').filter(Boolean).map((part, i, arr) => (
-                <span key={i} className="flex items-center gap-1">
-                  <span
-                    className="hover:text-[#58a6ff] cursor-pointer transition-colors"
-                    onClick={() => {
-                      const path = '/' + arr.slice(0, i + 1).join('/');
-                      if (activeWsRef.current?.readyState === WebSocket.OPEN) {
-                        activeWsRef.current.send(`cd ${path}\r`);
-                      }
-                    }}
-                  >
-                    {part}
-                  </span>
-                  {i < arr.length - 1 && <span className="text-[#484f58]">/</span>}
-                </span>
-              ))}
+            <div className="flex items-center gap-1 text-xs text-[#8b949e] px-3 py-2 border border-[#30363d] rounded-lg bg-[#161b22] flex-wrap">
+              <span className="flex-shrink-0">📍</span>
+              {currentPath.split('/').filter(Boolean).length > 0 ? (
+                currentPath.split('/').filter(Boolean).map((part, i, arr) => {
+                  const pathUpToNow = '/' + arr.slice(0, i + 1).join('/');
+                  return (
+                    <span key={i} className="flex items-center gap-1">
+                      <span
+                        className="hover:text-[#58a6ff] cursor-pointer transition-colors"
+                        onClick={() => {
+                          if (activeWsRef.current?.readyState === WebSocket.OPEN) {
+                            activeWsRef.current.send(`cd ${pathUpToNow}\r`);
+                          }
+                        }}
+                        title={pathUpToNow}
+                      >
+                        {part}
+                      </span>
+                      {i < arr.length - 1 && <span className="text-[#484f58] flex-shrink-0">/</span>}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-[#8b949e]">~</span>
+              )}
             </div>
             <div className="space-y-6">
               <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>{renderStats()}</section>
