@@ -13,7 +13,7 @@ import {
   TerminalToolbar, TabBar,
   TerminalSearchBar, MonacoEditor,
   TERMINAL_THEMES
-} from "../TerminalComponents";
+} from "./TerminalComponents";
 
 // Import custom hooks
 import {
@@ -36,7 +36,7 @@ import {
   RECONNECT_TIMEOUT,
   DASHBOARD_UPDATE_DURATION
 } from "./utils/constants";
-import { SpinnerIndicator } from "../TerminalComponents";
+import { SpinnerIndicator } from "./TerminalComponents";
 
 const TerminalPage = () => {
   // =============================================
