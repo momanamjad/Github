@@ -15,7 +15,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.png', 'customIcons/**/*'],
+      includeAssets: ['logo.png', 'logo-192.png', 'logo-512.png', 'maskable-logo-512.png', 'customIcons/**/*'],
       manifest: false, // we use our own public/manifest.json
       workbox: {
         // Cache-first for all static assets (JS/CSS/fonts/images)
