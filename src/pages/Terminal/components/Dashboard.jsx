@@ -1,6 +1,8 @@
-import React from "react";
-import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle, Cpu, HardDrive, MemoryStick, Clock, Play, Loader2 } from "lucide-react";
 import { FileExplorer } from "../TerminalComponents";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // Format bytes to human readable
 const formatSize = (bytes) => {
@@ -10,6 +12,253 @@ const formatSize = (bytes) => {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
+const formatUptime = (seconds) => {
+  if (!seconds) return '0s';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+};
+
+const getBarColor = (pct) => {
+  if (pct < 50) return '#3fb950';  // green
+  if (pct < 80) return '#d29922';  // yellow
+  return '#f85149';                 // red
+};
+
+// =============================================
+// ANIMATED METRIC BAR
+// =============================================
+const MetricBar = ({ label, used, total, unit, pct, icon: Icon, iconColor }) => {
+  const color = getBarColor(pct);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Icon size={13} style={{ color: iconColor }} />
+          <span className="text-[12px] text-[#8b949e]">{label}</span>
+        </div>
+        <span className="text-[11px] text-[#c9d1d9] font-mono">
+          {used} / {total} {unit}
+        </span>
+      </div>
+      <div className="h-1.5 w-full bg-[#21262d] rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{
+            width: `${Math.min(100, pct)}%`,
+            backgroundColor: color,
+            boxShadow: `0 0 6px ${color}66`,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// =============================================
+// SYSTEM MONITOR CARD
+// =============================================
+const SystemMonitor = () => {
+  const [metrics, setMetrics] = useState(null);
+  const intervalRef = useRef(null);
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/metrics`);
+      if (r.ok) setMetrics(await r.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchMetrics();
+    intervalRef.current = setInterval(fetchMetrics, 3000);
+    return () => clearInterval(intervalRef.current);
+  }, [fetchMetrics]);
+
+  const ramPct = metrics ? (metrics.ram_used_mb / metrics.ram_total_mb) * 100 : 0;
+  const diskPct = metrics ? (metrics.disk_used_gb / metrics.disk_total_gb) * 100 : 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Title with live dot */}
+      <div className="flex items-center gap-2">
+        <Cpu size={18} className="text-[#58a6ff]" />
+        <span className="text-[14px] font-semibold">System Monitor</span>
+        <span className="relative flex h-2 w-2 ml-1">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]" />
+        </span>
+      </div>
+
+      {!metrics ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="animate-pulse space-y-1.5">
+              <div className="h-3 bg-[#21262d] rounded w-1/3" />
+              <div className="h-1.5 bg-[#21262d] rounded-full" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* CPU */}
+          <MetricBar
+            label="CPU"
+            used={metrics.cpu_usage.toFixed(1) + '%'}
+            total="100%"
+            unit=""
+            pct={metrics.cpu_usage}
+            icon={Cpu}
+            iconColor="#79c0ff"
+          />
+
+          {/* RAM */}
+          <MetricBar
+            label="RAM"
+            used={(metrics.ram_used_mb / 1024).toFixed(1) + ' GB'}
+            total={(metrics.ram_total_mb / 1024).toFixed(1) + ' GB'}
+            unit=""
+            pct={ramPct}
+            icon={MemoryStick}
+            iconColor="#d2a8ff"
+          />
+
+          {/* Disk */}
+          <MetricBar
+            label="Disk"
+            used={metrics.disk_used_gb.toFixed(1) + ' GB'}
+            total={metrics.disk_total_gb.toFixed(1) + ' GB'}
+            unit=""
+            pct={diskPct}
+            icon={HardDrive}
+            iconColor="#f0883e"
+          />
+
+          {/* Uptime */}
+          <div className="flex items-center justify-between pt-1 border-t border-[#21262d]">
+            <div className="flex items-center gap-1.5">
+              <Clock size={13} className="text-[#8b949e]" />
+              <span className="text-[12px] text-[#8b949e]">Uptime</span>
+            </div>
+            <span className="text-[12px] text-[#3fb950] font-mono font-semibold">
+              {formatUptime(metrics.uptime_seconds)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================
+// NPM SCRIPTS RUNNER CARD
+// =============================================
+const SCRIPT_COLORS = {
+  dev:    { bg: '#1c2a4a', border: '#2f81f7', text: '#79c0ff', hover: '#2f81f7' },
+  start:  { bg: '#1c2a4a', border: '#2f81f7', text: '#79c0ff', hover: '#2f81f7' },
+  build:  { bg: '#1a2e1a', border: '#238636', text: '#3fb950', hover: '#238636' },
+  test:   { bg: '#2e2a1a', border: '#bb8009', text: '#d29922', hover: '#bb8009' },
+  lint:   { bg: '#2e1e0f', border: '#bd561d', text: '#f0883e', hover: '#bd561d' },
+  format: { bg: '#2e1e0f', border: '#bd561d', text: '#f0883e', hover: '#bd561d' },
+};
+
+const getScriptStyle = (name) => {
+  const key = Object.keys(SCRIPT_COLORS).find(k => name === k || name.startsWith(k));
+  return key ? SCRIPT_COLORS[key] : { bg: '#1e222a', border: '#30363d', text: '#8b949e', hover: '#30363d' };
+};
+
+const ScriptsRunner = ({ activeWsRef }) => {
+  const [scripts, setScripts] = useState(null);
+  const [running, setRunning] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchScripts = async () => {
+      try {
+        const r = await fetch(`${API_URL}/file?path=/workspace/project/package.json`);
+        const data = await r.json();
+        if (data.content) {
+          const pkg = JSON.parse(data.content);
+          setScripts(pkg.scripts || {});
+        } else {
+          setError('No package.json found');
+        }
+      } catch {
+        setError('Failed to load scripts');
+      }
+    };
+    fetchScripts();
+  }, []);
+
+  const runScript = (name) => {
+    if (activeWsRef?.current?.readyState === WebSocket.OPEN) {
+      setRunning(name);
+      activeWsRef.current.send(`npm run ${name}\r`);
+      // Reset running state after a short delay (prompt detection in index.jsx handles this ideally)
+      // Use a fallback timeout since command duration varies
+      setTimeout(() => setRunning(null), 500);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Play size={18} className="text-[#3fb950]" />
+        <span className="text-[14px] font-semibold">npm Scripts</span>
+      </div>
+
+      {scripts === null && !error && (
+        <div className="flex items-center gap-2 py-2">
+          <div className="w-3 h-3 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[12px] text-[#8b949e]">Loading scripts...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="text-[12px] text-[#8b949e] italic">{error}</div>
+      )}
+
+      {scripts && Object.keys(scripts).length === 0 && (
+        <div className="text-[12px] text-[#8b949e] italic">No scripts found</div>
+      )}
+
+      {scripts && Object.keys(scripts).length > 0 && (
+        <div className="grid grid-cols-2 gap-1.5">
+          {Object.keys(scripts).map(name => {
+            const style = getScriptStyle(name);
+            const isRunning = running === name;
+            return (
+              <button
+                key={name}
+                onClick={() => runScript(name)}
+                disabled={isRunning}
+                title={`npm run ${name}: ${scripts[name]}`}
+                style={{
+                  backgroundColor: style.bg,
+                  borderColor: style.border,
+                  color: style.text,
+                }}
+                className={`flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-mono font-medium rounded-md border transition-all duration-150 truncate
+                  ${isRunning ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-125 active:scale-95 cursor-pointer'}`}
+              >
+                {isRunning
+                  ? <Loader2 size={10} className="animate-spin shrink-0" />
+                  : <Play size={10} className="shrink-0" />
+                }
+                <span className="truncate">{name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================
+// MAIN DASHBOARD
+// =============================================
 export const Dashboard = ({
   stats,
   deps,
@@ -175,15 +424,32 @@ export const Dashboard = ({
       </div>
       
       <div className="space-y-6">
+        {/* Project Stats */}
         <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>
           {renderStats()}
         </section>
+
+        {/* System Monitor */}
+        <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
+          <SystemMonitor />
+        </section>
+
+        {/* npm Scripts */}
+        <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
+          <ScriptsRunner activeWsRef={activeWsRef} />
+        </section>
+
+        {/* Dependencies */}
         <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>
           {renderDeps()}
         </section>
+
+        {/* Git Status */}
         <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>
           {renderGit()}
         </section>
+
+        {/* File Explorer */}
         <section className={`bg-[#161b22] p-5 rounded-xl border shadow-sm transition-colors duration-300 ${dashboardUpdating ? 'border-[#58a6ff]' : 'border-[#30363d]'}`}>
           <FileExplorer wsRef={activeWsRef} onOpenFile={onOpenFile} />
         </section>

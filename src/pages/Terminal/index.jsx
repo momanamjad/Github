@@ -12,7 +12,7 @@ import {
   LockedScreen, FileExplorer, CommandPalette,
   TerminalToolbar, TabBar,
   TerminalSearchBar, MonacoEditor,
-  TERMINAL_THEMES
+  TERMINAL_THEMES, ShortcutsModal
 } from "./TerminalComponents";
 
 // Import custom hooks
@@ -68,11 +68,21 @@ const TerminalPage = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [commandHistory, setCommandHistory] = useState([]);
   const searchAddonRef = useRef(null);
   const commandHistoryRef = useRef([]);
   const currentCommandRef = useRef('');
   const [editorFile, setEditorFile] = useState(null);
+
+  // Ping / latency tracking
+  const [ping, setPing] = useState(null);
+  const pingSentTimeRef = useRef(null);
+  const pingIntervalRef = useRef(null);
+
+  // Command timing for notifications
+  const commandStartTimeRef = useRef(null);
+  const lastCommandRef = useRef('');
 
   // =============================================
   // Custom Hooks
@@ -170,6 +180,19 @@ const TerminalPage = () => {
       if (e.ctrlKey && e.key === "p") { 
         e.preventDefault(); 
         setShowPalette(v => !v); 
+      }
+      // Shortcuts modal: ? (when not in an input/terminal) or Ctrl+Shift+?
+      if (
+        (e.key === '?' && !e.ctrlKey && !e.altKey &&
+          !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName) &&
+          !document.activeElement?.closest('.xterm')) ||
+        (e.ctrlKey && e.shiftKey && e.key === '?')
+      ) {
+        e.preventDefault();
+        setShowShortcuts(v => !v);
+      }
+      if (e.key === 'Escape') {
+        setShowShortcuts(false);
       }
     };
     window.addEventListener("keydown", handler);
@@ -276,11 +299,42 @@ const TerminalPage = () => {
         newWs.onopen = () => {
           if (tab.id === activeTabIdRef.current) {
             setWsStatus("connected");
+
+            // Request notification permission
+            if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+              Notification.requestPermission();
+            }
+
+            // Start ping interval
+            if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = setInterval(() => {
+              if (newWs.readyState === WebSocket.OPEN && tab.id === activeTabIdRef.current) {
+                pingSentTimeRef.current = Date.now();
+                newWs.send(JSON.stringify({ type: 'ping' }));
+              }
+            }, 5000);
           }
           newWs.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
         };
 
         newWs.onmessage = async (event) => {
+          // Handle text frames (pong, etc.) before writing to terminal
+          if (typeof event.data === 'string') {
+            try {
+              const parsed = JSON.parse(event.data);
+              if (parsed.type === 'pong' && pingSentTimeRef.current !== null) {
+                const latency = Date.now() - pingSentTimeRef.current;
+                pingSentTimeRef.current = null;
+                if (tab.id === activeTabIdRef.current) setPing(latency);
+                return; // Don't write pong to terminal
+              }
+            } catch {}
+            // Not a control frame — write to terminal as-is
+            term.write(event.data);
+            processText(event.data);
+            return;
+          }
+
           let text;
           if (event.data instanceof Blob) {
             const buf = await event.data.arrayBuffer();
@@ -291,12 +345,29 @@ const TerminalPage = () => {
             term.write(event.data);
             text = event.data;
           }
+          processText(text);
+        };
 
+        const processText = (text) => {
           // Prompt detection
           currentLine += text;
           if (/[$#]\s*$/.test(currentLine.split("\n").pop())) {
             if (tab.id === activeTabIdRef.current) {
               setCmdRunning(false);
+
+              // Notification for long commands
+              if (commandStartTimeRef.current !== null) {
+                const duration = Date.now() - commandStartTimeRef.current;
+                commandStartTimeRef.current = null;
+                if (duration > 5000 && document.hidden) {
+                  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                    new Notification('github-cli', {
+                      body: `"${lastCommandRef.current}" completed in ${(duration / 1000).toFixed(1)}s`,
+                      icon: '/favicon.ico',
+                    });
+                  }
+                }
+              }
             }
             currentLine = "";
           }
@@ -324,6 +395,12 @@ const TerminalPage = () => {
         newWs.onclose = () => {
           if (tab.id === activeTabIdRef.current) {
             setWsStatus("disconnected");
+            // Clear ping interval
+            if (pingIntervalRef.current) {
+              clearInterval(pingIntervalRef.current);
+              pingIntervalRef.current = null;
+            }
+            setPing(null);
           }
           reconnectTimeout = setTimeout(() => {
             if (tab.id === activeTabIdRef.current) {
@@ -463,6 +540,9 @@ const TerminalPage = () => {
             commandHistoryRef.current = [cmd, ...commandHistoryRef.current].slice(0, 50);
             setCommandHistory([...commandHistoryRef.current]);
             setCmdRunning(true);
+            // Track command start time for notifications
+            commandStartTimeRef.current = Date.now();
+            lastCommandRef.current = cmd;
           }
           currentCommandRef.current = '';
         } else if (data === '\x7f') {
@@ -751,6 +831,16 @@ const TerminalPage = () => {
                 wsStatus === "connecting" ? "bg-[#d29922]" : "bg-[#f85149]"
               }`} />
               <span className="text-[11px] text-[#8b949e] uppercase tracking-wider font-semibold">{wsStatus}</span>
+              {wsStatus === 'connected' && ping !== null && (
+                <span
+                  className="text-[11px] font-mono font-semibold"
+                  style={{
+                    color: ping < 100 ? '#3fb950' : ping < 300 ? '#d29922' : '#f85149'
+                  }}
+                >
+                  {ping}ms
+                </span>
+              )}
             </div>
           </div>
 
@@ -762,6 +852,9 @@ const TerminalPage = () => {
             onNewTab={handleNewTab}
             onCloseTab={handleCloseTab}
           />
+
+          {/* Shortcuts Modal */}
+          <ShortcutsModal visible={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
           {/* Toolbar */}
           <TerminalToolbar
@@ -776,6 +869,7 @@ const TerminalPage = () => {
             isSplit={isSplit}
             selectedTheme={selectedTheme}
             onThemeChange={handleThemeChange}
+            onShowShortcuts={() => setShowShortcuts(v => !v)}
           />
 
           {/* Terminal Area */}

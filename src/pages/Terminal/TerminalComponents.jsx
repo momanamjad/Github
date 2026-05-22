@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   FolderOpen, File, ChevronRight, Search, X, Maximize2, Minimize2,
   Trash2, Copy, ChevronDown, Plus, Columns, Palette,
-  ChevronUp, CaseSensitive, Save, ArrowUp, ArrowDown, Lock
+  ChevronUp, CaseSensitive, Save, ArrowUp, ArrowDown, Lock,
+  Keyboard
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 
@@ -52,7 +53,7 @@ export const LockedScreen = ({ onLogin }) => (
 );
 
 // =============================================
-// FILE EXPLORER (updated for Monaco - Upgrade 2)
+// FILE EXPLORER
 // =============================================
 export const FileExplorer = ({ wsRef, onOpenFile }) => {
   const [currentPath, setCurrentPath] = useState(".");
@@ -85,7 +86,6 @@ export const FileExplorer = ({ wsRef, onOpenFile }) => {
       setCurrentPath(currentPath === "." ? entry.name : `${currentPath}/${entry.name}`);
     } else {
       const filePath = currentPath === "." ? entry.name : `${currentPath}/${entry.name}`;
-      // Open in Monaco editor if callback provided
       if (onOpenFile) {
         onOpenFile(filePath);
       } else if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -190,12 +190,96 @@ export const CommandPalette = ({ visible, onClose, wsRef }) => {
 };
 
 // =============================================
-// TERMINAL TOOLBAR (updated - Upgrade 1,3,5)
+// KEYBOARD SHORTCUTS MODAL
+// =============================================
+export const ShortcutsModal = ({ visible, onClose }) => {
+  useEffect(() => {
+    if (!visible) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [visible, onClose]);
+
+  if (!visible) return null;
+
+  const shortcuts = [
+    { keys: 'Ctrl+Shift+C', desc: 'Copy selection' },
+    { keys: 'Ctrl+Shift+V', desc: 'Paste' },
+    { keys: 'Ctrl+L', desc: 'Clear screen' },
+    { keys: 'Ctrl+U', desc: 'Clear line' },
+    { keys: 'Ctrl+R', desc: 'Search history' },
+    { keys: 'Ctrl+A', desc: 'Start of line' },
+    { keys: 'Ctrl+E', desc: 'End of line' },
+    { keys: 'Ctrl+W', desc: 'Delete word' },
+    { keys: 'Ctrl+F', desc: 'Search terminal' },
+    { keys: 'Ctrl+P', desc: 'Command palette' },
+    { keys: 'Ctrl++ / Ctrl+-', desc: 'Zoom in/out' },
+    { keys: '?', desc: 'This help modal' },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-[480px] max-w-[90vw] bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#30363d]">
+          <div className="flex items-center gap-2">
+            <Keyboard size={16} className="text-[#58a6ff]" />
+            <span className="text-[15px] font-semibold text-[#e6edf3]">Terminal Shortcuts</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-[#484f58] hover:text-[#e6edf3] hover:bg-[#21262d] transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Divider label */}
+        <div className="px-6 pt-3 pb-1">
+          <div className="h-px bg-[#30363d]" />
+        </div>
+
+        {/* Shortcuts List */}
+        <div className="px-6 py-3 space-y-1 max-h-[400px] overflow-y-auto">
+          {shortcuts.map(({ keys, desc }) => (
+            <div key={keys} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[#21262d] transition-colors group">
+              <span className="text-[13px] text-[#8b949e] group-hover:text-[#c9d1d9]">{desc}</span>
+              <kbd className="px-2 py-0.5 text-[11px] font-mono text-[#c9d1d9] bg-[#0d1117] border border-[#30363d] rounded-md shadow-sm whitespace-nowrap">
+                {keys}
+              </kbd>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-[#30363d] flex items-center justify-between">
+          <span className="text-[11px] text-[#484f58]">Press <kbd className="px-1 py-0.5 bg-[#0d1117] border border-[#30363d] rounded text-[10px]">Esc</kbd> or click outside to close</span>
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-[12px] text-[#c9d1d9] bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] rounded-lg transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =============================================
+// TERMINAL TOOLBAR
 // =============================================
 export const TerminalToolbar = ({
   wsRef, xtermRef, isFullscreen, setIsFullscreen,
   commandHistory, setShowHistory, showHistory,
-  onSplit, isSplit, selectedTheme, onThemeChange
+  onSplit, isSplit, selectedTheme, onThemeChange,
+  onShowShortcuts
 }) => {
   const [showThemes, setShowThemes] = useState(false);
 
@@ -222,12 +306,17 @@ export const TerminalToolbar = ({
         {isFullscreen ? "Exit" : "Fullscreen"}
       </button>
 
-      {/* Split Pane Button (Upgrade 1) */}
+      {/* Split Pane Button */}
       <button onClick={onSplit} className={`flex items-center gap-1.5 px-2 py-1 text-[11px] ${isSplit ? 'text-[#58a6ff]' : 'text-[#8b949e]'} hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors`} title={isSplit ? "Close Split" : "Split Pane"}>
         <Columns size={12} /> {isSplit ? "Unsplit" : "Split"}
       </button>
 
-      {/* Theme Dropdown (Upgrade 3) */}
+      {/* Shortcuts Button */}
+      <button onClick={onShowShortcuts} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors" title="Keyboard Shortcuts (?)">
+        <Keyboard size={12} /> Keys
+      </button>
+
+      {/* Theme Dropdown */}
       <div className="relative">
         <button onClick={() => setShowThemes(!showThemes)} className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded transition-colors">
           <Palette size={12} /> Theme
@@ -324,7 +413,7 @@ export const SpinnerIndicator = ({ running }) => {
 };
 
 // =============================================
-// TERMINAL SEARCH BAR (Upgrade 4)
+// TERMINAL SEARCH BAR
 // =============================================
 export const TerminalSearchBar = ({ visible, onClose, searchAddonRef }) => {
   const [query, setQuery] = useState('');
@@ -351,7 +440,6 @@ export const TerminalSearchBar = ({ visible, onClose, searchAddonRef }) => {
       caseSensitive: options.caseSensitive ?? caseSensitive,
       incremental: true,
     });
-    // xterm search addon doesn't expose count, so we track approximately
     if (found) {
       setResultCount(prev => Math.max(prev, 1));
     }
@@ -432,7 +520,7 @@ export const TerminalSearchBar = ({ visible, onClose, searchAddonRef }) => {
 };
 
 // =============================================
-// MONACO FILE EDITOR (Upgrade 2)
+// MONACO FILE EDITOR
 // =============================================
 const EXT_TO_LANG = {
   js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
