@@ -2,6 +2,14 @@ import React from "react";
 import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle } from "lucide-react";
 import { FileExplorer } from "../TerminalComponents";
 
+// Format bytes to human readable
+const formatSize = (bytes) => {
+  if (bytes === 0) return '0 KB';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
 export const Dashboard = ({
   stats,
   deps,
@@ -34,7 +42,7 @@ export const Dashboard = ({
           </div>
           <div className="bg-[#0d1117] p-3 rounded-md border border-[#30363d]">
             <div className="text-[12px] text-[#8b949e] mb-1 uppercase tracking-wider">Avg. Size</div>
-            <div className="text-xl font-bold">{stats.avg_size || "0 KB"}</div>
+            <div className="text-xl font-bold">{formatSize(stats.avg_size || 0)}</div>
           </div>
         </div>
         <div className="space-y-2">
