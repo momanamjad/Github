@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle, Cpu, HardDrive, MemoryStick, Clock, Play, Loader2 } from "lucide-react";
+import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle, Cpu, HardDrive, MemoryStick, Clock, Play, Loader2, GitCommit, GitPullRequest, Upload, Download, PlusCircle } from "lucide-react";
 import { FileExplorer } from "../TerminalComponents";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -257,6 +257,229 @@ const ScriptsRunner = ({ activeWsRef }) => {
 };
 
 // =============================================
+// GIT PANEL
+// =============================================
+const parseGitStatus = (output) => {
+  const files = [];
+  const lines = output.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    // Short format: XY filename
+    const shortMatch = trimmed.match(/^([MADRCU?!]{1,2})\s+(.+)$/);
+    if (shortMatch) {
+      const code = shortMatch[1];
+      const name = shortMatch[2];
+      let status = 'modified';
+      if (code.includes('?') || code.includes('A')) status = 'added';
+      else if (code.includes('D')) status = 'deleted';
+      else status = 'modified';
+      files.push({ name, status });
+      continue;
+    }
+    // Long format lines like "modified: src/foo.js"
+    const longMatch = trimmed.match(/^(modified|new file|deleted|renamed|untracked):\s+(.+)$/);
+    if (longMatch) {
+      const code = longMatch[1];
+      const name = longMatch[2];
+      let status = 'modified';
+      if (code === 'new file' || code === 'untracked') status = 'added';
+      else if (code === 'deleted') status = 'deleted';
+      files.push({ name, status });
+    }
+  }
+  return files;
+};
+
+const parseBranch = (output) => {
+  // From `git branch` output: find line starting with "*"
+  const match = output.match(/\*\s+(\S+)/);
+  if (match) return match[1];
+  // From `git status` first line: "On branch main"
+  const statusMatch = output.match(/On branch (\S+)/);
+  if (statusMatch) return statusMatch[1];
+  return null;
+};
+
+const STATUS_INDICATOR = {
+  added:    { label: '+', color: '#3fb950', title: 'New / Untracked' },
+  modified: { label: 'M', color: '#d29922', title: 'Modified' },
+  deleted:  { label: '-', color: '#f85149', title: 'Deleted' },
+};
+
+const GitPanel = ({ activeWsRef }) => {
+  const [files, setFiles] = useState([]);
+  const [isClean, setIsClean] = useState(false);
+  const [branch, setBranch] = useState(null);
+  const [commitMessage, setCommitMessage] = useState('');
+  const [runningCmd, setRunningCmd] = useState(null);
+  const intervalRef = useRef(null);
+
+  const isConnected = () => activeWsRef?.current?.readyState === WebSocket.OPEN;
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/git/status`);
+      const data = await r.json();
+      const output = data.output || '';
+      const clean = output.includes('nothing to commit') || output.includes('working tree clean');
+      setIsClean(clean);
+      setFiles(clean ? [] : parseGitStatus(output));
+      // Try to get branch from status output first
+      const b = parseBranch(output);
+      if (b) setBranch(b);
+    } catch {}
+  }, []);
+
+  const fetchBranch = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/git/branch`);
+      const data = await r.json();
+      const b = parseBranch(data.output || '');
+      if (b) setBranch(b);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+    fetchBranch();
+    intervalRef.current = setInterval(fetchStatus, 30000);
+    return () => clearInterval(intervalRef.current);
+  }, [fetchStatus, fetchBranch]);
+
+  const sendCmd = (cmd, cmdKey) => {
+    if (!isConnected()) return;
+    setRunningCmd(cmdKey);
+    activeWsRef.current.send(cmd + '\r');
+    // Refresh status after command; use a delay to let the command finish
+    setTimeout(() => {
+      setRunningCmd(null);
+      fetchStatus();
+    }, 3000);
+  };
+
+  const handleStage   = () => sendCmd('git add .', 'stage');
+  const handleCommit  = () => { if (!commitMessage.trim()) return; sendCmd(`git commit -m "${commitMessage.trim()}"`, 'commit'); setCommitMessage(''); };
+  const handlePush    = () => sendCmd('git push', 'push');
+  const handlePull    = () => sendCmd('git pull', 'pull');
+
+  const ActionBtn = ({ onClick, disabled, cmdKey, icon: Icon, label, color }) => {
+    const spinning = runningCmd === cmdKey;
+    return (
+      <button
+        onClick={onClick}
+        disabled={disabled || spinning || !isConnected()}
+        className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-md border transition-all duration-150
+          ${ disabled || !isConnected()
+            ? 'opacity-40 cursor-not-allowed border-[#30363d] text-[#484f58] bg-transparent'
+            : 'cursor-pointer hover:brightness-125 active:scale-95'
+          }`}
+        style={disabled || !isConnected() ? {} : { backgroundColor: color.bg, borderColor: color.border, color: color.text }}
+      >
+        {spinning
+          ? <Loader2 size={11} className="animate-spin shrink-0" />
+          : <Icon size={11} className="shrink-0" />
+        }
+        {label}
+      </button>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Title + Branch Badge */}
+      <div className="flex items-center gap-2">
+        <GitBranch size={18} className="text-[#ff7b72]" />
+        <span className="text-[14px] font-semibold">Git Panel</span>
+        {branch && (
+          <span className="ml-auto px-2 py-0.5 text-[11px] font-mono rounded-full bg-[#2f81f722] text-[#58a6ff] border border-[#2f81f744]">
+            {branch}
+          </span>
+        )}
+      </div>
+
+      {/* Changed Files */}
+      <div className="space-y-1">
+        {isClean ? (
+          <div className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-[#12261e] border border-[#23863633]">
+            <CheckCircle2 size={13} className="text-[#3fb950]" />
+            <span className="text-[12px] text-[#3fb950]">Nothing to commit</span>
+          </div>
+        ) : files.length === 0 ? (
+          <div className="text-[12px] text-[#8b949e] italic py-1">Fetching status...</div>
+        ) : (
+          <div className="max-h-[120px] overflow-y-auto space-y-0.5 pr-1">
+            {files.map((f, i) => {
+              const ind = STATUS_INDICATOR[f.status] || STATUS_INDICATOR.modified;
+              return (
+                <div key={i} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-[#0d1117] group transition-colors">
+                  <span
+                    className="text-[11px] font-mono font-bold w-4 shrink-0 text-center"
+                    style={{ color: ind.color }}
+                    title={ind.title}
+                  >{ind.label}</span>
+                  <span className="text-[12px] text-[#c9d1d9] truncate font-mono group-hover:text-[#e6edf3]">{f.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Commit Message Input */}
+      <input
+        placeholder="Commit message..."
+        value={commitMessage}
+        onChange={e => setCommitMessage(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && commitMessage.trim()) handleCommit(); }}
+        className="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-1.5 text-[13px] text-white placeholder-[#484f58] focus:border-[#58a6ff] outline-none transition-colors"
+      />
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-2 gap-1.5">
+        <ActionBtn
+          onClick={handleStage}
+          cmdKey="stage"
+          icon={PlusCircle}
+          label="Stage All"
+          color={{ bg: '#1c2a4a', border: '#2f81f7', text: '#79c0ff' }}
+        />
+        <ActionBtn
+          onClick={handleCommit}
+          disabled={!commitMessage.trim()}
+          cmdKey="commit"
+          icon={GitCommit}
+          label="Commit"
+          color={{ bg: '#1a2e1a', border: '#238636', text: '#3fb950' }}
+        />
+        <ActionBtn
+          onClick={handlePush}
+          cmdKey="push"
+          icon={Upload}
+          label="Push"
+          color={{ bg: '#2e1e0f', border: '#bd561d', text: '#f0883e' }}
+        />
+        <ActionBtn
+          onClick={handlePull}
+          cmdKey="pull"
+          icon={Download}
+          label="Pull"
+          color={{ bg: '#2e2a1a', border: '#bb8009', text: '#d29922' }}
+        />
+      </div>
+
+      {/* Refresh hint */}
+      <button
+        onClick={fetchStatus}
+        className="w-full text-[11px] text-[#484f58] hover:text-[#8b949e] transition-colors py-0.5 text-center"
+      >
+        ↻ refresh status
+      </button>
+    </div>
+  );
+};
+
+// =============================================
 // MAIN DASHBOARD
 // =============================================
 export const Dashboard = ({
@@ -437,6 +660,11 @@ export const Dashboard = ({
         {/* npm Scripts */}
         <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
           <ScriptsRunner activeWsRef={activeWsRef} />
+        </section>
+
+        {/* Git Panel */}
+        <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
+          <GitPanel activeWsRef={activeWsRef} />
         </section>
 
         {/* Dependencies */}
