@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle, Cpu, HardDrive, MemoryStick, Clock, Play, Loader2, GitCommit, GitPullRequest, Upload, Download, PlusCircle } from "lucide-react";
+import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle, Cpu, HardDrive, MemoryStick, Clock, Play, Loader2, GitCommit, GitPullRequest, Upload, Download, PlusCircle, Network, ExternalLink, RefreshCw } from "lucide-react";
 import { FileExplorer } from "../TerminalComponents";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -480,6 +480,147 @@ const GitPanel = ({ activeWsRef }) => {
 };
 
 // =============================================
+// PORT MONITOR CARD
+// =============================================
+const PORT_LABELS = {
+  3000: { label: 'React Dev', color: '#61dafb' },
+  5173: { label: 'Vite',      color: '#a78bfa' },
+  8080: { label: 'HTTP',      color: '#f0883e' },
+  3001: { label: 'github-cli', color: '#3fb950', highlight: true },
+  8000: { label: 'Dev Server', color: '#d29922' },
+  4000: { label: 'GraphQL',   color: '#e10098' },
+};
+const DEV_PORTS = new Set([3000, 5173]);
+
+const PortMonitor = () => {
+  const [ports, setPorts] = useState(null);
+  const [countdown, setCountdown] = useState(10);
+  const intervalRef = useRef(null);
+  const countdownRef = useRef(null);
+
+  const fetchPorts = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/ports`);
+      if (r.ok) {
+        const data = await r.json();
+        setPorts(data.ports || []);
+      }
+    } catch {
+      setPorts([]);
+    }
+    setCountdown(10);
+  }, []);
+
+  useEffect(() => {
+    fetchPorts();
+    intervalRef.current = setInterval(fetchPorts, 10000);
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => (prev <= 1 ? 10 : prev - 1));
+    }, 1000);
+    return () => {
+      clearInterval(intervalRef.current);
+      clearInterval(countdownRef.current);
+    };
+  }, [fetchPorts]);
+
+  // Deduplicate by port number, keep first occurrence
+  const uniquePorts = ports
+    ? [...new Map(ports.map(p => [p.port, p])).values()]
+    : [];
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Network size={18} className="text-[#58a6ff]" />
+          <span className="text-[14px] font-semibold">Port Monitor</span>
+          <span className="relative flex h-2 w-2 ml-1">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]" />
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[#484f58] font-mono">↻ {countdown}s</span>
+          <button
+            onClick={fetchPorts}
+            className="p-1 rounded text-[#484f58] hover:text-[#8b949e] hover:bg-[#21262d] transition-colors"
+            title="Refresh now"
+          >
+            <RefreshCw size={11} />
+          </button>
+        </div>
+      </div>
+
+      {/* Port List */}
+      {ports === null ? (
+        <div className="flex items-center gap-2 py-2">
+          <div className="w-3 h-3 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[12px] text-[#8b949e]">Scanning ports...</span>
+        </div>
+      ) : uniquePorts.length === 0 ? (
+        <div className="text-[12px] text-[#8b949e] italic py-2 text-center">No active ports detected</div>
+      ) : (
+        <div className="space-y-1">
+          {uniquePorts.map((p, i) => {
+            const meta = PORT_LABELS[p.port];
+            const isHighlighted = meta?.highlight;
+            const isDevPort = DEV_PORTS.has(p.port);
+            const portColor = meta?.color || '#8b949e';
+            return (
+              <div
+                key={i}
+                className={`flex items-center gap-2 py-1.5 px-2.5 rounded-md transition-colors ${
+                  isHighlighted ? 'bg-[#12261e] border border-[#23863633]' : 'hover:bg-[#0d1117]'
+                }`}
+              >
+                {/* Status dot */}
+                <span
+                  className="text-[10px] font-bold"
+                  style={{ color: portColor }}
+                >
+                  ●
+                </span>
+
+                {/* Port number */}
+                <span
+                  className="text-[13px] font-mono font-bold w-[42px] shrink-0"
+                  style={{ color: portColor }}
+                >
+                  {p.port}
+                </span>
+
+                {/* Process name */}
+                <span className="text-[12px] text-[#c9d1d9] truncate flex-1">
+                  {meta?.label || p.process || 'unknown'}
+                </span>
+
+                {/* Status badge */}
+                <span className="text-[10px] text-[#484f58] font-mono shrink-0">{p.status}</span>
+
+                {/* Open button for dev ports */}
+                {isDevPort && (
+                  <a
+                    href={`http://localhost:${p.port}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[#58a6ff] border border-[#2f81f744] rounded hover:bg-[#2f81f722] transition-colors shrink-0"
+                    title={`Open localhost:${p.port}`}
+                  >
+                    <ExternalLink size={9} />
+                    Open
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================
 // MAIN DASHBOARD
 // =============================================
 export const Dashboard = ({
@@ -665,6 +806,11 @@ export const Dashboard = ({
         {/* Git Panel */}
         <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
           <GitPanel activeWsRef={activeWsRef} />
+        </section>
+
+        {/* Port Monitor */}
+        <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
+          <PortMonitor />
         </section>
 
         {/* Dependencies */}

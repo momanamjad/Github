@@ -59,6 +59,7 @@ export const FileExplorer = ({ wsRef, onOpenFile }) => {
   const [currentPath, setCurrentPath] = useState(".");
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, entry, filePath }
 
   const fetchDir = async (path) => {
     setLoading(true);
@@ -79,17 +80,78 @@ export const FileExplorer = ({ wsRef, onOpenFile }) => {
 
   useEffect(() => { fetchDir(currentPath); }, [currentPath]);
 
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    window.addEventListener('contextmenu', close);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('contextmenu', close);
+    };
+  }, [contextMenu]);
+
   const breadcrumbs = currentPath === "." ? ["project"] : ["project", ...currentPath.split("/").filter(Boolean)];
+
+  const getFullPath = (entryName) =>
+    currentPath === "." ? entryName : `${currentPath}/${entryName}`;
 
   const handleClick = (entry) => {
     if (entry.isDir) {
       setCurrentPath(currentPath === "." ? entry.name : `${currentPath}/${entry.name}`);
     } else {
-      const filePath = currentPath === "." ? entry.name : `${currentPath}/${entry.name}`;
+      const filePath = getFullPath(entry.name);
       if (onOpenFile) {
         onOpenFile(filePath);
-      } else if (wsRef.current?.readyState === WebSocket.OPEN) {
+      } else if (wsRef?.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(`cat ${filePath}\r`);
+      }
+    }
+  };
+
+  const handleRightClick = (e, entry) => {
+    if (entry.isDir) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const filePath = getFullPath(entry.name);
+    setContextMenu({ x: e.clientX, y: e.clientY, entry, filePath });
+  };
+
+  const downloadFile = async (filePath, fileName) => {
+    try {
+      const res = await fetch(`${API_URL}/file?path=${encodeURIComponent(filePath)}`);
+      const data = await res.json();
+      const blob = new Blob([data.content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Download failed:', e);
+    }
+  };
+
+  const handleContextAction = (action) => {
+    if (!contextMenu) return;
+    const { entry, filePath } = contextMenu;
+    setContextMenu(null);
+
+    if (action === 'open') {
+      if (onOpenFile) onOpenFile(filePath);
+      else if (wsRef?.current?.readyState === WebSocket.OPEN) wsRef.current.send(`cat ${filePath}\r`);
+    } else if (action === 'download') {
+      downloadFile(filePath, entry.name);
+    } else if (action === 'copy') {
+      navigator.clipboard.writeText(filePath).catch(() => {});
+    } else if (action === 'delete') {
+      if (window.confirm(`Delete "${entry.name}"? This cannot be undone.`)) {
+        if (wsRef?.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(`rm ${filePath}\r`);
+          setTimeout(() => fetchDir(currentPath), 800);
+        }
       }
     }
   };
@@ -129,12 +191,52 @@ export const FileExplorer = ({ wsRef, onOpenFile }) => {
         {loading ? (
           <div className="text-[12px] text-[#8b949e] py-4 text-center animate-pulse">Loading...</div>
         ) : entries.map((e, i) => (
-          <button key={i} onClick={() => handleClick(e)} className="w-full flex items-center gap-2 py-1.5 px-2 hover:bg-[#0d1117] rounded transition-colors text-[13px] text-left group">
+          <button
+            key={i}
+            onClick={() => handleClick(e)}
+            onContextMenu={(ev) => handleRightClick(ev, e)}
+            className="w-full flex items-center gap-2 py-1.5 px-2 hover:bg-[#0d1117] rounded transition-colors text-[13px] text-left group"
+          >
             {e.isDir ? <FolderOpen size={14} className="text-[#58a6ff] shrink-0" /> : <File size={14} className="text-[#8b949e] shrink-0" />}
             <span className={`truncate ${e.isDir ? "text-[#58a6ff]" : "text-[#c9d1d9]"} group-hover:text-[#e6edf3]`}>{e.name}</span>
           </button>
         ))}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-[200] py-1 rounded-lg shadow-2xl border"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+            backgroundColor: '#161b22',
+            borderColor: '#30363d',
+            minWidth: '180px',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {[
+            { key: 'open',     icon: '📄', label: 'Open in Editor' },
+            { key: 'download', icon: '⬇️', label: 'Download' },
+            { key: 'copy',     icon: '📋', label: 'Copy Path' },
+            { key: 'delete',   icon: '🗑️', label: 'Delete', danger: true },
+          ].map(item => (
+            <button
+              key={item.key}
+              onClick={() => handleContextAction(item.key)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors text-left ${
+                item.danger
+                  ? 'text-[#f85149] hover:bg-[#21262d]'
+                  : 'text-[#c9d1d9] hover:bg-[#21262d]'
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
