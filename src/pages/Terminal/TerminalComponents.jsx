@@ -94,8 +94,12 @@ export const FileExplorer = ({ wsRef, onOpenFile }) => {
 
   const breadcrumbs = currentPath === "." ? ["project"] : ["project", ...currentPath.split("/").filter(Boolean)];
 
-  const getFullPath = (entryName) =>
-    currentPath === "." ? entryName : `${currentPath}/${entryName}`;
+  const getFullPath = (entryName) => {
+    if (currentPath === ".") return entryName;
+    return currentPath.endsWith('/') 
+      ? `${currentPath}${entryName}` 
+      : `${currentPath}/${entryName}`;
+  };
 
   const handleClick = (entry) => {
     if (entry.isDir) {
