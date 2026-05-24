@@ -1,9 +1,19 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { SESSION_KEY, MAX_SESSION_LINES } from '../utils/constants';
+
+const SESSION_RESTORED_KEY = 'session_already_restored';
 
 export const useTerminalSession = (isLoggedIn) => {
   const lastSaveTimeRef = { current: 0 };
   const hasRestoredRef = { current: false };
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.removeItem(SESSION_RESTORED_KEY);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   const saveSession = useCallback((term, force = false) => {
     if (!term || !isLoggedIn) return;
@@ -27,6 +37,8 @@ export const useTerminalSession = (isLoggedIn) => {
 
   const replaySession = useCallback((term) => {
     if (hasRestoredRef.current) return false;
+    const alreadyRestored = sessionStorage.getItem(SESSION_RESTORED_KEY);
+    if (alreadyRestored) return false;
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
       if (!raw) return false;
@@ -35,6 +47,7 @@ export const useTerminalSession = (isLoggedIn) => {
         lines.forEach(l => term.writeln(l));
         term.writeln("\x1b[2m--- session restored ---\x1b[0m");
         hasRestoredRef.current = true;
+        sessionStorage.setItem(SESSION_RESTORED_KEY, 'true');
         sessionStorage.removeItem(SESSION_KEY);
         return true;
       }

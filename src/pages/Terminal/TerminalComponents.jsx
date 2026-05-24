@@ -648,9 +648,9 @@ export const MonacoEditor = ({ filePath, onClose }) => {
     const fetchFile = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/ls?path=${encodeURIComponent(filePath)}`);
-        const text = await res.text();
-        setContent(text);
+        const res = await fetch(`${API_URL}/file?path=${encodeURIComponent(filePath)}`);
+        const data = await res.json();
+        setContent(data.content || '');
       } catch (e) {
         setContent(`// Error loading file: ${e.message}`);
       }

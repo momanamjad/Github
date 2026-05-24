@@ -592,7 +592,7 @@ const PortMonitor = () => {
 
                 {/* Process name */}
                 <span className="text-[12px] text-[#c9d1d9] truncate flex-1">
-                  {meta?.label || p.process || 'unknown'}
+                  {meta?.label || (p.process ? p.process.replace(/["`']/g, '').split(/\s+/)[0] : 'unknown')}
                 </span>
 
                 {/* Status badge */}
