@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import {
   FolderOpen, File, ChevronRight, Search, X, Maximize2, Minimize2,
   Trash2, Copy, ChevronDown, Plus, Columns, Palette,
   ChevronUp, CaseSensitive, Save, ArrowUp, ArrowDown, Lock,
   Keyboard
 } from "lucide-react";
-import Editor from "@monaco-editor/react";
+
+// Lazy-load Monaco Editor (~2MB) — only loaded when a file is opened
+const LazyMonacoEditor = lazy(() => import('@monaco-editor/react'));
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -718,28 +720,37 @@ export const MonacoEditor = ({ filePath, onClose }) => {
             <div className="w-6 h-6 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <Editor
-            height="100%"
-            language={language}
-            value={content}
-            theme="vs-dark"
-            onMount={handleEditorMount}
-            onChange={(value) => setContent(value || '')}
-            options={{
-              fontSize: 14,
-              fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
-              minimap: { enabled: true },
-              scrollBeyondLastLine: false,
-              wordWrap: 'on',
-              lineNumbers: 'on',
-              renderWhitespace: 'selection',
-              bracketPairColorization: { enabled: true },
-              padding: { top: 8 },
-              smoothScrolling: true,
-              cursorBlinking: 'smooth',
-              cursorSmoothCaretAnimation: 'on',
-            }}
-          />
+          <Suspense
+            fallback={
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <div className="w-8 h-8 border-2 border-[#58a6ff] border-t-transparent rounded-full animate-spin" />
+                <span className="text-[12px] text-[#8b949e]">Loading editor...</span>
+              </div>
+            }
+          >
+            <LazyMonacoEditor
+              height="100%"
+              language={language}
+              value={content}
+              theme="vs-dark"
+              onMount={handleEditorMount}
+              onChange={(value) => setContent(value || '')}
+              options={{
+                fontSize: 14,
+                fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
+                minimap: { enabled: true },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                renderWhitespace: 'selection',
+                bracketPairColorization: { enabled: true },
+                padding: { top: 8 },
+                smoothScrolling: true,
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+              }}
+            />
+          </Suspense>
         )}
       </div>
     </div>

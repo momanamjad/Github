@@ -24,7 +24,7 @@ import {
 } from "./hooks";
 
 // Import components
-import { Dashboard, TerminalArea } from "./components";
+import { Dashboard, TerminalArea, WelcomeScreen, shouldShowWelcome } from "./components";
 
 // Import utilities
 import {
@@ -85,6 +85,11 @@ const TerminalPage = () => {
   const lastCommandRef = useRef('');
 
   // =============================================
+  // Welcome Screen
+  // =============================================
+  const [showWelcome, setShowWelcome] = useState(() => shouldShowWelcome());
+
+  // =============================================
   // Custom Hooks
   // =============================================
   const { user } = useGitHub();
@@ -134,42 +139,68 @@ const TerminalPage = () => {
   // =============================================
   // Dashboard API Fetches
   // =============================================
-  const fetchStats = useCallback(async (path) => {
+  const fetchStats = useCallback(async (path, signal) => {
     try {
       const url = path ? `${API_URL}/stats?path=${encodeURIComponent(path)}` : `${API_URL}/stats`;
-      const r = await fetch(url);
+      const r = await fetch(url, signal ? { signal } : undefined);
       setStats(await r.json());
-    } catch {}
+    } catch (e) {
+      if (e?.name !== 'AbortError') { /* silently ignore */ }
+    }
   }, []);
 
-  const fetchDeps = useCallback(async () => {
-    try { const r = await fetch(`${API_URL}/deps`); setDeps(await r.json()); } catch {}
+  const fetchDeps = useCallback(async (signal) => {
+    try {
+      const r = await fetch(`${API_URL}/deps`, signal ? { signal } : undefined);
+      setDeps(await r.json());
+    } catch (e) {
+      if (e?.name !== 'AbortError') { /* silently ignore */ }
+    }
   }, []);
 
-  const fetchGitStatus = useCallback(async () => {
-    try { const r = await fetch(`${API_URL}/git/status`); setGitStatus(await r.json()); } catch {}
+  const fetchGitStatus = useCallback(async (signal) => {
+    try {
+      const r = await fetch(`${API_URL}/git/status`, signal ? { signal } : undefined);
+      setGitStatus(await r.json());
+    } catch (e) {
+      if (e?.name !== 'AbortError') { /* silently ignore */ }
+    }
   }, []);
 
-  // Reactive dashboard refresh on cd
+  // Debounce ref for cd-detected refresh
+  const cdDebounceRef = useRef(null);
+
+  // Reactive dashboard refresh on cd — debounced 300ms
   const refreshDashboard = useCallback(async (termPath) => {
-    // Flash animation - show spinner for 1 second
-    setDashboardUpdating(true);
-    const timer = setTimeout(() => setDashboardUpdating(false), DASHBOARD_UPDATE_DURATION);
+    // Cancel any pending debounce
+    if (cdDebounceRef.current) clearTimeout(cdDebounceRef.current);
 
-    // Send full absolute path to stats API
-    await Promise.all([
-      fetchStats(termPath),
-      fetchGitStatus(),
-    ]);
+    cdDebounceRef.current = setTimeout(async () => {
+      // Flash animation — show spinner for 1 second
+      setDashboardUpdating(true);
+      const timer = setTimeout(() => setDashboardUpdating(false), DASHBOARD_UPDATE_DURATION);
 
-    return () => clearTimeout(timer);
+      // Create per-call AbortControllers
+      const ctrl = new AbortController();
+      await Promise.all([
+        fetchStats(termPath, ctrl.signal),
+        fetchGitStatus(ctrl.signal),
+      ]);
+
+      return () => {
+        clearTimeout(timer);
+        ctrl.abort();
+      };
+    }, 300);
   }, [fetchStats, fetchGitStatus]);
 
-  // Initial dashboard fetch
-  useEffect(() => { 
-    fetchStats(); 
-    fetchDeps(); 
-    fetchGitStatus(); 
+  // Initial dashboard fetch — cancel on unmount
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchStats(undefined, ctrl.signal);
+    fetchDeps(ctrl.signal);
+    fetchGitStatus(ctrl.signal);
+    return () => ctrl.abort();
   }, [fetchStats, fetchDeps, fetchGitStatus]);
 
   // =============================================
@@ -282,7 +313,8 @@ const TerminalPage = () => {
       let reconnectTimeout = null;
       let ws = null;
 
-      // WebSocket Connection
+      // WebSocket Connection with exponential backoff
+      let reconnectDelay = 1000; // start at 1s
       const connectWS = () => {
         if (reconnectTimeout) clearTimeout(reconnectTimeout);
         const newWs = new WebSocket(`${WS_URL}/ws`);
@@ -297,6 +329,8 @@ const TerminalPage = () => {
         }
 
         newWs.onopen = () => {
+          // Successful connection — reset backoff delay
+          reconnectDelay = 1000;
           if (tab.id === activeTabIdRef.current) {
             setWsStatus("connected");
 
@@ -402,12 +436,14 @@ const TerminalPage = () => {
             }
             setPing(null);
           }
+          // Exponential backoff: 1s → 2s → 4s → 8s → max 30s
           reconnectTimeout = setTimeout(() => {
             if (tab.id === activeTabIdRef.current) {
               setWsStatus("connecting");
             }
+            reconnectDelay = Math.min(reconnectDelay * 2, 30000);
             connectWS();
-          }, RECONNECT_TIMEOUT);
+          }, reconnectDelay);
           if (tabsRef.current[tab.id]) {
             tabsRef.current[tab.id].reconnectTimeout = reconnectTimeout;
           }
@@ -532,7 +568,6 @@ const TerminalPage = () => {
       };
       container.addEventListener('contextmenu', handleRightClick);
 
-      // Data Input Handling
       term.onData((data) => {
         if (data === '\r') {
           const cmd = currentCommandRef.current.trim();
@@ -803,6 +838,11 @@ const TerminalPage = () => {
 
   return (
     <div className={`flex flex-col ${isFullscreen ? "" : "h-[calc(100vh-64px)]"} bg-[#0d1117] text-[#e6edf3] font-sans`}>
+      {/* Onboarding Welcome Screen — first-visit only */}
+      {showWelcome && (
+        <WelcomeScreen onDismiss={() => setShowWelcome(false)} />
+      )}
+
       <div className={`flex flex-1 overflow-hidden ${isFullscreen ? "" : "flex-col lg:flex-row"}`}>
         {/* Dashboard */}
         {!isFullscreen && (

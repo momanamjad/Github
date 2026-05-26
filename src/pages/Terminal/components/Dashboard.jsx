@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Activity, FileCode, Hash, Package, GitBranch, CheckCircle2, AlertCircle, Cpu, HardDrive, MemoryStick, Clock, Play, Loader2, GitCommit, GitPullRequest, Upload, Download, PlusCircle, Network, ExternalLink, RefreshCw } from "lucide-react";
 import { FileExplorer } from "../TerminalComponents";
+import { useDashboardPolling } from "../hooks/useDashboardPolling";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -57,26 +58,10 @@ const MetricBar = ({ label, used, total, unit, pct, icon: Icon, iconColor }) => 
 };
 
 // =============================================
-// SYSTEM MONITOR CARD
+// SYSTEM MONITOR CARD (memoized)
 // =============================================
-const SystemMonitor = () => {
-  const [metrics, setMetrics] = useState(null);
-  const intervalRef = useRef(null);
-
-  const fetchMetrics = useCallback(async () => {
-    try {
-      const r = await fetch(`${API_URL}/metrics`);
-      if (r.ok) setMetrics(await r.json());
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    fetchMetrics();
-    intervalRef.current = setInterval(fetchMetrics, 3000);
-    return () => clearInterval(intervalRef.current);
-  }, [fetchMetrics]);
-
-  const ramPct = metrics ? (metrics.ram_used_mb / metrics.ram_total_mb) * 100 : 0;
+export const SystemMonitor = memo(({ metrics }) => {
+  const ramPct  = metrics ? (metrics.ram_used_mb / metrics.ram_total_mb) * 100 : 0;
   const diskPct = metrics ? (metrics.disk_used_gb / metrics.disk_total_gb) * 100 : 0;
 
   return (
@@ -149,10 +134,11 @@ const SystemMonitor = () => {
       )}
     </div>
   );
-};
+});
+SystemMonitor.displayName = 'SystemMonitor';
 
 // =============================================
-// NPM SCRIPTS RUNNER CARD
+// NPM SCRIPTS RUNNER CARD (memoized)
 // =============================================
 const SCRIPT_COLORS = {
   dev:    { bg: '#1c2a4a', border: '#2f81f7', text: '#79c0ff', hover: '#2f81f7' },
@@ -168,15 +154,16 @@ const getScriptStyle = (name) => {
   return key ? SCRIPT_COLORS[key] : { bg: '#1e222a', border: '#30363d', text: '#8b949e', hover: '#30363d' };
 };
 
-const ScriptsRunner = ({ activeWsRef }) => {
+export const ScriptsRunner = memo(({ activeWsRef }) => {
   const [scripts, setScripts] = useState(null);
   const [running, setRunning] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
+    const ctrl = new AbortController();
     const fetchScripts = async () => {
       try {
-        const r = await fetch(`${API_URL}/file?path=/workspace/project/package.json`);
+        const r = await fetch(`${API_URL}/file?path=/workspace/project/package.json`, { signal: ctrl.signal });
         const data = await r.json();
         if (data.content) {
           const pkg = JSON.parse(data.content);
@@ -184,19 +171,18 @@ const ScriptsRunner = ({ activeWsRef }) => {
         } else {
           setError('No package.json found');
         }
-      } catch {
-        setError('Failed to load scripts');
+      } catch (e) {
+        if (e.name !== 'AbortError') setError('Failed to load scripts');
       }
     };
     fetchScripts();
+    return () => ctrl.abort();
   }, []);
 
   const runScript = (name) => {
     if (activeWsRef?.current?.readyState === WebSocket.OPEN) {
       setRunning(name);
       activeWsRef.current.send(`npm run ${name}\r`);
-      // Reset running state after a short delay (prompt detection in index.jsx handles this ideally)
-      // Use a fallback timeout since command duration varies
       setTimeout(() => setRunning(null), 500);
     }
   };
@@ -254,10 +240,11 @@ const ScriptsRunner = ({ activeWsRef }) => {
       )}
     </div>
   );
-};
+});
+ScriptsRunner.displayName = 'ScriptsRunner';
 
 // =============================================
-// GIT PANEL
+// GIT PANEL (memoized)
 // =============================================
 const parseGitStatus = (output) => {
   const files = [];
@@ -292,10 +279,8 @@ const parseGitStatus = (output) => {
 };
 
 const parseBranch = (output) => {
-  // From `git branch` output: find line starting with "*"
   const match = output.match(/\*\s+(\S+)/);
   if (match) return match[1];
-  // From `git status` first line: "On branch main"
   const statusMatch = output.match(/On branch (\S+)/);
   if (statusMatch) return statusMatch[1];
   return null;
@@ -307,13 +292,12 @@ const STATUS_INDICATOR = {
   deleted:  { label: '-', color: '#f85149', title: 'Deleted' },
 };
 
-const GitPanel = ({ activeWsRef }) => {
-  const [files, setFiles] = useState([]);
-  const [isClean, setIsClean] = useState(false);
-  const [branch, setBranch] = useState(null);
+export const GitPanel = memo(({ activeWsRef }) => {
+  const [files, setFiles]               = useState([]);
+  const [isClean, setIsClean]           = useState(false);
+  const [branch, setBranch]             = useState(null);
   const [commitMessage, setCommitMessage] = useState('');
-  const [runningCmd, setRunningCmd] = useState(null);
-  const intervalRef = useRef(null);
+  const [runningCmd, setRunningCmd]     = useState(null);
 
   const isConnected = () => activeWsRef?.current?.readyState === WebSocket.OPEN;
 
@@ -325,7 +309,6 @@ const GitPanel = ({ activeWsRef }) => {
       const clean = output.includes('nothing to commit') || output.includes('working tree clean');
       setIsClean(clean);
       setFiles(clean ? [] : parseGitStatus(output));
-      // Try to get branch from status output first
       const b = parseBranch(output);
       if (b) setBranch(b);
     } catch {}
@@ -343,25 +326,24 @@ const GitPanel = ({ activeWsRef }) => {
   useEffect(() => {
     fetchStatus();
     fetchBranch();
-    intervalRef.current = setInterval(fetchStatus, 30000);
-    return () => clearInterval(intervalRef.current);
+    // Git status is now polled by useDashboardPolling every 30s.
+    // This panel only needs an initial fetch + manual refresh.
   }, [fetchStatus, fetchBranch]);
 
   const sendCmd = (cmd, cmdKey) => {
     if (!isConnected()) return;
     setRunningCmd(cmdKey);
     activeWsRef.current.send(cmd + '\r');
-    // Refresh status after command; use a delay to let the command finish
     setTimeout(() => {
       setRunningCmd(null);
       fetchStatus();
     }, 3000);
   };
 
-  const handleStage   = () => sendCmd('git add .', 'stage');
-  const handleCommit  = () => { if (!commitMessage.trim()) return; sendCmd(`git commit -m "${commitMessage.trim()}"`, 'commit'); setCommitMessage(''); };
-  const handlePush    = () => sendCmd('git push', 'push');
-  const handlePull    = () => sendCmd('git pull', 'pull');
+  const handleStage  = () => sendCmd('git add .', 'stage');
+  const handleCommit = () => { if (!commitMessage.trim()) return; sendCmd(`git commit -m "${commitMessage.trim()}"`, 'commit'); setCommitMessage(''); };
+  const handlePush   = () => sendCmd('git push', 'push');
+  const handlePull   = () => sendCmd('git pull', 'pull');
 
   const ActionBtn = ({ onClick, disabled, cmdKey, icon: Icon, label, color }) => {
     const spinning = runningCmd === cmdKey;
@@ -477,10 +459,11 @@ const GitPanel = ({ activeWsRef }) => {
       </button>
     </div>
   );
-};
+});
+GitPanel.displayName = 'GitPanel';
 
 // =============================================
-// PORT MONITOR CARD
+// PORT MONITOR CARD (memoized)
 // =============================================
 const PORT_LABELS = {
   3000: { label: 'React Dev', color: '#61dafb' },
@@ -492,37 +475,7 @@ const PORT_LABELS = {
 };
 const DEV_PORTS = new Set([3000, 5173]);
 
-const PortMonitor = () => {
-  const [ports, setPorts] = useState(null);
-  const [countdown, setCountdown] = useState(10);
-  const intervalRef = useRef(null);
-  const countdownRef = useRef(null);
-
-  const fetchPorts = useCallback(async () => {
-    try {
-      const r = await fetch(`${API_URL}/ports`);
-      if (r.ok) {
-        const data = await r.json();
-        setPorts(data.ports || []);
-      }
-    } catch {
-      setPorts([]);
-    }
-    setCountdown(10);
-  }, []);
-
-  useEffect(() => {
-    fetchPorts();
-    intervalRef.current = setInterval(fetchPorts, 10000);
-    countdownRef.current = setInterval(() => {
-      setCountdown(prev => (prev <= 1 ? 10 : prev - 1));
-    }, 1000);
-    return () => {
-      clearInterval(intervalRef.current);
-      clearInterval(countdownRef.current);
-    };
-  }, [fetchPorts]);
-
+export const PortMonitor = memo(({ ports, onRefresh }) => {
   // Deduplicate by port number, keep first occurrence
   const uniquePorts = ports
     ? [...new Map(ports.map(p => [p.port, p])).values()]
@@ -541,9 +494,8 @@ const PortMonitor = () => {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#484f58] font-mono">↻ {countdown}s</span>
           <button
-            onClick={fetchPorts}
+            onClick={onRefresh}
             className="p-1 rounded text-[#484f58] hover:text-[#8b949e] hover:bg-[#21262d] transition-colors"
             title="Refresh now"
           >
@@ -618,7 +570,8 @@ const PortMonitor = () => {
       )}
     </div>
   );
-};
+});
+PortMonitor.displayName = 'PortMonitor';
 
 // =============================================
 // MAIN DASHBOARD
@@ -630,8 +583,14 @@ export const Dashboard = ({
   currentPath,
   dashboardUpdating,
   activeWsRef,
-  onOpenFile
+  onOpenFile,
 }) => {
+  // Consolidated polling: metrics + ports + git
+  const { metrics, ports, gitStatus: polledGit, isLoading } = useDashboardPolling(currentPath);
+
+  // Merge: parent's gitStatus (from cd events) takes priority
+  const effectiveGitStatus = gitStatus ?? polledGit;
+
   const renderStats = () => {
     if (!stats) return <div className="animate-pulse h-40 bg-[#161b22] rounded-lg"></div>;
     const total = stats.total_files || 0;
@@ -687,7 +646,7 @@ export const Dashboard = ({
   const renderDeps = () => {
     if (!deps) return <div className="animate-pulse h-40 bg-[#161b22] rounded-lg"></div>;
     const prodDeps = Object.entries(deps.dependencies || {});
-    const devDeps = Object.entries(deps.devDependencies || {});
+    const devDeps  = Object.entries(deps.devDependencies || {});
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -715,8 +674,8 @@ export const Dashboard = ({
   };
 
   const renderGit = () => {
-    if (!gitStatus) return <div className="animate-pulse h-24 bg-[#161b22] rounded-lg"></div>;
-    const output = gitStatus.output || "";
+    if (!effectiveGitStatus) return <div className="animate-pulse h-24 bg-[#161b22] rounded-lg"></div>;
+    const output = effectiveGitStatus.output || "";
     const isClean = output.includes("nothing to commit, working tree clean");
     const branchMatch = output.match(/On branch (.+)/);
     const branch = branchMatch ? branchMatch[1] : "unknown";
@@ -793,9 +752,9 @@ export const Dashboard = ({
           {renderStats()}
         </section>
 
-        {/* System Monitor */}
+        {/* System Monitor — receives metrics from consolidated poller */}
         <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
-          <SystemMonitor />
+          <SystemMonitor metrics={metrics} />
         </section>
 
         {/* npm Scripts */}
@@ -808,9 +767,9 @@ export const Dashboard = ({
           <GitPanel activeWsRef={activeWsRef} />
         </section>
 
-        {/* Port Monitor */}
+        {/* Port Monitor — receives ports from consolidated poller */}
         <section className="bg-[#161b22] p-5 rounded-xl border border-[#30363d] shadow-sm">
-          <PortMonitor />
+          <PortMonitor ports={ports} onRefresh={() => {}} />
         </section>
 
         {/* Dependencies */}
