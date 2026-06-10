@@ -51,6 +51,12 @@ export const GitHubProvider = ({ children }) => {
         };
     }, [refreshRepos]);
 
+    const logout = useCallback(() => {
+        localStorage.removeItem('github_token');
+        localStorage.removeItem('github_user');
+        setUser(null);
+    }, []);
+
     const updateStatus = useCallback((newStatus) => {
         const success = updateStoredStatus(newStatus);
         if (success) setStatus(newStatus);
@@ -74,8 +80,9 @@ export const GitHubProvider = ({ children }) => {
         updateUser,
         isStatusModalOpen,
         setIsStatusModalOpen,
-        login
-    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login]);
+        login,
+        logout
+    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login, logout]);
 
     return (
         <GitHubContext.Provider value={value}>
