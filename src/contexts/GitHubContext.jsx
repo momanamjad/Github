@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories } from '../services/storageService';
+import { apiClient } from '../services/apiClient';
 
 const GitHubContext = createContext();
 
@@ -8,6 +9,19 @@ export const GitHubProvider = ({ children }) => {
     const [status, setStatus] = useState(() => getStoredStatus());
     const [repositories, setRepositories] = useState([]);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+
+    const login = useCallback(async (loginCredential, password) => {
+      const res = await apiClient('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ login: loginCredential, password }),
+      });
+      if (res?.data?.token) {
+        localStorage.setItem('github_token', res.data.token);
+        localStorage.setItem('github_user', JSON.stringify(res.data.user));
+        setUser(res.data.user);
+      }
+      return res;
+    }, []);
 
     const refreshRepos = useCallback(() => {
         setRepositories(getStoredRepositories());
@@ -59,8 +73,9 @@ export const GitHubProvider = ({ children }) => {
         updateStatus,
         updateUser,
         isStatusModalOpen,
-        setIsStatusModalOpen
-    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen]);
+        setIsStatusModalOpen,
+        login
+    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login]);
 
     return (
         <GitHubContext.Provider value={value}>
