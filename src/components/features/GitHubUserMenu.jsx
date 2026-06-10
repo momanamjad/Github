@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useGitHub } from "@contexts/GitHubContext";
 import { useClickOutside } from "@hooks/useGitHub_hooks";
 import { useScrollLock } from "../../hooks/useScrollLock";
-import { registerUser } from "../services/GithubApi";
+import { registerUser } from "../../services/GithubApi";
 
 // Icons
 import ProfileIcon from '../../../public/customIcons/ProfileIcon';
