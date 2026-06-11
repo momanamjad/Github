@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGitHub } from "@/contexts/GitHubContext";
 import { addRepository, getStoredRepositories } from "@services/storageService.js";
+import { createRepository } from "@services/GithubApi.jsx";
 
 const ADJECTIVES = [
   "glorious", "stunning", "crisp", "super", "bug-free", "urban", "solid", "shiny", 
@@ -21,9 +22,9 @@ const generateRandomRepoName = () => {
 
 const NewRepoPage = () => {
   const navigate = useNavigate();
-  const { refreshRepos } = useGitHub();
+  const { refreshRepos, user } = useGitHub();
   const [formData, setFormData] = useState({
-    owner: "momanamjad",
+    owner: user?.login || "moman",
     repoName: "",
     description: "",
     visibility: "public",
@@ -31,6 +32,12 @@ const NewRepoPage = () => {
     gitignoreTemplate: "none",
     license: "none",
   });
+
+  useEffect(() => {
+    if (user?.login) {
+      setFormData(prev => ({ ...prev, owner: user.login }));
+    }
+  }, [user]);
 
   const [suggestedRepoName] = useState(generateRandomRepoName);
   const [showGitignoreDropdown, setShowGitignoreDropdown] = useState(false);
@@ -91,7 +98,7 @@ const NewRepoPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate repository name
@@ -105,34 +112,16 @@ const NewRepoPage = () => {
       alert("Repository name cannot contain spaces or newlines.");
       return;
     }
-    // Don't mutate state directly — use the cleaned name as a local constant
     const repoName = cleanedName;
-    const newRepo = {
-      name: repoName,
-      full_name: `${formData.owner}/${repoName}`,
-      private: formData.visibility === "private",
-      html_url: `https://github.com/${formData.owner}/${repoName}`,
-      description: formData.description || null,
-      fork: false,
-      language: null,
-      has_issues: true,
-      has_projects: true,
-      has_downloads: true,
-      has_wiki: true,
-      has_pages: false,
-      archived: false,
-      disabled: false,
-      forks_count: 0,
-      open_issues_count: 0,
-      stargazers_count: 0,
-      watchers_count: 0,
-      license: formData.license !== "none" ? { name: formData.license } : null,
-      topics: [],
-    };
     
-    // Add to localStorage
+    // Add to backend database
     try {
-      addRepository(newRepo);
+      await createRepository({
+        name: repoName,
+        description: formData.description || "",
+        visibility: formData.visibility,
+        language: "JavaScript",
+      });
       refreshRepos(); // Trigger global update
     } catch (error) {
       setNameError(error.message);
@@ -144,7 +133,7 @@ const NewRepoPage = () => {
     
     // Reset form
     setFormData({
-      owner: "momanamjad",
+      owner: user?.login || "moman",
       repoName: "",
       description: "",
       visibility: "public",

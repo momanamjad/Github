@@ -4,9 +4,12 @@ import CopyToClipboardIcon from "../../../public/customIcons/CopyToClipboardIcon
 import CloseIcon from "../../../public/customIcons/CloseIcon";
 import ArrowRightIcon from "../../../public/customIcons/ArrowRightIcon";
 import { useScrollLock } from "../../hooks/useScrollLock";
+import { useGitHub } from "../../contexts/GitHubContext";
 
 
-const OpenIssueModal = ({ onClose, username = "momanamjad" }) => {
+const OpenIssueModal = ({ onClose, username }) => {
+  const { user } = useGitHub();
+  const activeUsername = username || user?.login || "moman";
   useScrollLock(true); // Since this component is only rendered when open
 
   return (
@@ -49,7 +52,7 @@ const OpenIssueModal = ({ onClose, username = "momanamjad" }) => {
             </div>
 
             <RepoSelector
-              username={username}
+              username={activeUsername}
             />
           </div>
           <div className="mt-4 text-sm border bg-[#EFF2F5] text-gray-800 pt-2 pb-2 pl-4 pr-2">

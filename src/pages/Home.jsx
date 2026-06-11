@@ -11,12 +11,14 @@ import ChevronDownIcon from "../../public/customIcons/ChevronDownIcon";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from 'boneyard-js/react';
 import { HomeSidebarSkeleton, HomeFeedSkeleton } from "@features/HomeSkeleton";
+import { languageColors } from "@utils/LanguageColors.jsx";
 
 
 const INITIAL_REPO_COUNT = 4;
 
 const Home = React.memo(() => {
-  const { repositories: allRepos } = useGitHub();
+  const { repositories: allRepos, user } = useGitHub();
+  const activeUsername = user?.login || "moman";
   const [filterOpen, setFilterOpen] = useState(false);
   const [, setFilterValue] = useState();
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +54,7 @@ const Home = React.memo(() => {
   const hasMoreRepos = filteredRepos.length > INITIAL_REPO_COUNT;
 
   const handleRepoClick = (repo) => {
-    const owner = repo.owner?.login || "momanamjad";
+    const owner = repo.owner?.login || activeUsername;
     navigate(`/${owner}/${repo.name}`);
   };
 
@@ -119,7 +121,7 @@ const Home = React.memo(() => {
                     />
                   </span>
                   <span className="truncate">
-                    {repo.full_name || `momanamjad/${repo.name}`}
+                    {repo.full_name || `${activeUsername}/${repo.name}`}
                   </span>
                 </li>
               ))
@@ -184,34 +186,42 @@ const Home = React.memo(() => {
 
               {recentRepos.length > 0 ? (
                 recentRepos.map((repo) => (
-                  <div key={repo.id || repo.name} className="p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm transition-hover hover:border-[#8c959f]">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div key={repo.id || repo.name} className="p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
                       <div className="w-5 h-5 rounded-full overflow-hidden">
                         <img src="profile.webp" alt="Avatar" className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-xs text-[#1f2328] font-medium">momanamjad</span>
+                      <span className="text-xs text-[#1f2328] font-medium">{repo.owner?.login || activeUsername}</span>
                       <span className="text-xs text-[#636c76]">created a repository</span>
                       <span className="text-xs text-[#636c76] ml-auto">
                         {new Date(repo.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <div className="rounded-lg p-3 bg-[#F6F8FA]">
-                      <div className="flex justify-between items-start mb-1">
-                        <h4
-                          onClick={() => handleRepoClick(repo)}
-                          className="text-[#0969da] font-bold hover:underline cursor-pointer text-sm truncate"
-                        >
-                          momanamjad/{repo.name}
-                        </h4>
+                    <div className="border border-[#d0d7de] bg-white rounded-md p-4">
+                      <div className="flex justify-between items-start gap-4 mb-2 flex-wrap sm:flex-nowrap">
+                        <div className="flex items-center flex-wrap gap-2 min-w-0">
+                          <h4
+                            onClick={() => handleRepoClick(repo)}
+                            className="text-[#0969da] font-bold hover:underline cursor-pointer text-sm truncate"
+                          >
+                            {repo.owner?.login || activeUsername}/{repo.name}
+                          </h4>
+                          <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-medium text-[#57606a] border border-[#d0d7de] rounded-full bg-white select-none capitalize">
+                            {repo.visibility || (repo.private ? "private" : "public")}
+                          </span>
+                        </div>
                         <StarButton repo={repo} />
                       </div>
                       {repo.description && (
-                        <p className="text-xs text-[#636c76] mb-2 line-clamp-1">{repo.description}</p>
+                        <p className="text-xs text-[#57606a] mb-2 line-clamp-1">{repo.description}</p>
                       )}
-                      <div className="flex items-center gap-3 text-[11px] text-[#636c76]">
+                      <div className="flex items-center gap-3 text-[11px] text-[#57606a] mt-3">
                         {repo.language && (
-                          <div className="flex items-center gap-1">
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#3178c6]"></span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full border border-[rgba(31,35,40,0.1)]"
+                              style={{ backgroundColor: languageColors[repo.language] || "#8b949e" }}
+                            />
                             <span>{repo.language}</span>
                           </div>
                         )}

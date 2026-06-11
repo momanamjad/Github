@@ -50,19 +50,23 @@ export default function Repositories() {
   const filteredRepositories = useMemo(() => {
     let filtered = [...repositories];
 
+    // Helper to check if logged-in user owns the repo
+    const isOwner = (repo) => {
+      if (!user) return false;
+      const ownerId = repo.owner?._id || repo.owner?.id || repo.owner;
+      const ownerLogin = repo.owner?.login;
+      return ownerId === user.id || ownerLogin === user.login;
+    };
+
     // 1. Filter by Tab (Sidebar)
     if (activeTab === "my-repositories") {
-      filtered = filtered.filter(repo => repo.owner?.login === user?.login);
+      filtered = filtered.filter(isOwner);
     } else if (activeTab === "my-forks") {
       filtered = filtered.filter(repo => repo.fork);
     } else if (activeTab === "admin-access") {
-      // For this clone, we'll just show everything as if we have admin access
-      // In a real app, this would check permissions
-      filtered = filtered.filter(repo => repo.permissions?.admin || repo.owner?.login === user?.login);
+      filtered = filtered.filter(repo => repo.permissions?.admin || isOwner(repo));
     } else if (activeTab === "my-contributions") {
-      // For this clone, we'll show repos that aren't owned by us but we've "contributed" to
-      // or just all repos for demonstration
-      filtered = filtered.filter(repo => repo.owner?.login !== user?.login || repo.fork);
+      filtered = filtered.filter(repo => !isOwner(repo) || repo.fork);
     }
 
     // 2. Filter by Search Query

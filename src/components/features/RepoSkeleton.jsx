@@ -2,7 +2,7 @@ import React from 'react';
 
 export const RepoSkeleton = () => {
   return (
-    <div className="py-6 flex justify-between items-start border-b border-[#d0d7de] last:border-0">
+    <div className="py-6 flex justify-between items-start border-b border-[#d0d7de] last:border-0 animate-pulse">
       <div className="flex-1 min-w-0 pr-4">
         {/* Title skeleton */}
         <div className="h-6 bg-gray-200 rounded w-1/3 mb-2" />

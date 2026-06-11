@@ -3,12 +3,15 @@ import { Search, X, Clock, User, ChevronDown, MessageSquare } from 'lucide-react
 import EmptyStateClockIcon from "../components/ui/icons/EmptyStateClockIcon";
 import EmptyStateDiscussionIcon from "../components/ui/icons/EmptyStateDiscussionIcon";
 import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
+import { useGitHub } from "../contexts/GitHubContext";
 
 export default function GitHubClone() {
   const [mainSection, setMainSection] = useState('projects');  
   const [projectTab, setProjectTab] = useState('recently-viewed');  
   const [discussionTab, setDiscussionTab] = useState('created'); 
   const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useGitHub();
+  const activeUsername = user?.login || "moman";
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -218,7 +221,7 @@ export default function GitHubClone() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={discussionTab === 'created' ? 'author:momanamjad' : 'commenter:momanamjad'}
+                      placeholder={discussionTab === 'created' ? `author:${activeUsername}` : `commenter:${activeUsername}`}
                       className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     />
                     {searchQuery && (

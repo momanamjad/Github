@@ -87,7 +87,7 @@ export const buddyTools = [
     },
     {
         name: "openPage",
-        description: "Navigates the user to a specific page within the app. Available paths: / (home), /repositories, /projects, /issues, /pull-requests, /profile/stars, /momanamjad (overview), /new (create repo page), /terminal (terminal page)",
+        description: "Navigates the user to a specific page within the app. Available paths: / (home), /repositories, /projects, /issues, /pull-requests, /profile/stars, /moman (overview), /new (create repo page), /terminal (terminal page)",
         parameters: {
             type: "object",
             properties: {

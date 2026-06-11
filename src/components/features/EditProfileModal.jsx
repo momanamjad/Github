@@ -293,6 +293,11 @@ const EditProfileModal = ({ isOpen, onClose, userProfile, onSave }) => {
                 <SelectValue placeholder="Select email" />
               </SelectTrigger>
               <SelectContent>
+                {userProfile?.email && (
+                  <SelectItem value={userProfile.email}>
+                    {userProfile.email}
+                  </SelectItem>
+                )}
                 <SelectItem value="momanamjad07@gmail.com">
                   momanamjad07@gmail.com
                 </SelectItem>

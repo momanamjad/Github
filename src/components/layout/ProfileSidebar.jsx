@@ -3,8 +3,9 @@
 // Your EXISTING sidebar + Status Button Integration
 // ============================================
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useGitHub } from "@/contexts/GitHubContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@ui/avatar";
 import { Card, CardContent } from "@ui/card";
 import { Button } from "@ui/button";
@@ -17,51 +18,83 @@ import ForkIcon from "../ui/icons/ForkIcon";
 import CompanyIcon from "../ui/icons/CompanyIcon";
 import LocationIcon from "../ui/icons/LocationIcon";
 import EmailIcon from "../ui/icons/EmailIcon";
+import { getUser } from "../../services/GithubApi";
+
 const ProfileSidebar = ({
-  username = "momanamjad",
   repositories = [],
   pinnedRepos = [],
   onRepoClick,
 }) => {
   const navigate = useNavigate();
+  const { username: routeUsername } = useParams();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const { user, updateUser } = useGitHub();
 
-  // Status-related state
-  // const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  // const [selectedEmoji, setSelectedEmoji] = useState("");
-  // const [statusText, setStatusText] = useState("");
-  // const [isBusy, setIsBusy] = useState(false);
-  // const [expiration, setExpiration] = useState("never");
-  // const [expirationTime, setExpirationTime] = useState(null);
-  // const [isStatusHovered, setIsStatusHovered] = useState(false);
-  // const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  // const emojiPickerRef = useRef(null);
+  const username = routeUsername || user?.login || "moman";
+  const isOwner = user && user.login === username;
 
   const [userProfile, setUserProfile] = useState({
-    name: "Moman Amjad",
-    username: "momanamjad",
+    name: "",
+    username: username,
     pronouns: "he/him",
     avatar: "/profile.webp",
     bio: "",
-    company: "Filinix Solutions",
-    location: "koh e noor Faisalabad",
+    company: "",
+    location: "",
     displayLocalTime: false,
     timezone: "(GMT-12:00) International Date Line West",
-    email: "momanamjad07@gmail.com",
+    email: "",
     website: "",
     socialLinks: ["", "", "", ""],
     followers: 0,
-    following: 3,
+    following: 0,
   });
 
-
-
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const u = await getUser(username);
+        setUserProfile({
+          name: u.name || u.login,
+          username: u.login,
+          pronouns: u.pronouns || "he/him",
+          avatar: u.avatar_url || "/profile.webp",
+          bio: u.bio || "",
+          company: u.company || "",
+          location: u.location || "",
+          displayLocalTime: false,
+          timezone: "(GMT-12:00) International Date Line West",
+          email: u.email || "",
+          website: u.blog || "",
+          socialLinks: ["", "", "", ""],
+          followers: u.followers_count || 0,
+          following: u.following_count || 0,
+        });
+      } catch (err) {
+        console.error("Failed to load profile for sidebar:", err);
+      }
+    };
+    fetchProfile();
+  }, [username]);
 
   const handleSaveProfile = (updatedProfile) => {
-    setUserProfile((prev) => ({
-      ...prev,
+    const newProfile = {
+      ...userProfile,
       ...updatedProfile,
-    }));
+    };
+    setUserProfile(newProfile);
+    if (isOwner) {
+      updateUser({
+        ...user,
+        name: newProfile.name,
+        avatar_url: newProfile.avatar,
+        bio: newProfile.bio,
+        company: newProfile.company,
+        location: newProfile.location,
+        email: newProfile.email,
+        blog: newProfile.website,
+      });
+    }
     console.log("Profile updated:", updatedProfile);
     setIsEditingProfile(false);
   };
@@ -91,7 +124,7 @@ const ProfileSidebar = ({
             />
 
             <div className="absolute -bottom-1 -right-1 sm:bottom-0 sm:right-0 lg:bottom-5 lg:right-5 z-10">
-              <StatusButton />
+              <StatusButton username={username} profileStatus={userProfile.status} />
             </div>
           </div>
 
@@ -132,15 +165,17 @@ const ProfileSidebar = ({
               <p className="mt-3 text-[16px] text-[#24292f] leading-snug">{userProfile.bio}</p>
             )}
 
-            <div className="mt-4">
-              <Button
-                variant="editProfile"
-                className="cursor-pointer w-full bg-[#f6f8fa] text-[#24292f] border border-[#d0d7de] hover:bg-[#f3f4f6]"
-                onClick={() => setIsEditingProfile(true)}
-              >
-                Edit profile
-              </Button>
-            </div>
+            {isOwner && (
+              <div className="mt-4">
+                <Button
+                  variant="editProfile"
+                  className="cursor-pointer w-full bg-[#f6f8fa] text-[#24292f] border border-[#d0d7de] hover:bg-[#f3f4f6]"
+                  onClick={() => setIsEditingProfile(true)}
+                >
+                  Edit profile
+                </Button>
+              </div>
+            )}
           </>
         )}
 

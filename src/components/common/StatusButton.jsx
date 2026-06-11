@@ -7,17 +7,28 @@ import XIcon from '../../../public/customIcons/XIcon';
 import { useScrollLock } from '../../hooks/useScrollLock';
 
 
-const StatusButton = ({ hidden = false }) => {
-  const { status, updateStatus, isStatusModalOpen, setIsStatusModalOpen } = useGitHub();
+import { useEffect } from 'react';
 
-  const [localEmoji, setLocalEmoji] = useState(status.emoji || '');
-  const [localText, setLocalText] = useState(status.text || '');
-  const [localIsBusy, setLocalIsBusy] = useState(status.isBusy || false);
+const StatusButton = ({ hidden = false, username, profileStatus }) => {
+  const { user, status: globalStatus, updateStatus, isStatusModalOpen, setIsStatusModalOpen } = useGitHub();
+
+  const targetUsername = username || user?.login || "";
+  const isOwner = user && user.login === targetUsername;
+  const currentStatus = isOwner ? (globalStatus || { emoji: '', text: '', isBusy: false }) : (profileStatus || { emoji: '', text: '', isBusy: false });
+
+  const [localEmoji, setLocalEmoji] = useState(currentStatus.emoji || '');
+  const [localText, setLocalText] = useState(currentStatus.text || '');
+  const [localIsBusy, setLocalIsBusy] = useState(currentStatus.isBusy || false);
   const [expiration, setExpiration] = useState('never');
   const [expirationTime, setExpirationTime] = useState(null);
   
   useScrollLock(isStatusModalOpen);
 
+  useEffect(() => {
+    setLocalEmoji(currentStatus.emoji || '');
+    setLocalText(currentStatus.text || '');
+    setLocalIsBusy(currentStatus.isBusy || false);
+  }, [currentStatus]);
 
   const [isHovered, setIsHovered] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -27,11 +38,11 @@ const StatusButton = ({ hidden = false }) => {
 
   // Sync local state when modal opens
   const openModal = useCallback(() => {
-    setLocalEmoji(status.emoji || '');
-    setLocalText(status.text || '');
-    setLocalIsBusy(status.isBusy || false);
+    setLocalEmoji(currentStatus.emoji || '');
+    setLocalText(currentStatus.text || '');
+    setLocalIsBusy(currentStatus.isBusy || false);
     setIsStatusModalOpen(true);
-  }, [status, setIsStatusModalOpen]);
+  }, [currentStatus, setIsStatusModalOpen]);
 
   const closeModal = useCallback(() => {
     setIsStatusModalOpen(false);
@@ -84,23 +95,26 @@ const StatusButton = ({ hidden = false }) => {
     closeModal();
   };
 
+  const hasStatus = currentStatus.emoji || currentStatus.text;
 
-  const hasStatus = status.emoji || status.text;
+  // Don't show anything for guest/other users if they have no status set
+  if (!isOwner && !hasStatus) return null;
 
   return (
     <>
       {!hidden && (
         <button
-          onClick={openModal}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className={`relative flex items-center justify-center transition-all duration-200 rounded-full bg-white shadow-sm hover:text-blue-600 ${status.isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
+          onClick={isOwner ? openModal : undefined}
+          onMouseEnter={() => isOwner && setIsHovered(true)}
+          onMouseLeave={() => isOwner && setIsHovered(false)}
+          style={{ cursor: isOwner ? 'pointer' : 'default' }}
+          className={`relative flex items-center justify-center transition-all duration-200 rounded-full bg-white shadow-sm ${isOwner ? 'hover:text-blue-600' : ''} ${currentStatus.isBusy ? 'ring-2 ring-orange-600 ring-offset-2' : ''
             } ${isHovered ? 'px-2 sm:px-3 py-1 gap-1 sm:gap-2' : hasStatus ? 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10' : 'w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 border border-[#d0d7de]'}`}
         >
-          <span className="text-[10px] sm:text-sm lg:text-base leading-none flex items-center justify-center">{hasStatus ? status.emoji : '🙂'}</span>
+          <span className="text-[10px] sm:text-sm lg:text-base leading-none flex items-center justify-center">{hasStatus ? currentStatus.emoji : '🙂'}</span>
           {isHovered && (
             <span className="text-xs sm:text-sm text-[#59636E] whitespace-nowrap">
-              {hasStatus ? status.text || 'Edit status' : 'Set status'}
+              {hasStatus ? currentStatus.text || 'Edit status' : 'Set status'}
             </span>
           )}
         </button>

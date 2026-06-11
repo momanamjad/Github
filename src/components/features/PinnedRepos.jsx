@@ -103,7 +103,7 @@ const PinnedRepos = ({ username }) => {
 
   return (
     <section className="px-4 mt-8">
-      <h2 className="mb-4 text-[16px] font-semibold text-white">Pinned</h2>
+      <h2 className="mb-4 text-[16px] font-semibold text-[#24292f]">Pinned</h2>
 
       <DndContext
         sensors={sensors}
@@ -115,9 +115,9 @@ const PinnedRepos = ({ username }) => {
         <SortableContext items={ids} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ">
             {repos.map((repo) => {
-              const id = repo.name || repo.id || `${repo.author}/${repo.name}`;
+              const id = repo.name || repo.id || `${repo.author || username}/${repo.name}`;
               return (
-                <SortableItem key={id} id={id} repo={repo} />
+                <SortableItem key={id} id={id} repo={repo} author={username} />
               );
             })}
           </div>
@@ -127,7 +127,7 @@ const PinnedRepos = ({ username }) => {
           sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.4" } } }),
         }}>
           {activeId ? (
-            <SortableItem key="overlay" id={activeId} repo={repos.find(r => (r.name || r.id || `${r.author}/${r.name}`) === activeId)} isOverlay />
+            <SortableItem key="overlay" id={activeId} repo={repos.find(r => (r.name || r.id || `${r.author || username}/${r.name}`) === activeId)} author={username} isOverlay />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -135,7 +135,7 @@ const PinnedRepos = ({ username }) => {
   );
 };
 
-function SortableItem({ id, repo, isOverlay }) {
+function SortableItem({ id, repo, isOverlay, author }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -147,7 +147,8 @@ function SortableItem({ id, repo, isOverlay }) {
     <div ref={setNodeRef} style={style}>
       <PinnedRepoCard
         repo={repo}
-        stars={repo.stars}
+        author={author}
+        stars={repo.stars || repo.stargazers_count}
         language={repo.language}
         languageColor={repo.languageColor}
         visibility={repo.visibility}

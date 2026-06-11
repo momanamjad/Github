@@ -9,7 +9,7 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 
 export default function GitHubSearch({ isOpen, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const { repositories: repos } = useGitHub();
+  const { repositories: repos, user } = useGitHub();
   const modalRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -17,8 +17,7 @@ export default function GitHubSearch({ isOpen, onClose }) {
 
   useScrollLock(isOpen);
 
-
-  const username = "momanamjad";
+  const username = user?.login || "moman";
 
   useEffect(() => {
     if (isOpen) {

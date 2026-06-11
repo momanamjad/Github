@@ -9,7 +9,7 @@ import { RepoSkeleton } from "@features/RepoSkeleton";
 const Repositories = () => {
   const { username } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { repositories: allRepos } = useGitHub();
+  const { repositories: allRepos, user } = useGitHub();
   const [isLoading, setIsLoading] = useState(true);
 
   // Simulate loading delay for skeleton demonstration
@@ -20,8 +20,22 @@ const Repositories = () => {
 
   // Filter out repos not owned by the current profile user
   const repos = useMemo(() => {
-    return allRepos.filter(r => (r.owner?.login || "momanamjad").toLowerCase() === username.toLowerCase());
-  }, [allRepos, username]);
+    const profileUser = username.toLowerCase();
+    return allRepos.filter(r => {
+      const ownerLogin = r.owner?.login;
+      if (ownerLogin) {
+        return ownerLogin.toLowerCase() === profileUser;
+      }
+      
+      // Fallback: If owner is a raw ID string, check if it matches the current user
+      if (typeof r.owner === "string" && user && r.owner === user.id) {
+        return user.login.toLowerCase() === profileUser;
+      }
+      
+      // Default fallback
+      return "moman".toLowerCase() === profileUser;
+    });
+  }, [allRepos, username, user]);
 
   const search = searchParams.get("q") || "";
   const language = searchParams.get("language") || "All";

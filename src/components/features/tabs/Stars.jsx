@@ -41,7 +41,7 @@ const Stars = () => {
   const params = useParams();
   useEffect(() => {
     const fetchStarred = async () => {
-      const username = params?.username || 'momanamjad';
+      const username = params?.username || 'moman';
       try {
         setLoading(true);
         const starredRepos = await getStarredRepos(username);

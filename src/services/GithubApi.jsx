@@ -34,8 +34,8 @@ export const registerUser = async (login, email, password) => {
     method: "POST",
     body: JSON.stringify({ login, email, password }),
   });
-  if (res?.data?.token) {
-    localStorage.setItem("github_token", res.data.token);
+  if (res?.data?.accessToken) {
+    localStorage.setItem("github_token", res.data.accessToken);
     localStorage.setItem("github_user", JSON.stringify(res.data.user));
   }
   return res.data;
@@ -43,91 +43,32 @@ export const registerUser = async (login, email, password) => {
 
 // Get user profile
 export const getUser = async (username) => {
-  try {
-    const res = await apiClient(`/auth/user/${username}`);
-    return res.data.user;
-  } catch (err) {
-    console.warn("Backend getUser failed, falling back to local storage:", err.message);
-    await storageReady;
-    await simulateDelay();
-    const user = getStoredUser();
-    if (!user) {
-      return createUserData(username);
-    }
-    return user;
-  }
+  const res = await apiClient(`/auth/user/${username}`);
+  return res.data.user;
 };
 
 // Get repositories
 export const getRepos = async (username) => {
-  try {
-    // Attempt to load from user's public profile repos
-    const res = await apiClient(`/auth/user/${username}`);
-    if (res?.data?.repos) {
-      return res.data.repos;
-    }
-    // Fallback to general repos route
-    const generalRes = await apiClient("/repos");
-    return generalRes.data || [];
-  } catch (err) {
-    console.warn("Backend getRepos failed, falling back to local storage:", err.message);
-    await storageReady;
-    await simulateDelay();
-    const repos = getStoredRepositories();
-    if (!repos || repos.length === 0) {
-      throw new Error("Repositories not found");
-    }
-    return repos;
-  }
+  const res = await apiClient(`/auth/user/${username}`);
+  return res?.data?.repos || [];
 };
 
 // Get starred repositories
 export const getStarredRepos = async (username) => {
-  try {
-    const res = await apiClient(`/auth/user/${username}`);
-    // Extract repos that are starred (if backend includes a list of user's stars/starred repos)
-    if (res?.data?.starredRepos) {
-      return res.data.starredRepos;
-    }
-    // Alternatively, filter public repos for starred ones or return public repos as mock fallback
-    return res.data.repos?.filter(r => r.stars_count > 0) || [];
-  } catch (err) {
-    console.warn("Backend getStarredRepos failed, falling back to local storage:", err.message);
-    await storageReady;
-    await simulateDelay();
-    const starredRepos = getStoredStarredRepos();
-    if (!starredRepos || starredRepos.length === 0) {
-      throw new Error("Starred repos not found");
-    }
-    return starredRepos;
-  }
+  const res = await apiClient(`/auth/user/${username}`);
+  return res.data.repos?.filter(r => r.stars_count > 0) || [];
 };
 
 // Get single repository details
 export const getRepo = async (username, repoName) => {
-  try {
-    // Search repos or get by ID/name
-    const res = await apiClient(`/auth/user/${username}`);
-    const foundRepo = res.data.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
-    if (foundRepo) return foundRepo;
-    throw new Error("Repo not found in user profile");
-  } catch (err) {
-    console.warn("Backend getRepo failed, falling back to local storage:", err.message);
-    await storageReady;
-    await simulateDelay();
-    const repos = getStoredRepositories();
-    const repoData = repos.find((r) => r.name.toLowerCase() === repoName.toLowerCase());
-    if (!repoData) {
-      throw new Error("Repo not found");
-    }
-    return repoData;
-  }
+  const res = await apiClient(`/auth/user/${username}`);
+  const foundRepo = res.data.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
+  if (foundRepo) return foundRepo;
+  throw new Error("Repo not found in user profile");
 };
 
 // Get repo contents
 export const getRepoContents = async (user, repo, path = "") => {
-  // Currently file tree structure is static or local storage based.
-  // We keep this using the local/storage schema to prevent code disruption.
   await storageReady;
   await simulateDelay();
   const contents = getStoredRepoContents(repo);
@@ -160,13 +101,28 @@ export const getRepoContents = async (user, repo, path = "") => {
 
 // Get pinned repos
 export const getPinnedRepos = async (username) => {
-  try {
-    const res = await apiClient(`/auth/user/${username}`);
-    return res.data.pins || [];
-  } catch (err) {
-    console.warn("Backend getPinnedRepos failed, falling back to local storage:", err.message);
-    await storageReady;
-    await simulateDelay();
-    return getStoredPinnedRepos();
-  }
+  const res = await apiClient(`/auth/user/${username}`);
+  const pins = res.data.pins || [];
+  return pins.map(pin => pin.repository).filter(Boolean);
+};
+
+// Create a new repository on the backend
+export const createRepository = async (repoData) => {
+  const res = await apiClient("/repos", {
+    method: "POST",
+    body: JSON.stringify(repoData),
+  });
+  return res.data;
+};
+
+// Toggle star on a repository
+export const toggleStarRepo = async (repoId) => {
+  const res = await apiClient(`/repos/${repoId}/star`, { method: "POST" });
+  return res.data;
+};
+
+// Toggle pin on a repository
+export const togglePinRepo = async (repoId) => {
+  const res = await apiClient(`/repos/${repoId}/pin`, { method: "POST" });
+  return res.data;
 };

@@ -8,6 +8,7 @@ import { getStoredStarredRepos, starRepository, unstarRepository } from "@servic
 
 const PinnedRepoCard = ({
   repo,
+  author,
   dragHandleProps,
   isDragging,
   isOverlay,
@@ -15,58 +16,92 @@ const PinnedRepoCard = ({
   const [isStarred, setIsStarred] = useState(false);
   const [starCount, setStarCount] = useState(repo?.stars || repo?.stargazers_count || 0);
 
-  useEffect(() => {
-    const starredRepos = getStoredStarredRepos();
-    const starred = starredRepos.some(r => r.name === repo?.name && r.owner?.login === repo?.author);
-    setIsStarred(starred);
-  }, [repo]);
+  const authorLogin = author || repo?.author || repo?.owner?.login || "moman";
 
-  const handleStarToggle = (e) => {
+  useEffect(() => {
+    try {
+      const storedStarred = JSON.parse(localStorage.getItem("starred_repo_ids") || "[]");
+      setIsStarred(storedStarred.includes(repo?._id || repo?.id));
+    } catch {
+      const starredRepos = getStoredStarredRepos();
+      const starred = starredRepos.some(r => r.name === repo?.name && (r.owner?.login === repo?.author || r.owner?.login === authorLogin));
+      setIsStarred(starred);
+    }
+  }, [repo, authorLogin]);
+
+  const handleStarToggle = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Construct a full repo object for the star service if needed
-    const repoToStar = {
-      ...repo,
-      full_name: `${repo.author}/${repo.name}`,
-      stargazers_count: starCount
-    };
+    const repoId = repo?._id || repo?.id;
+    const hasToken = !!localStorage.getItem("github_token");
 
-    if (isStarred) {
-      unstarRepository(repoToStar.full_name);
-      setIsStarred(false);
-      setStarCount(prev => Math.max(0, prev - 1));
+    if (hasToken && repo?._id) {
+      try {
+        const { toggleStarRepo } = await import("../../services/GithubApi");
+        await toggleStarRepo(repo._id);
+      } catch (err) {
+        console.error("Error starring inside pinned card:", err);
+      }
     } else {
-      starRepository(repoToStar);
-      setIsStarred(true);
-      setStarCount(prev => prev + 1);
+      const repoToStar = {
+        ...repo,
+        full_name: `${authorLogin}/${repo.name}`,
+        stargazers_count: starCount
+      };
+      if (isStarred) {
+        unstarRepository(repoToStar.full_name);
+      } else {
+        starRepository(repoToStar);
+      }
     }
-    window.dispatchEvent(new CustomEvent('github_repos_updated'));
+
+    setIsStarred(prev => {
+      const nextStarred = !prev;
+      setStarCount(c => nextStarred ? c + 1 : Math.max(0, c - 1));
+      
+      try {
+        let stored = JSON.parse(localStorage.getItem("starred_repo_ids") || "[]");
+        if (nextStarred) {
+          if (!stored.includes(repoId)) stored.push(repoId);
+        } else {
+          stored = stored.filter(id => id !== repoId);
+        }
+        localStorage.setItem("starred_repo_ids", JSON.stringify(stored));
+      } catch (_err) {}
+
+      window.dispatchEvent(new Event('github_starred_updated'));
+      window.dispatchEvent(new CustomEvent('github_repos_updated'));
+      return nextStarred;
+    });
   };
 
   return (
     <article
-      className={`bg-white border border-[#C8D1DA] rounded-md p-4 transition flex flex-col justify-between min-h-[114px] select-none ${
+      className={`bg-white border border-[#d0d7de] rounded-md p-4 transition flex flex-col justify-between min-h-[120px] select-none ${
         isOverlay ? "shadow-xl ring-2 ring-[#0969da] cursor-grabbing rotate-2" : ""
       } ${isDragging && !isOverlay ? "opacity-0" : ""}`}
     >
       <div>
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <ReposotoryIcon className="mt-1 flex-shrink-0" />
+          <div className="flex items-start gap-2 flex-wrap min-w-0">
+            <ReposotoryIcon className="mt-1 flex-shrink-0 text-[#57606a]" />
             <Link
-              to={`/${repo.author}/${encodeURIComponent(repo.name)}`}
+              to={`/${authorLogin}/${encodeURIComponent(repo.name)}`}
               className="text-[#0969DA] font-semibold text-[14px] hover:underline break-all"
             >
               {repo.name || "Repository"}
             </Link>
+            <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-medium text-[#57606a] border border-[#d0d7de] rounded-full bg-white select-none capitalize">
+              {repo.visibility || (repo.private ? "private" : "public")}
+            </span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Star toggle in pinned card */}
             <button 
               onClick={handleStarToggle}
-              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+              className="p-1 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
             >
               <Star 
                 size={14} 
@@ -83,7 +118,7 @@ const PinnedRepoCard = ({
           </div>
         </div>
 
-        <p className="text-[#636c76] text-[12px] mt-2 leading-snug line-clamp-2">
+        <p className="text-[#57606a] text-[12px] mt-2 leading-snug line-clamp-2 pr-1">
           {repo.description || "No description provided."}
         </p>
       </div>

@@ -121,7 +121,7 @@ const GitHubUserMenu = () => {
 
               <form onSubmit={handleAuthSubmit} className="p-6 space-y-4">
                 <h3 className="text-github-text font-bold text-lg text-center">
-                  {authTab === "login" ? "Sign in to GitHub Clone" : "Create your account"}
+                  {authTab === "login" ? "Sign in to GitHub" : "Create your account"}
                 </h3>
 
                 {errorMsg && (

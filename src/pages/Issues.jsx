@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Search, ChevronDown } from "lucide-react";
 import FilterModal from "../components/FilterModal";
+import { useGitHub } from "../contexts/GitHubContext";
 import { StarsIcon } from "../components/ui/Icons";
 import TabUserIcon from "../components/ui/icons/TabUserIcon";
 import TabCircleIcon from "../components/ui/icons/TabCircleIcon";
@@ -13,6 +14,8 @@ import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 export default function GitHubIssues() {
   const [activeTab, setActiveTab] = useState("assigned");
   const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useGitHub();
+  const activeUsername = user?.login || "moman";
 
   const tabs = [
     { id: "assigned", label: "Assigned to me", icon: "user" },
@@ -28,7 +31,7 @@ export default function GitHubIssues() {
       repo: "main-site",
       number: 45,
       status: "open",
-      author: "momanamjad",
+      author: activeUsername,
       updated: "2 hours ago",
       labels: ["bug"],
     },

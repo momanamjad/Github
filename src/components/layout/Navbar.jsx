@@ -9,6 +9,7 @@ import { useTabsContext } from "@/contexts/TabsContext";
 import StatusButton from "../common/StatusButton";
 import TopBarActions from "./Topbar";
 import GithubOpenMenu from "./GithubOpenMenu";
+import { useGitHub } from "@/contexts/GitHubContext";
 
 const Navbar = () => {
   const [progress, setProgress] = useState(0);
@@ -19,20 +20,24 @@ const Navbar = () => {
   const { hasTabsComponent } = useTabsContext();
   const searchInputRef = useRef(null);
 
+  const { user } = useGitHub();
+  const activeUsername = user?.login || "moman";
+
   const routeMap = useMemo(() => ({
     Home: "/",
     Issues: "/issues",
     "Pull requests": "/pull-requests",
     Repositories: "/repositories",
     Projects: "/projects",
-    Stars: "/momanamjad/stars",
+    Stars: `/${activeUsername}/stars`,
     Discussions: "/discussions",
     Codespaces: "/codespaces",
     Copilot: "/copilot",
     Explore: "/explore",
     Marketplace: "/marketplace",
     "MCP Registry": "/mcp-registry",
-  }), []);
+    "Create a new repository": "/new",
+  }), [activeUsername]);
 
   const params = useParams();
 
@@ -52,8 +57,21 @@ const Navbar = () => {
       );
     }
 
+    if (params.username) {
+      const pathParts = location.pathname.split('/').filter(Boolean);
+      if (pathParts.length > 1) {
+        const subTab = pathParts[1];
+        if (subTab === 'repositories') return 'Repositories';
+        if (subTab === 'stars') return 'Stars';
+        if (subTab === 'projects') return 'Projects';
+        if (subTab === 'packages') return 'Packages';
+      } else {
+        return params.username;
+      }
+    }
+
     const found = Object.keys(routeMap).find((key) => routeMap[key] === location.pathname);
-    return found || params.username || "momanamjad";
+    return found || params.username || activeUsername;
   }, [location.pathname, routeMap, params]);
 
   // Handle Route Transition Progress — use setTimeout to avoid

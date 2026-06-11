@@ -43,53 +43,7 @@ let _initPromise = null;   // Ensures we only initialize once
 
 export const initializeStorage = () => {
   if (_initPromise) return _initPromise;
-
-  _initPromise = (async () => {
-    try {
-      const existingUser = localStorage.getItem(STORAGE_KEYS.USER);
-
-      if (!existingUser) {
-        const userData = await import('./userData.json');
-
-        writeCached(STORAGE_KEYS.USER, userData.user);
-
-        // Ensure each seeded repo has a fileTree — done here at init time only,
-        // NOT on every read, to avoid silent mutation inside getStoredRepositories.
-        const reposWithTree = userData.repositories.map(repo => ({
-          ...repo,
-          fileTree: repo.fileTree ?? [
-            { type: 'dir', name: 'src', path: 'src', children: [] },
-            { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
-          ]
-        }));
-        writeCached(STORAGE_KEYS.REPOSITORIES, reposWithTree);
-        writeCached(STORAGE_KEYS.PINNED_REPOS, userData.pinnedRepositories);
-        writeCached(STORAGE_KEYS.STARRED_REPOS, userData.starredRepositories);
-        writeCached(STORAGE_KEYS.REPO_CONTENTS, userData.repositoryContents);
-      } else {
-        // Migration: patch fileTree for any existing repos that are missing it
-        // (one-time fix for data seeded before this field was added)
-        const existing = readCached(STORAGE_KEYS.REPOSITORIES) || [];
-        const needsPatch = existing.some(r => !r.fileTree);
-        if (needsPatch) {
-          const patched = existing.map(repo => ({
-            ...repo,
-            fileTree: repo.fileTree ?? [
-              { type: 'dir', name: 'src', path: 'src', children: [] },
-              { type: 'file', name: 'README.md', path: 'README.md', content: `# ${repo.name}\n` }
-            ]
-          }));
-          writeCached(STORAGE_KEYS.REPOSITORIES, patched);
-        }
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error initializing localStorage:', error);
-      return false;
-    }
-  })();
-
+  _initPromise = Promise.resolve(true);
   return _initPromise;
 };
 

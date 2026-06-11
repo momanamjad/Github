@@ -1,7 +1,8 @@
 import React from "react";
-import { Star } from "lucide-react";
+import { Star, GitFork } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { getStoredStarredRepos, starRepository, unstarRepository, getStoredPinnedRepos, pinRepository, unpinRepository } from "@services/storageService.js";
+import { toggleStarRepo, togglePinRepo } from "@services/GithubApi.jsx";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import { Link } from "react-router-dom";
 
@@ -15,23 +16,37 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
     year: repo.updated_at.includes(new Date().getFullYear()) ? undefined : 'numeric'
   });
 
+  const ownerLogin = repo.owner?.login || "moman";
+  const visibility = repo.visibility || (repo.private ? "private" : "public");
+
   return (
-    <div className="py-6 flex justify-between items-start border-b border-github-border last:border-0">
-      <div className="flex-1 min-w-0 pr-4">
-        <Link
-          to={`/${repo.owner.login}/${encodeURIComponent(repo.name)}`}
-          className="text-[#0969DA] text-[20px] font-semibold hover:underline truncate inline-block max-w-full"
-        >
-          {repo.name}
-        </Link>
+    <div className="py-6 flex flex-col sm:flex-row sm:justify-between sm:items-start border-b border-[#d0d7de]/60 last:border-0 gap-4">
+      <div className="flex-1 min-w-0 pr-0 sm:pr-4">
+        <div className="flex items-center flex-wrap gap-2 mb-1">
+          <Link
+            to={`/${ownerLogin}/${encodeURIComponent(repo.name)}`}
+            className="text-[#0969DA] text-[20px] font-semibold hover:underline truncate max-w-full"
+          >
+            {repo.name}
+          </Link>
+          <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-[#57606a] border border-[#d0d7de] rounded-full bg-white select-none capitalize">
+            {visibility}
+          </span>
+        </div>
+
+        {repo.fork && (
+          <p className="text-xs text-[#57606a] mb-1.5">
+            Forked from <span className="font-mono">{repo.parent || "original/repo"}</span>
+          </p>
+        )}
 
         {repo.description && (
-          <p className="mt-1 text-sm text-github-muted max-w-xl line-clamp-2">
+          <p className="mt-1 text-sm text-[#57606a] max-w-2xl break-words pr-2 line-clamp-2">
             {repo.description}
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-github-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-xs text-[#57606a]">
           {repo.language && (
             <span className="flex items-center gap-1.5">
               <span
@@ -42,49 +57,58 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
             </span>
           )}
 
-          <span className="flex items-center gap-1">
-            <Star size={14} />
-            {repo.stargazers_count + (isStarred ? 1 : 0)}
-          </span>
+          {((repo.stars_count || 0) + (isStarred ? 1 : 0) > 0) && (
+            <span className="flex items-center gap-1">
+              <Star size={14} className="text-[#57606a]" />
+              {(repo.stars_count || 0) + (isStarred ? 1 : 0)}
+            </span>
+          )}
+
+          {repo.forks_count > 0 && (
+            <span className="flex items-center gap-1">
+              <GitFork size={14} className="text-[#57606a]" />
+              {repo.forks_count}
+            </span>
+          )}
 
           <span>Updated on {formattedDate}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
         <button
           onClick={() => onTogglePin(repo)}
           className={`
-                      flex items-center gap-1.5
-                      px-3 py-1
-                      text-xs font-medium
-                      border border-github-border
-                      rounded-md
-                      transition-all duration-200
-                      hover:bg-[#F6F8FA]
-                      ${isPinned ? 'bg-[#F6F8FA]' : 'bg-white'}
-                  `}
+            flex items-center gap-1.5
+            px-3 py-1.5
+            text-xs font-semibold
+            border border-[#d0d7de]
+            rounded-md
+            transition-all duration-200
+            shadow-sm cursor-pointer
+            ${isPinned ? 'bg-[#f3f4f6] text-[#24292f] border-[#afb8c1]' : 'bg-[#f6f8fa] text-[#24292f] hover:bg-[#f3f4f6]'}
+          `}
         >
-          {isPinned ? "Unpin" : "Pin"}
+          {isPinned ? "Pinned" : "Pin"}
         </button>
         <button
           onClick={() => onToggleStar(repo)}
           className={`
-                      flex items-center gap-1.5
-                      px-3 py-1
-                      text-xs font-medium
-                      border border-github-border
-                      rounded-md
-                      transition-all duration-200
-                      hover:bg-[#F6F8FA]
-                      ${isStarred ? 'bg-[#F6F8FA]' : 'bg-white'}
-                  `}
+            flex items-center gap-1.5
+            px-3 py-1.5
+            text-xs font-semibold
+            border border-[#d0d7de]
+            rounded-md
+            transition-all duration-200
+            shadow-sm cursor-pointer
+            ${isStarred ? 'bg-[#f3f4f6] text-[#24292f] border-[#afb8c1]' : 'bg-[#f6f8fa] text-[#24292f] hover:bg-[#f3f4f6]'}
+          `}
         >
-        <Star
-          size={14}
-          className={isStarred ? "fill-[#e3b341] text-[#e3b341]" : "text-github-muted"}
-        />
-        {isStarred ? "Starred" : "Star"}
+          <Star
+            size={14}
+            className={isStarred ? "fill-[#e3b341] text-[#e3b341]" : "text-[#57606a]"}
+          />
+          {isStarred ? "Starred" : "Star"}
         </button>
       </div>
     </div>
@@ -92,23 +116,32 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
 });
 
 const RepoList = ({ repos }) => {
-  const [starredFullNames, setStarredFullNames] = useState([]);
-  const [pinnedNames, setPinnedNames] = useState([]);
+  const [starredIds, setStarredIds] = useState([]);
+  const [pinnedIds, setPinnedIds] = useState([]);
 
-  // Load initial starred/pinned state asynchronously to avoid
-  // synchronous setState inside effect body (react-hooks/set-state-in-effect)
   const refreshData = useCallback(() => {
-    const starred = getStoredStarredRepos();
-    setStarredFullNames(starred.map(r => r.full_name));
+    // Star local backup or state
+    try {
+      const storedStarred = JSON.parse(localStorage.getItem("starred_repo_ids") || "[]");
+      setStarredIds(storedStarred);
+    } catch {
+      const starred = getStoredStarredRepos();
+      setStarredIds(starred.map(r => r._id || r.id));
+    }
 
-    const pinned = getStoredPinnedRepos();
-    setPinnedNames(pinned.map(r => r.name));
+    // Pinned repos
+    try {
+      const storedPinned = JSON.parse(localStorage.getItem("pinned_repo_ids") || "[]");
+      setPinnedIds(storedPinned);
+    } catch {
+      const pinned = getStoredPinnedRepos();
+      setPinnedIds(pinned.map(r => r._id || r.id));
+    }
   }, []);
 
   useEffect(() => {
     refreshData();
 
-    // Listen to custom events from other components (like StarButton or PinnedRepoCard)
     window.addEventListener('github_repos_updated', refreshData);
     window.addEventListener('github_starred_updated', refreshData);
     window.addEventListener('github_pinned_updated', refreshData);
@@ -120,32 +153,71 @@ const RepoList = ({ repos }) => {
     };
   }, [refreshData]);
 
-  const handleStarToggle = useCallback((repo) => {
-    setStarredFullNames(prev => {
-      const isCurrentlyStarred = prev.includes(repo.full_name);
-      if (isCurrentlyStarred) {
+  const handleStarToggle = useCallback(async (repo) => {
+    const repoId = repo._id || repo.id;
+    const hasToken = !!localStorage.getItem("github_token");
+
+    if (hasToken && repo._id) {
+      try {
+        await toggleStarRepo(repo._id);
+      } catch (err) {
+        console.error("Error toggling star on backend:", err);
+      }
+    } else {
+      // Local storage fallback
+      const starred = getStoredStarredRepos();
+      if (starred.some(r => (r._id || r.id) === repoId)) {
         unstarRepository(repo.full_name);
-        return prev.filter(name => name !== repo.full_name);
       } else {
         starRepository(repo);
-        return [...prev, repo.full_name];
       }
+    }
+
+    // Toggle local state list
+    setStarredIds(prev => {
+      let next;
+      if (prev.includes(repoId)) {
+        next = prev.filter(id => id !== repoId);
+      } else {
+        next = [...prev, repoId];
+      }
+      localStorage.setItem("starred_repo_ids", JSON.stringify(next));
+      window.dispatchEvent(new Event('github_starred_updated'));
+      return next;
     });
   }, []);
 
-  const handlePinToggle = useCallback((repo) => {
-    setPinnedNames(prev => {
-      const isCurrentlyPinned = prev.includes(repo.name);
-      if (isCurrentlyPinned) {
+  const handlePinToggle = useCallback(async (repo) => {
+    const repoId = repo._id || repo.id;
+    const hasToken = !!localStorage.getItem("github_token");
+
+    if (hasToken && repo._id) {
+      try {
+        await togglePinRepo(repo._id);
+      } catch (err) {
+        console.error("Error toggling pin on backend:", err);
+      }
+    } else {
+      // Local storage fallback
+      const pinned = getStoredPinnedRepos();
+      if (pinned.some(r => (r._id || r.id) === repoId)) {
         unpinRepository(repo.name);
-        // Dispatch event so PinnedRepos.jsx instantly updates
-        window.dispatchEvent(new Event('github_pinned_updated'));
-        return prev.filter(name => name !== repo.name);
       } else {
         pinRepository(repo);
-        window.dispatchEvent(new Event('github_pinned_updated'));
-        return [...prev, repo.name];
       }
+    }
+
+    // Toggle local state list
+    setPinnedIds(prev => {
+      let next;
+      if (prev.includes(repoId)) {
+        next = prev.filter(id => id !== repoId);
+      } else {
+        next = [...prev, repoId];
+      }
+      localStorage.setItem("pinned_repo_ids", JSON.stringify(next));
+      window.dispatchEvent(new Event('github_pinned_updated'));
+      return next;
     });
   }, []);
 
@@ -159,16 +231,19 @@ const RepoList = ({ repos }) => {
 
   return (
     <div className="flex flex-col">
-      {repos.map((repo) => (
-        <RepoItem
-          key={repo.id}
-          repo={repo}
-          isStarred={starredFullNames.includes(repo.full_name)}
-          onToggleStar={handleStarToggle}
-          isPinned={pinnedNames.includes(repo.name)}
-          onTogglePin={handlePinToggle}
-        />
-      ))}
+      {repos.map((repo) => {
+        const repoId = repo._id || repo.id;
+        return (
+          <RepoItem
+            key={repoId}
+            repo={repo}
+            isStarred={starredIds.includes(repoId)}
+            onToggleStar={handleStarToggle}
+            isPinned={pinnedIds.includes(repoId)}
+            onTogglePin={handlePinToggle}
+          />
+        );
+      })}
     </div>
   );
 };

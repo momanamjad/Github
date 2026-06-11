@@ -46,7 +46,8 @@ const GithubOpenMenu = React.memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const { repositories: allRepos } = useGitHub();
+  const { repositories: allRepos, user } = useGitHub();
+  const activeUsername = user?.login || "moman";
   
   useScrollLock(isOpen);
 
@@ -77,14 +78,14 @@ const GithubOpenMenu = React.memo(() => {
     "Pull requests": "/pull-requests",
     Repositories: "/repositories",
     Projects: "/projects",
-    Stars: "/momanamjad/stars",
+    Stars: `/${activeUsername}/stars`,
     Discussions: "/discussions",
     Codespaces: "/codespaces",
     Copilot: "/copilot",
     Explore: "/explore",
     MarketPlace: "/marketplace",
     "MCP Registory": "/mcp-registry",
-  }), []);
+  }), [activeUsername]);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -290,9 +291,9 @@ const GithubOpenMenu = React.memo(() => {
           {filteredRepos.length > 0 ? (
             filteredRepos.map(repo => (
               <button
-                key={repo.id}
+                key={repo._id || repo.id || repo.name}
                 onClick={() => {
-                  const ownerLogin = repo.owner?.login || 'momanamjad';
+                  const ownerLogin = repo.owner?.login || activeUsername;
                   navigate(`/${ownerLogin}/${repo.name}`);
                   setIsOpen(false);
                 }}
@@ -310,7 +311,7 @@ const GithubOpenMenu = React.memo(() => {
                     {repo.owner?.login ? repo.owner.login.substring(0, 2).toUpperCase() : 'MA'}
                   </div>
                 )}
-                <span className="truncate font-medium">{repo.owner?.login || 'momanamjad'}/{repo.name}</span>
+                <span className="truncate font-medium">{repo.owner?.login || activeUsername}/{repo.name}</span>
               </button>
             ))
           ) : (
