@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories } from '../services/storageService';
+import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage } from '../services/storageService';
 import { apiClient } from '../services/apiClient';
 
 const GitHubContext = createContext();
@@ -82,8 +82,7 @@ export const GitHubProvider = ({ children }) => {
     }, [refreshRepos]);
 
     const logout = useCallback(() => {
-        localStorage.removeItem('github_token');
-        localStorage.removeItem('github_user');
+        clearAllStorage();
         setUser(null);
     }, []);
 
