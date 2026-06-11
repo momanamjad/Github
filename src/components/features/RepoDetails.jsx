@@ -27,7 +27,7 @@ const RepoDetails = () => {
         setRepoData(repoInfo);
 
         if (repoInfo.fileTree) {
-          const tree = getTree(repoInfo.id);
+          const tree = getTree(repoInfo._id || repoInfo.id);
           setFileTree(tree);
           setFiles(tree);
         } else {
@@ -92,7 +92,7 @@ const RepoDetails = () => {
 
   const refreshTree = () => {
     if (!repoData) return;
-    const tree = getTree(repoData.id);
+    const tree = getTree(repoData._id || repoData.id);
     setFileTree([...tree]);
   };
 
@@ -121,7 +121,7 @@ const RepoDetails = () => {
             {/* File Explorer */}
             <div className="w-full lg:w-[340px] xl:w-[380px] shrink-0">
               <FileExplorer
-                repoId={repoData.id}
+                repoId={repoData._id || repoData.id}
                 tree={fileTree}
                 onSelect={handleSelect}
                 refreshTree={refreshTree}
@@ -132,7 +132,7 @@ const RepoDetails = () => {
             <div className="flex-1 min-w-0">
               {selectedFile ? (
                 <FileEditor
-                  repoId={repoData.id}
+                  repoId={repoData._id || repoData.id}
                   file={selectedFile}
                   onSave={handleSaveFile}
                 />
