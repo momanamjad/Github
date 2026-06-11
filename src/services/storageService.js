@@ -201,10 +201,23 @@ export const updateRepository = (repoId, updatedData) => {
   try {
     const repos = getStoredRepositories();
     const updatedRepos = repos.map(repo =>
-      repo.id === repoId ? { ...repo, ...updatedData, updated_at: new Date().toISOString() } : repo
+      (repo.id === repoId || repo._id === repoId) ? { ...repo, ...updatedData, updated_at: new Date().toISOString() } : repo
     );
 
     writeCached(STORAGE_KEYS.REPOSITORIES, updatedRepos);
+
+    // Sync fileTree updates to the backend DB if logged in
+    const token = localStorage.getItem("github_token");
+    if (token) {
+      const targetRepo = updatedRepos.find(r => r.id === repoId || r._id === repoId);
+      if (targetRepo && targetRepo._id) {
+        import("./GithubApi.jsx").then(({ updateRepoApi }) => {
+          updateRepoApi(targetRepo._id, { fileTree: targetRepo.fileTree }).catch(err => {
+            console.error("Failed to sync fileTree update to backend database:", err);
+          });
+        });
+      }
+    }
 
     return updatedRepos;
   } catch (error) {

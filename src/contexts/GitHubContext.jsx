@@ -45,6 +45,9 @@ export const GitHubProvider = ({ children }) => {
                 const { getRepos } = await import('../services/GithubApi');
                 const repos = await getRepos(user.login);
                 setRepositories(repos || []);
+                if (repos) {
+                    localStorage.setItem('github_repositories', JSON.stringify(repos));
+                }
             } catch (err) {
                 console.warn("Error refreshing repos from backend, falling back to local storage:", err);
                 setRepositories(getStoredRepositories());

@@ -126,3 +126,12 @@ export const togglePinRepo = async (repoId) => {
   const res = await apiClient(`/repos/${repoId}/pin`, { method: "POST" });
   return res.data;
 };
+
+// Update repository (visibility, description, fileTree, etc.)
+export const updateRepoApi = async (repoId, repoData) => {
+  const res = await apiClient(`/repos/${repoId}`, {
+    method: "PUT",
+    body: JSON.stringify(repoData),
+  });
+  return res.data;
+};
