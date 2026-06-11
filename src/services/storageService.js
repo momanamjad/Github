@@ -207,8 +207,8 @@ export const updateRepository = (repoId, updatedData) => {
     writeCached(STORAGE_KEYS.REPOSITORIES, updatedRepos);
 
     // Sync fileTree updates to the backend DB if logged in
-    const token = localStorage.getItem("github_token");
-    if (token) {
+    const user = localStorage.getItem("github_user");
+    if (user) {
       const targetRepo = updatedRepos.find(r => r.id === repoId || r._id === repoId);
       if (targetRepo && targetRepo._id) {
         import("./GithubApi.jsx").then(({ updateRepoApi }) => {

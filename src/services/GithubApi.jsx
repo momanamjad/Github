@@ -21,8 +21,7 @@ export const loginUser = async (email, password) => {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  if (res?.data?.token) {
-    localStorage.setItem("github_token", res.data.token);
+  if (res?.data?.user) {
     localStorage.setItem("github_user", JSON.stringify(res.data.user));
   }
   return res.data;
@@ -34,8 +33,7 @@ export const registerUser = async (login, email, password) => {
     method: "POST",
     body: JSON.stringify({ login, email, password }),
   });
-  if (res?.data?.accessToken) {
-    localStorage.setItem("github_token", res.data.accessToken);
+  if (res?.data?.user) {
     localStorage.setItem("github_user", JSON.stringify(res.data.user));
   }
   return res.data;

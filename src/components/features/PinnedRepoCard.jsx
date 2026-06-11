@@ -34,9 +34,9 @@ const PinnedRepoCard = ({
     e.stopPropagation();
     
     const repoId = repo?._id || repo?.id;
-    const hasToken = !!localStorage.getItem("github_token");
+    const hasUser = !!localStorage.getItem("github_user");
 
-    if (hasToken && repo?._id) {
+    if (hasUser && repo?._id) {
       try {
         const { toggleStarRepo } = await import("../../services/GithubApi");
         await toggleStarRepo(repo._id);

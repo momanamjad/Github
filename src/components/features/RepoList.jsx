@@ -155,9 +155,9 @@ const RepoList = ({ repos }) => {
 
   const handleStarToggle = useCallback(async (repo) => {
     const repoId = repo._id || repo.id;
-    const hasToken = !!localStorage.getItem("github_token");
+    const hasUser = !!localStorage.getItem("github_user");
 
-    if (hasToken && repo._id) {
+    if (hasUser && repo._id) {
       try {
         await toggleStarRepo(repo._id);
       } catch (err) {
@@ -189,9 +189,9 @@ const RepoList = ({ repos }) => {
 
   const handlePinToggle = useCallback(async (repo) => {
     const repoId = repo._id || repo.id;
-    const hasToken = !!localStorage.getItem("github_token");
+    const hasUser = !!localStorage.getItem("github_user");
 
-    if (hasToken && repo._id) {
+    if (hasUser && repo._id) {
       try {
         await togglePinRepo(repo._id);
       } catch (err) {
