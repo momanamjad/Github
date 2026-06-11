@@ -7,7 +7,7 @@ import { getStoredRepositories, updateRepository } from './storageService.js';
  */
 export const getTree = (repoId) => {
   const repos = getStoredRepositories();
-  const repo = repos.find(r => r.id === repoId);
+  const repo = repos.find(r => r.id === repoId || r._id === repoId);
   return repo?.fileTree || [];
 };
 

@@ -120,7 +120,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
           <div key={fullPath}>
             {/* Directory row */}
             <div
-              className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors border-b border-[#d0d7de]/50"
+              className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors"
               style={{ paddingLeft }}
             >
               <span onClick={() => toggle(fullPath)} className="shrink-0 text-[#636c76]">
@@ -206,7 +206,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
       return (
         <div
           key={fullPath}
-          className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors border-b border-[#d0d7de]/50"
+          className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors"
           style={{ paddingLeft }}
         >
           <span className="shrink-0 w-[14px]" />

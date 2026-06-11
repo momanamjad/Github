@@ -4,6 +4,7 @@ import { getRepo } from "@services/GithubApi.jsx";
 import RepoHeader from "@features/RepoHeader";
 import RepoFileList from "@features/RepoFileList";
 import { getTree } from "@services/fileSystemService.js";
+import { getStoredRepositories } from "@services/storageService.js";
 import FileExplorer from "@components/FileExplorer.jsx";
 import FileEditor from "@components/FileEditor.jsx";
 
@@ -25,6 +26,18 @@ const RepoDetails = () => {
 
         const repoInfo = await getRepo(username, repo);
         setRepoData(repoInfo);
+
+        // Sync backend repository info (containing DB fileTree) to local storage cache
+        if (repoInfo) {
+          const cachedRepos = getStoredRepositories();
+          const idx = cachedRepos.findIndex(r => r._id === repoInfo._id || r.id === repoInfo.id);
+          if (idx === -1) {
+            cachedRepos.push(repoInfo);
+          } else {
+            cachedRepos[idx] = { ...cachedRepos[idx], ...repoInfo };
+          }
+          localStorage.setItem('github_repositories', JSON.stringify(cachedRepos));
+        }
 
         if (repoInfo.fileTree) {
           const tree = getTree(repoInfo._id || repoInfo.id);
