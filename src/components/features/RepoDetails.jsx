@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getRepo } from "@services/GithubApi.jsx";
+import { apiClient } from "@services/apiClient.js";
 import RepoHeader from "@features/RepoHeader";
 import RepoFileList from "@features/RepoFileList";
 import { getTree } from "@services/fileSystemService.js";
@@ -24,7 +25,19 @@ const RepoDetails = () => {
         setLoading(true);
         setError(null);
 
-        const repoInfo = await getRepo(username, repo);
+        let repoInfo = await getRepo(username, repo);
+        
+        if (repoInfo && repoInfo._id) {
+          try {
+            const fullRepoRes = await apiClient(`/repos/${repoInfo._id}`);
+            if (fullRepoRes?.data) {
+              repoInfo = fullRepoRes.data;
+            }
+          } catch (err) {
+            console.warn("Failed to fetch full repo details from backend:", err);
+          }
+        }
+
         setRepoData(repoInfo);
 
         // Sync backend repository info (containing DB fileTree) to local storage cache
@@ -40,7 +53,7 @@ const RepoDetails = () => {
         }
 
         if (repoInfo.fileTree) {
-          const tree = getTree(repoInfo._id || repoInfo.id);
+          const tree = await getTree(repoInfo._id || repoInfo.id);
           setFileTree(tree);
           setFiles(tree);
         } else {
@@ -103,9 +116,9 @@ const RepoDetails = () => {
     );
   }
 
-  const refreshTree = () => {
+  const refreshTree = async () => {
     if (!repoData) return;
-    const tree = getTree(repoData._id || repoData.id);
+    const tree = await getTree(repoData._id || repoData.id);
     setFileTree([...tree]);
   };
 

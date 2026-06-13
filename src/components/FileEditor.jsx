@@ -17,9 +17,9 @@ const FileEditor = ({ repoId, file, onSave }) => {
 
   if (!file) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      updateNode(repoId, file.path, { content });
+      await updateNode(repoId, file.path, { content });
       if (onSave) onSave(file.path, content);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

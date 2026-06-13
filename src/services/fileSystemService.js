@@ -1,29 +1,37 @@
 import { getStoredRepositories, updateRepository } from './storageService.js';
+import { apiClient } from './apiClient.js';
+
+// Helper to determine if the repoId is a backend MongoDB ObjectId
+const isBackendRepo = (repoId) => {
+  return typeof repoId === 'string' && /^[0-9a-fA-F]{24}$/.test(repoId);
+};
 
 /**
- * Read the file tree for a repository. Always returns an array (empty if none).
- * @param {number} repoId
- * @returns {Array}
+ * Read the file tree for a repository.
  */
-export const getTree = (repoId) => {
+export const getTree = async (repoId) => {
+  if (isBackendRepo(repoId)) {
+    try {
+      const res = await apiClient(`/repos/${repoId}/contents`);
+      return res.data || [];
+    } catch (err) {
+      console.error('Error fetching tree from backend, falling back to local storage:', err);
+    }
+  }
   const repos = getStoredRepositories();
   const repo = repos.find(r => r.id === repoId || r._id === repoId);
   return repo?.fileTree || [];
 };
 
 /**
- * Persist an updated tree for a repository.
- * @param {number} repoId
- * @param {Array} tree
- * @returns {Array} the tree that was saved
+ * Persist an updated tree for a repository (local storage fallback only).
  */
 export const saveTree = (repoId, tree) => {
   updateRepository(repoId, { fileTree: tree });
   return tree;
 };
 
-// recursive helpers ---------------------------------------------------------
-
+// recursive helpers for local storage ---------------------------------------------------------
 function findNode(tree, targetPath) {
   for (const node of tree) {
     if (node.path === targetPath) return node;
@@ -37,7 +45,6 @@ function findNode(tree, targetPath) {
 
 function addNodeToTree(tree, parentPath, newNode) {
   if (!parentPath || parentPath === '') {
-    // add to root
     tree.push(newNode);
     return true;
   }
@@ -73,11 +80,23 @@ function deleteNodeFromTree(tree, targetPath) {
 
 /**
  * Add a file or directory node under a given parent path.
- * parentPath may be empty string or null to indicate root.
  */
-export const addNode = (repoId, parentPath, newNode) => {
-  const tree = getTree(repoId);
-  // ensure no duplicate
+export const addNode = async (repoId, parentPath, newNode) => {
+  if (isBackendRepo(repoId)) {
+    const res = await apiClient(`/repos/${repoId}/contents`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: newNode.name,
+        path: newNode.path,
+        type: newNode.type,
+        content: newNode.content || '',
+        parentPath: parentPath || ''
+      })
+    });
+    return res.data;
+  }
+
+  const tree = await getTree(repoId);
   if (findNode(tree, newNode.path)) {
     throw new Error(`Path already exists: ${newNode.path}`);
   }
@@ -88,10 +107,22 @@ export const addNode = (repoId, parentPath, newNode) => {
 
 /**
  * Update a node's properties (rename or edit content)
- * newValues should contain fields to merge onto the node.
  */
-export const updateNode = (repoId, path, newValues) => {
-  const tree = getTree(repoId);
+export const updateNode = async (repoId, path, newValues) => {
+  if (isBackendRepo(repoId)) {
+    const res = await apiClient(`/repos/${repoId}/contents`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        oldPath: path,
+        name: newValues.name,
+        path: newValues.path,
+        content: newValues.content
+      })
+    });
+    return res.data;
+  }
+
+  const tree = await getTree(repoId);
   const node = findNode(tree, path);
   if (!node) throw new Error(`Node not found: ${path}`);
   Object.assign(node, newValues);
@@ -100,10 +131,18 @@ export const updateNode = (repoId, path, newValues) => {
 };
 
 /**
- * Delete a node (file or folder). Directories are removed recursively.
+ * Delete a node (file or folder).
  */
-export const deleteNode = (repoId, path) => {
-  const tree = getTree(repoId);
+export const deleteNode = async (repoId, path) => {
+  if (isBackendRepo(repoId)) {
+    const res = await apiClient(`/repos/${repoId}/contents`, {
+      method: 'DELETE',
+      body: JSON.stringify({ path })
+    });
+    return res.data;
+  }
+
+  const tree = await getTree(repoId);
   const removed = deleteNodeFromTree(tree, path);
   if (!removed) throw new Error(`Node not found: ${path}`);
   saveTree(repoId, tree);
@@ -111,17 +150,27 @@ export const deleteNode = (repoId, path) => {
 };
 
 /**
- * Move a node from one path to another (does not rename children).
+ * Move/rename a node.
  */
-export const moveNode = (repoId, fromPath, toPath) => {
-  const tree = getTree(repoId);
+export const moveNode = async (repoId, fromPath, toPath) => {
+  if (isBackendRepo(repoId)) {
+    const res = await apiClient(`/repos/${repoId}/contents`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        oldPath: fromPath,
+        path: toPath,
+        name: toPath.split('/').pop()
+      })
+    });
+    return res.data;
+  }
+
+  const tree = await getTree(repoId);
   const node = findNode(tree, fromPath);
   if (!node) throw new Error(`Source not found: ${fromPath}`);
 
-  // remove from original location
   deleteNodeFromTree(tree, fromPath);
 
-  // update path (and child paths if directory)
   const updatePaths = (n, base) => {
     n.path = n.path.replace(fromPath, toPath);
     if (n.type === 'dir') {

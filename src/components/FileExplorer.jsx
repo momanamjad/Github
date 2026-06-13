@@ -39,7 +39,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
   const toggle = (path) =>
     setOpenDirs((prev) => ({ ...prev, [path]: !prev[path] }));
 
-  const commitCreate = (parentPath, isDir, rawName) => {
+  const commitCreate = async (parentPath, isDir, rawName) => {
     const clean = (rawName || "").replace(/\s+/g, "-").trim();
     if (!clean) {
       setInlineCreate(null);
@@ -50,9 +50,9 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
       ? { type: "dir", name: clean, path: newPath, children: [] }
       : { type: "file", name: clean, path: newPath, content: "" };
     try {
-      addNode(repoId, parentPath, node);
+      await addNode(repoId, parentPath, node);
       setInlineCreate(null);
-      refreshTree();
+      await refreshTree();
       if (!isDir) {
         onSelect && onSelect(node);
       }
@@ -70,7 +70,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     setRenameValue(currentName);
   };
 
-  const commitRename = (oldPath) => {
+  const commitRename = async (oldPath) => {
     const clean = (renameValue || "").replace(/\s+/g, "-").trim();
     const segments = oldPath.split("/");
     const oldName = segments[segments.length - 1];
@@ -83,9 +83,9 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     segments[segments.length - 1] = clean;
     const newPath = segments.join("/");
     try {
-      moveNode(repoId, oldPath, newPath);
+      await moveNode(repoId, oldPath, newPath);
       setRenamingPath(null);
-      refreshTree();
+      await refreshTree();
     } catch (e) {
       console.error(e.message);
       setRenamingPath(null);
@@ -97,11 +97,11 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     setRenameValue("");
   };
 
-  const removeNode = (path, name) => {
+  const removeNode = async (path, name) => {
     if (!window.confirm(`Delete "${name}"?`)) return;
     try {
-      deleteNode(repoId, path);
-      refreshTree();
+      await deleteNode(repoId, path);
+      await refreshTree();
       if (onSelect) onSelect(null);
     } catch (e) {
       console.error(e.message);
