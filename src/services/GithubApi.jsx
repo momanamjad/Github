@@ -54,14 +54,24 @@ export const getRepos = async (username) => {
 // Get starred repositories
 export const getStarredRepos = async (username) => {
   const res = await apiClient(`/auth/user/${username}`);
-  return res.data.repos?.filter(r => r.stars_count > 0) || [];
+  return res.data.starredRepos || [];
 };
 
 // Get single repository details
 export const getRepo = async (username, repoName) => {
   const res = await apiClient(`/auth/user/${username}`);
   const foundRepo = res.data.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
-  if (foundRepo) return foundRepo;
+  if (foundRepo) {
+    try {
+      const detailRes = await apiClient(`/repos/${foundRepo._id || foundRepo.id}`);
+      if (detailRes && detailRes.data) {
+        return detailRes.data;
+      }
+    } catch (err) {
+      console.error("Failed to fetch full repo details, using profile list data:", err);
+    }
+    return foundRepo;
+  }
   throw new Error("Repo not found in user profile");
 };
 
@@ -132,4 +142,10 @@ export const updateRepoApi = async (repoId, repoData) => {
     body: JSON.stringify(repoData),
   });
   return res.data;
+};
+
+// Explore public repositories
+export const getExploreRepos = async () => {
+  const res = await apiClient("/repos/public/explore");
+  return res?.data || [];
 };

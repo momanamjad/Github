@@ -9,6 +9,7 @@ import { useTabsContext } from "@/contexts/TabsContext";
 import StatusButton from "../common/StatusButton";
 import TopBarActions from "./Topbar";
 import GithubOpenMenu from "./GithubOpenMenu";
+import NotificationCenter from "./NotificationCenter";
 import { useGitHub } from "@/contexts/GitHubContext";
 
 const Navbar = () => {
@@ -124,7 +125,7 @@ const Navbar = () => {
           {/* Left Section */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <GithubOpenMenu />
-            <Link to="/" className="hover:opacity-80 transition-opacity">
+            <Link to="/" className="hover:opacity-80 transition-opacity flex items-center gap-1">
               <IoLogoGithub size={32} />
             </Link>
             {/* Dashboard text — hidden on small screens */}
@@ -191,6 +192,7 @@ const Navbar = () => {
                 <TerminalSquare size={18} />
               </Link>
               <TopBarActions />
+              <NotificationCenter />
               <GitHubUserMenu />
             </div>
           </div>

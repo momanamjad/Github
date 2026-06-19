@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Compass, TrendingUp, Star, GitFork, Eye, Search } from 'lucide-react';
+import { getExploreRepos } from '../services/GithubApi';
+import { Link } from 'react-router-dom';
 
 const Explore = () => {
   const [activeTab, setActiveTab] = useState('trending');
+  const [repos, setRepos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchExplore = async () => {
+      try {
+        setLoading(true);
+        const data = await getExploreRepos();
+        setRepos(data || []);
+      } catch (err) {
+        console.error('Error fetching explore repos:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExplore();
+  }, []);
 
   const tabs = [
     { id: 'trending', label: 'Trending', icon: TrendingUp },
@@ -70,54 +89,52 @@ const Explore = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                Trending repositories today
+                Public repositories
               </h2>
-              <select className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Today</option>
-                <option>This week</option>
-                <option>This month</option>
-              </select>
             </div>
 
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div
-                  key={item}
-                  className="border border-gray-300 rounded-lg p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-blue-600 hover:underline cursor-pointer mb-1">
-                        username/trending-repo-{item}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        A comprehensive solution for modern web development with cutting-edge 
-                        features and best practices built in.
-                      </p>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
-                        <span className="flex items-center">
-                          <span className="w-3 h-3 bg-blue-500 rounded-full mr-1.5"></span>
-                          TypeScript
-                        </span>
-                        <span className="flex items-center">
-                          <Star className="w-3 h-3 mr-1" />
-                          2.4k stars today
-                        </span>
-                        <span className="flex items-center">
-                          <GitFork className="w-3 h-3 mr-1" />
-                          345 forks
-                        </span>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading explore repositories...</div>
+            ) : repos.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No public repositories found. Create one to get started!</div>
+            ) : (
+              <div className="space-y-4">
+                {repos.map((repo) => (
+                  <div
+                    key={repo._id}
+                    className="border border-gray-300 rounded-lg p-6 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
+                        {repo.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/${repo.owner?.login}/${repo.name}`} className="text-lg font-semibold text-blue-600 hover:underline mb-1 inline-block">
+                          {repo.owner?.login || 'unknown'}/{repo.name}
+                        </Link>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {repo.description || 'No description provided.'}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                          <span className="flex items-center">
+                            <span className="w-3 h-3 bg-blue-500 rounded-full mr-1.5"></span>
+                            {repo.language || 'JavaScript'}
+                          </span>
+                          <span className="flex items-center">
+                            <Star className="w-3 h-3 mr-1" />
+                            {repo.stars_count || 0} stars
+                          </span>
+                          <span className="flex items-center">
+                            <GitFork className="w-3 h-3 mr-1" />
+                            {repo.forks_count || 0} forks
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <button className="flex-shrink-0 inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50">
-                      <Star className="w-3 h-3 mr-1.5" />
-                      Star
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

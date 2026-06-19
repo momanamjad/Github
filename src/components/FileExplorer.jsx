@@ -39,7 +39,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
   const toggle = (path) =>
     setOpenDirs((prev) => ({ ...prev, [path]: !prev[path] }));
 
-  const commitCreate = async (parentPath, isDir, rawName) => {
+  const commitCreate = (parentPath, isDir, rawName) => {
     const clean = (rawName || "").replace(/\s+/g, "-").trim();
     if (!clean) {
       setInlineCreate(null);
@@ -50,9 +50,9 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
       ? { type: "dir", name: clean, path: newPath, children: [] }
       : { type: "file", name: clean, path: newPath, content: "" };
     try {
-      await addNode(repoId, parentPath, node);
+      addNode(repoId, parentPath, node);
       setInlineCreate(null);
-      await refreshTree();
+      refreshTree();
       if (!isDir) {
         onSelect && onSelect(node);
       }
@@ -70,7 +70,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     setRenameValue(currentName);
   };
 
-  const commitRename = async (oldPath) => {
+  const commitRename = (oldPath) => {
     const clean = (renameValue || "").replace(/\s+/g, "-").trim();
     const segments = oldPath.split("/");
     const oldName = segments[segments.length - 1];
@@ -83,9 +83,9 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     segments[segments.length - 1] = clean;
     const newPath = segments.join("/");
     try {
-      await moveNode(repoId, oldPath, newPath);
+      moveNode(repoId, oldPath, newPath);
       setRenamingPath(null);
-      await refreshTree();
+      refreshTree();
     } catch (e) {
       console.error(e.message);
       setRenamingPath(null);
@@ -97,11 +97,11 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
     setRenameValue("");
   };
 
-  const removeNode = async (path, name) => {
+  const removeNode = (path, name) => {
     if (!window.confirm(`Delete "${name}"?`)) return;
     try {
-      await deleteNode(repoId, path);
-      await refreshTree();
+      deleteNode(repoId, path);
+      refreshTree();
       if (onSelect) onSelect(null);
     } catch (e) {
       console.error(e.message);
@@ -120,10 +120,10 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
           <div key={fullPath}>
             {/* Directory row */}
             <div
-              className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors"
+              className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
               style={{ paddingLeft }}
             >
-              <span onClick={() => toggle(fullPath)} className="shrink-0 text-[#636c76]">
+              <span onClick={() => toggle(fullPath)} className="shrink-0 text-[#636c76] dark:text-[#8b949e]">
                 {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </span>
               <span className="shrink-0 text-[#54aeff]">
@@ -141,11 +141,11 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                     if (e.key === "Escape") cancelRename();
                   }}
                   onBlur={() => commitRename(fullPath)}
-                  className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] rounded bg-white outline-none ring-1 ring-[#0969da]/30"
+                  className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] dark:border-[#58a6ff] rounded bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-white outline-none ring-1 ring-[#0969da]/30"
                 />
               ) : (
                 <span
-                  className="flex-1 text-[14px] text-[#1f2328] truncate"
+                  className="flex-1 text-[14px] text-[#1f2328] dark:text-[#c9d1d9] truncate"
                   onClick={() => toggle(fullPath)}
                 >
                   {node.name}
@@ -182,7 +182,6 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                 </div>
               )}
             </div>
-
             {/* Children */}
             {isOpen && (
               <>
@@ -206,11 +205,11 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
       return (
         <div
           key={fullPath}
-          className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] cursor-pointer transition-colors"
+          className="group flex items-center gap-1.5 py-1 px-2 hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
           style={{ paddingLeft }}
         >
           <span className="shrink-0 w-[14px]" />
-          <span className="shrink-0 text-[#636c76]">
+          <span className="shrink-0 text-[#636c76] dark:text-[#8b949e]">
             <FileIcon size={16} />
           </span>
 
@@ -225,11 +224,11 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                 if (e.key === "Escape") cancelRename();
               }}
               onBlur={() => commitRename(fullPath)}
-              className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] rounded bg-white outline-none ring-1 ring-[#0969da]/30"
+              className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] dark:border-[#58a6ff] rounded bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-white outline-none ring-1 ring-[#0969da]/30"
             />
           ) : (
             <span
-              className="flex-1 text-[14px] text-[#1f2328] truncate hover:underline hover:text-[#0969da]"
+              className="flex-1 text-[14px] text-[#1f2328] dark:text-[#c9d1d9] truncate hover:underline hover:text-[#0969da] dark:hover:text-[#58a6ff]"
               onClick={() => onSelect && onSelect(node)}
             >
               {node.name}
@@ -254,25 +253,25 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#f6f8fa] border border-[#d0d7de] rounded-t-md">
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-t-md">
         <button
           onClick={() => setInlineCreate({ parentPath: "", type: "file" })}
-          className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f3f4f6] transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] dark:text-[#c9d1d9] bg-white dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-[#f3f4f6] dark:hover:bg-[#30363d] transition-colors cursor-pointer"
         >
           <FilePlus size={14} /> File
         </button>
         <button
           onClick={() => setInlineCreate({ parentPath: "", type: "dir" })}
-          className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f3f4f6] transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] dark:text-[#c9d1d9] bg-white dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-[#f3f4f6] dark:hover:bg-[#30363d] transition-colors cursor-pointer"
         >
           <FolderPlus size={14} /> Folder
         </button>
       </div>
 
       {/* File tree */}
-      <div className="border border-t-0 border-[#d0d7de] rounded-b-md bg-white overflow-hidden">
+      <div className="border border-t-0 border-[#d0d7de] dark:border-[#30363d] rounded-b-md bg-white dark:bg-[#0d1117] overflow-hidden">
         {tree.length === 0 ? (
-          <div className="px-4 py-8 text-center text-[#636c76] text-sm">
+          <div className="px-4 py-8 text-center text-[#636c76] dark:text-[#8b949e] text-sm">
             This repository is empty. Create a file or folder to get started.
           </div>
         ) : (
@@ -302,10 +301,10 @@ const ActionBtn = ({ children, title, onClick, variant = "default" }) => (
       e.stopPropagation();
       onClick();
     }}
-    className={`p-1 rounded transition-colors cursor-pointer
+    className={`p-1 rounded transition-colors cursor-pointer bg-transparent border-0
       ${variant === "danger"
-        ? "text-[#636c76] hover:text-[#cf222e] hover:bg-[#ffebe9]"
-        : "text-[#636c76] hover:text-[#0969da] hover:bg-[#ddf4ff]"
+        ? "text-[#636c76] dark:text-[#8b949e] hover:text-[#cf222e] dark:hover:text-[#ff7b72] hover:bg-[#ffebe9] dark:hover:bg-[#4d1f21]"
+        : "text-[#636c76] dark:text-[#8b949e] hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:bg-[#ddf4ff] dark:hover:bg-[#1f3f26]"
       }`}
   >
     {children}
@@ -317,18 +316,18 @@ const InlineInput = React.forwardRef(({ type, depth, onCommit, onCancel }, ref) 
   const paddingLeft = `${depth * 16 + 8}px`;
   return (
     <div
-      className="flex items-center gap-1.5 py-1 px-2 bg-[#ddf4ff] border-b border-[#0969da]/30"
+      className="flex items-center gap-1.5 py-1 px-2 bg-[#ddf4ff] dark:bg-[#1f3f26] border-b border-[#0969da]/30"
       style={{ paddingLeft }}
     >
       <span className="shrink-0 w-[14px]" />
-      <span className="shrink-0 text-[#636c76]">
+      <span className="shrink-0 text-[#636c76] dark:text-[#8b949e]">
         {type === "dir" ? <Folder size={16} /> : <FileIcon size={16} />}
       </span>
       <input
         ref={ref}
         type="text"
         placeholder={type === "dir" ? "Folder name..." : "Filename..."}
-        className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] rounded bg-white outline-none ring-1 ring-[#0969da]/30"
+        className="flex-1 min-w-0 px-1.5 py-0 text-[13px] border border-[#0969da] dark:border-[#58a6ff] rounded bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-white outline-none ring-1 ring-[#0969da]/30"
         onKeyDown={(e) => {
           if (e.key === "Enter") onCommit(e.currentTarget.value);
           if (e.key === "Escape") onCancel();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
-import { getStarredRepos } from "@services/GithubApi";
+import { getStarredRepos, toggleStarRepo } from "@services/GithubApi";
 import { starRepository, unstarRepository } from "@services/storageService.js";
 import { useParams, Link } from 'react-router-dom';
 import { useScrollLock } from '../../../hooks/useScrollLock';
@@ -39,38 +39,38 @@ const Stars = () => {
 
   // Load data on component mount
   const params = useParams();
+  const fetchStarred = async () => {
+    const username = params?.username || 'moman';
+    try {
+      const starredRepos = await getStarredRepos(username);
+      setRepos(starredRepos);
+    } catch (error) {
+      console.error("Error fetching starred repos:", error);
+      setRepos([]);
+    }
+  };
+
   useEffect(() => {
-    const fetchStarred = async () => {
-      const username = params?.username || 'moman';
-      try {
-        setLoading(true);
-        const starredRepos = await getStarredRepos(username);
-        setRepos(starredRepos);
-      } catch (error) {
-        console.error("Error fetching starred repos:", error);
-        setRepos([]);
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    fetchStarred().finally(() => setLoading(false));
+
+    window.addEventListener("github_stars_updated", fetchStarred);
+    return () => {
+      window.removeEventListener("github_stars_updated", fetchStarred);
     };
-    fetchStarred();
   }, [params?.username]);
 
-  const handleStarToggle = (repo) => {
-    const isCurrentlyStarred = repos.some(r => r.full_name === repo.full_name);
-    let updatedList;
-
-    if (isCurrentlyStarred) {
-      // Unstar: Remove from the displayed list in this tab
-      unstarRepository(repo.full_name);
-      updatedList = repos.filter(r => r.full_name !== repo.full_name);
-    } else {
-      // Star: Add back (unlikely to be used in 'Stars' tab but good for consistency)
-      starRepository(repo);
-      updatedList = [...repos, repo];
+  const handleStarToggle = async (repo) => {
+    try {
+      const repoId = repo._id || repo.id;
+      await toggleStarRepo(repoId);
+      // Immediately remove from list since it's unstarred
+      setRepos(prev => prev.filter(r => (r._id !== repoId && r.id !== repoId)));
+      // Dispatch event to sync other views
+      window.dispatchEvent(new CustomEvent("github_stars_updated"));
+    } catch (error) {
+      console.error("Error toggling star:", error);
     }
-
-    setRepos(updatedList);
   };
 
   // 1. DYNAMIC FILTERS & SORTING LOGIC

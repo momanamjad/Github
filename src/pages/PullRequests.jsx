@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, Check } from 'lucide-react';
 import { useGitHub } from "../contexts/GitHubContext";
 import { apiClient } from "../services/apiClient";
@@ -59,47 +59,49 @@ const defaultPullRequests = [
 
 const PullRequests = () => {
   const { user, repositories } = useGitHub();
-  const [selectedTab, setSelectedTab] = useState("everything");
+  const [selectedTab, setSelectedTab] = useState("Created");
   const [searchQuery, setSearchQuery] = useState("is:open is:pr author:@me");
-  const [pullRequests, setPullRequests] = useState(defaultPullRequests);
+  const [pullRequests, setPullRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPrRepoId, setNewPrRepoId] = useState("");
   const [newPrTitle, setNewPrTitle] = useState("");
   const [newPrDesc, setNewPrDesc] = useState("");
+  const [expandedPrId, setExpandedPrId] = useState(null);
+
+  const isFetchingRef = useRef(false);
+  const lastRepoIdsRef = useRef("");
 
   const fetchAllPRs = async () => {
     if (!user || !repositories || repositories.length === 0) return;
+    const repoIdsStr = repositories.map(r => r._id || r.id).join(",");
+    if (isFetchingRef.current || lastRepoIdsRef.current === repoIdsStr) return;
+
+    isFetchingRef.current = true;
+    lastRepoIdsRef.current = repoIdsStr;
     setLoading(true);
     try {
-      const prList = [];
-      for (const repo of repositories) {
-        if (typeof repo._id === 'string' && repo._id.length === 24) {
-          const res = await apiClient(`/repos/${repo._id}/pulls`);
-          if (res?.data) {
-            res.data.forEach((pr) => {
-              prList.push({
-                id: pr._id,
-                title: pr.title,
-                repo: repo.name,
-                number: Math.floor(Math.random() * 800) + 100,
-                status: pr.status,
-                author: pr.author?.login || user.login,
-                comments: 0,
-                updated: new Date(pr.updated_at || pr.created_at).toLocaleDateString(),
-                labels: [],
-              });
-            });
-          }
-        }
-      }
-      if (prList.length > 0) {
-        setPullRequests(prList);
+      const res = await apiClient(`/users/pulls`);
+      if (res?.data) {
+        const formatted = res.data.map((pr) => ({
+          id: pr._id,
+          title: pr.title,
+          repo: pr.repository?.name || "Unknown",
+          repoId: pr.repository?._id || pr.repository,
+          number: Math.floor(Math.random() * 800) + 100,
+          status: pr.status,
+          author: pr.author?.login || user.login,
+          comments: 0,
+          updated: new Date(pr.updatedAt || pr.createdAt || new Date()).toLocaleDateString(),
+          labels: [],
+        }));
+        setPullRequests(formatted);
       }
     } catch (err) {
       console.error("Failed to fetch PRs:", err);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -121,6 +123,7 @@ const PullRequests = () => {
       setIsCreateModalOpen(false);
       setNewPrTitle("");
       setNewPrDesc("");
+      lastRepoIdsRef.current = ""; // Reset ref to force re-fetch
       await fetchAllPRs();
     } catch (err) {
       console.error("Failed to create PR:", err);
@@ -165,14 +168,23 @@ const PullRequests = () => {
     }
   };
 
-  const filteredPullRequests = pullRequests.filter(pr => 
-    pr.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pr.repo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pr.author.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPullRequests = pullRequests.filter(pr => {
+    // Apply tab filters
+    if (selectedTab === "Created") {
+      if (pr.author !== user?.login) return false;
+    }
+    // Search query parsing helper (ignore syntax helpers)
+    const tokens = searchQuery.split(/\s+/).filter(t => !t.startsWith("is:") && !t.startsWith("author:"));
+    if (tokens.length === 0) return true;
+    
+    const textQuery = tokens.join(" ").toLowerCase();
+    return pr.title.toLowerCase().includes(textQuery) ||
+           pr.repo.toLowerCase().includes(textQuery) ||
+           pr.author.toLowerCase().includes(textQuery);
+  });
 
   return (
-    <div className="min-h-screen text-[#e6edf3] font-sans">
+    <div className="min-h-screen bg-white text-[#1f2328] font-sans">
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
           <div className="border rounded-md border-github-border">
@@ -224,11 +236,11 @@ const PullRequests = () => {
 
         <div className="border border-github-border rounded-lg overflow-hidden">
           <div className="bg-[#F6F8FA] px-4 py-3 border-b border-github-border flex items-center gap-3 text-sm">
-            <StatusOpenIcon className="w-4 h-4 text-black" />
-            <span className="text-black">{filteredPullRequests.length} Results</span>
+            <StatusOpenIcon className="w-4 h-4 text-github-text" />
+            <span className="text-github-text">{filteredPullRequests.length} Results</span>
             <div className="flex gap-3">
-              <Check className="w-4 h-4 text-black" />
-              <span className="text-black">
+              <Check className="w-4 h-4 text-github-muted" />
+              <span className="text-github-muted">
                 {
                   filteredPullRequests.filter(
                     (pr) => pr.status === "closed" || pr.status === "merged",
@@ -252,12 +264,15 @@ const PullRequests = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex text-[#59636e] flex-wrap items-center gap-2">
                     <PullRequestSidebarIcon className="w-4 h-4 text-[#59636e]" />
-                    <a
-                      href="#"
-                      className="font-semibold hover:text-[#2f81f7] text-base text-github-link"
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setExpandedPrId(expandedPrId === pr.id ? null : pr.id);
+                      }}
+                      className="font-semibold text-base text-[#0969da] hover:underline cursor-pointer border-0 bg-transparent text-left"
                     >
                       {pr.title}
-                    </a>
+                    </button>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#848d97] mt-1">
@@ -270,9 +285,46 @@ const PullRequests = () => {
                       {pr.comments}
                     </span>
                   </div>
+
+                  {expandedPrId === pr.id && (
+                    <div className="mt-3 p-4 border border-[#d0d7de] rounded-md bg-[#f6f8fa] text-[13px] text-[#24292f] space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-[#1a7f37]">
+                        <svg className="w-4 h-4" viewBox="0 0 16 16" version="1.1" fill="currentColor">
+                          <path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.47a.75.75 0 0 0-1.06-1.06L7 9.19 5.28 7.47a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l4.25-4.25Z"/>
+                        </svg>
+                        <span>This branch has no conflicts with the base branch</span>
+                      </div>
+                      <div className="border-t border-[#d0d7de]/60 pt-2">
+                        <p className="font-semibold mb-1.5 text-xs text-[#57606a]">Files changed (1)</p>
+                        <div className="flex items-center justify-between py-1.5 px-3 bg-white border border-[#d0d7de] rounded text-xs">
+                          <span className="font-mono text-[#1f2328]">README.md</span>
+                          <span className="text-[#1a7f37] font-semibold">+12 lines</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex-shrink-0 text-xs hidden sm:block">
+                <div className="flex-shrink-0 text-xs flex items-center gap-2">
+                  {pr.status === "open" && (
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!window.confirm(`Are you sure you want to merge PR: "${pr.title}"?`)) return;
+                        try {
+                          await apiClient(`/repos/${pr.repoId}/pulls/${pr.id}/merge`, { method: "POST" });
+                          alert("Pull Request merged successfully!");
+                          lastRepoIdsRef.current = "";
+                          await fetchAllPRs();
+                        } catch (err) {
+                          alert("Merge failed: " + err.message);
+                        }
+                      }}
+                      className="px-2.5 py-1 text-xs font-semibold text-white bg-[#238636] hover:bg-[#2ea043] rounded-md transition-colors cursor-pointer"
+                    >
+                      Merge
+                    </button>
+                  )}
                   <PullRequestSidebarIcon className="w-4 h-4" />
                 </div>
               </div>
@@ -329,16 +381,16 @@ const PullRequests = () => {
         </div>
       </div>
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1f2328] border border-github-border rounded-lg max-w-md w-full p-6 text-white shadow-2xl">
-            <h3 className="text-lg font-bold mb-4">Open a New Pull Request</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-[#d0d7de] rounded-lg max-w-md w-full p-6 text-[#1f2328] shadow-2xl">
+            <h3 className="text-lg font-bold mb-4 text-[#1f2328]">Open a New Pull Request</h3>
             <form onSubmit={handleCreatePR} className="flex flex-col gap-4">
               <div>
-                <label className="block text-xs text-gray-400 mb-1 font-medium">Select Repository</label>
+                <label className="block text-xs text-[#57606a] mb-1 font-semibold">Select Repository</label>
                 <select
                   value={newPrRepoId}
                   onChange={(e) => setNewPrRepoId(e.target.value)}
-                  className="w-full bg-[#30363d] border border-github-border rounded p-2 text-sm focus:outline-none focus:border-[#2f81f7] text-white"
+                  className="w-full bg-[#f6f8fa] border border-[#d0d7de] rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328]"
                 >
                   {repositories.map(repo => (
                     <option key={repo._id || repo.id} value={repo._id || repo.id}>
@@ -348,30 +400,30 @@ const PullRequests = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1 font-medium">Title</label>
+                <label className="block text-xs text-[#57606a] mb-1 font-semibold">Title</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Add dark mode"
                   value={newPrTitle}
                   onChange={(e) => setNewPrTitle(e.target.value)}
-                  className="w-full bg-[#30363d] border border-github-border rounded p-2 text-sm focus:outline-none focus:border-[#2f81f7] text-white"
+                  className="w-full bg-white border border-[#d0d7de] rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328]"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1 font-medium">Description (Optional)</label>
+                <label className="block text-xs text-[#57606a] mb-1 font-semibold">Description (Optional)</label>
                 <textarea
                   placeholder="Describe your changes..."
                   value={newPrDesc}
                   onChange={(e) => setNewPrDesc(e.target.value)}
-                  className="w-full bg-[#30363d] border border-github-border rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-[#2f81f7] text-white"
+                  className="w-full bg-white border border-[#d0d7de] rounded p-2 text-sm h-24 resize-none focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328]"
                 />
               </div>
               <div className="flex justify-end gap-2 mt-2">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-github-border hover:bg-[#30363d] text-sm font-semibold rounded-md transition-colors cursor-pointer text-white"
+                  className="px-4 py-2 border border-[#d0d7de] bg-[#f6f8fa] text-[#24292f] hover:bg-gray-100 text-sm font-semibold rounded-md transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

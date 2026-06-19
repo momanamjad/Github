@@ -391,6 +391,7 @@ export const clearAllStorage = () => {
       localStorage.removeItem(key);
       delete _cache[key];
     });
+    localStorage.removeItem('github_token');
     // Reset init promise so next mount re-seeds from JSON
     _initPromise = null;
     return true;

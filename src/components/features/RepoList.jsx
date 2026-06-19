@@ -76,21 +76,23 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
       </div>
 
       <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-        <button
-          onClick={() => onTogglePin(repo)}
-          className={`
-            flex items-center gap-1.5
-            px-3 py-1.5
-            text-xs font-semibold
-            border border-[#d0d7de]
-            rounded-md
-            transition-all duration-200
-            shadow-sm cursor-pointer
-            ${isPinned ? 'bg-[#f3f4f6] text-[#24292f] border-[#afb8c1]' : 'bg-[#f6f8fa] text-[#24292f] hover:bg-[#f3f4f6]'}
-          `}
-        >
-          {isPinned ? "Pinned" : "Pin"}
-        </button>
+        {visibility !== "private" && (
+          <button
+            onClick={() => onTogglePin(repo)}
+            className={`
+              flex items-center gap-1.5
+              px-3 py-1.5
+              text-xs font-semibold
+              border border-[#d0d7de]
+              rounded-md
+              transition-all duration-200
+              shadow-sm cursor-pointer
+              ${isPinned ? 'bg-[#f3f4f6] text-[#24292f] border-[#afb8c1]' : 'bg-[#f6f8fa] text-[#24292f] hover:bg-[#f3f4f6]'}
+            `}
+          >
+            {isPinned ? "Pinned" : "Pin"}
+          </button>
+        )}
         <button
           onClick={() => onToggleStar(repo)}
           className={`

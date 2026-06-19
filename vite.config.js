@@ -14,6 +14,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      disable: true,
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'logo-192.png', 'logo-512.png', 'maskable-logo-512.png', 'customIcons/**/*'],
       manifest: false, // we use our own public/manifest.json

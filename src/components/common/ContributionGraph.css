@@ -184,3 +184,61 @@
 .year-btn:hover:not(.active) {
   background-color: #f3f4f6;
 }
+
+/* ── Dark Mode Heatmap Styles ── */
+.dark .react-calendar-heatmap .lvl-0 {
+  fill: #161b22;
+}
+.dark .react-calendar-heatmap .lvl-1 {
+  fill: #0e4429;
+}
+.dark .react-calendar-heatmap .lvl-2 {
+  fill: #006d32;
+}
+.dark .react-calendar-heatmap .lvl-3 {
+  fill: #26a641;
+}
+.dark .react-calendar-heatmap .lvl-4 {
+  fill: #39d353;
+}
+
+.dark .legend-box.lvl-0 {
+  background-color: #161b22;
+}
+.dark .legend-box.lvl-1 {
+  background-color: #0e4429;
+}
+.dark .legend-box.lvl-2 {
+  background-color: #006d32;
+}
+.dark .legend-box.lvl-3 {
+  background-color: #26a641;
+}
+.dark .legend-box.lvl-4 {
+  background-color: #39d353;
+}
+
+.dark .gh-calendar-card {
+  border-color: #30363d;
+  background-color: #0d1117;
+}
+
+.dark .gh-header {
+  color: #c9d1d9;
+}
+
+.dark .gh-footer {
+  color: #8b949e;
+}
+
+.dark .year-btn:hover:not(.active) {
+  background-color: #21262d;
+}
+
+.dark .react-calendar-heatmap text {
+  fill: #c9d1d9;
+}
+
+.dark .react-calendar-heatmap-month-label {
+  fill: #8b949e;
+}

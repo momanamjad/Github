@@ -5,37 +5,34 @@ import RepoList from "@features/RepoList";
 import RepoFilterBar from "@features/RepoFilterBar";
 import { Skeleton } from 'boneyard-js/react';
 import { RepoSkeleton } from "@features/RepoSkeleton";
+import { getRepos } from "@services/GithubApi";
 
 const Repositories = () => {
   const { username } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { repositories: allRepos, user } = useGitHub();
+  const { user } = useGitHub();
+  const [repos, setRepos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate loading delay for skeleton demonstration
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, [username]);
+    const fetchRepos = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getRepos(username);
+        setRepos(data || []);
+      } catch (err) {
+        console.error("Failed to load repositories:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRepos();
 
-  // Filter out repos not owned by the current profile user
-  const repos = useMemo(() => {
-    const profileUser = username.toLowerCase();
-    return allRepos.filter(r => {
-      const ownerLogin = r.owner?.login;
-      if (ownerLogin) {
-        return ownerLogin.toLowerCase() === profileUser;
-      }
-      
-      // Fallback: If owner is a raw ID string, check if it matches the current user
-      if (typeof r.owner === "string" && user && r.owner === user.id) {
-        return user.login.toLowerCase() === profileUser;
-      }
-      
-      // Default fallback
-      return "moman".toLowerCase() === profileUser;
-    });
-  }, [allRepos, username, user]);
+    window.addEventListener('github_repos_updated', fetchRepos);
+    return () => {
+      window.removeEventListener('github_repos_updated', fetchRepos);
+    };
+  }, [username]);
 
   const search = searchParams.get("q") || "";
   const language = searchParams.get("language") || "All";

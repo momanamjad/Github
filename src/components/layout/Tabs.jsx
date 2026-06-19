@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { useTabsContext } from "@/contexts/TabsContext";
 import { getRepos } from "@services/GithubApi.jsx";
 import { useScrollLock } from "../../hooks/useScrollLock";
+import { Users } from "lucide-react";
 
 
 const Tabs = ({ username }) => {

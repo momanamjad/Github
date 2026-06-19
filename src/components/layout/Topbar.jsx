@@ -50,9 +50,6 @@ const TopBarActions = () => {
         <IconButton label="Pull requests" onClick={() => navigate("/pull-requests")}>
           <GitPullRequestIcon size={16} />
         </IconButton>
-        <IconButton label="Notifications">
-          <InboxIcon size={16} />
-        </IconButton>
       </div>
     </div>
   );

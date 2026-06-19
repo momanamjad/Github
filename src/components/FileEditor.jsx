@@ -2,17 +2,13 @@ import React, { useState, useEffect } from "react";
 import { updateNode } from "@services/fileSystemService.js";
 import { FileCode, Save, Check } from "lucide-react";
 
-const FileEditor = ({ repoId, file, onSave }) => {
+const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
   const [content, setContent] = useState(file?.content || "");
   const [saved, setSaved] = useState(false);
 
-  // Use setTimeout to avoid synchronous setState-in-effect lint error
   useEffect(() => {
-    const id = setTimeout(() => {
-      setContent(file?.content || "");
-      setSaved(false);
-    }, 0);
-    return () => clearTimeout(id);
+    setContent(file?.content || "");
+    setSaved(false);
   }, [file]);
 
   if (!file) return null;
@@ -43,6 +39,8 @@ const FileEditor = ({ repoId, file, onSave }) => {
     txt: "Text",
   }[ext] || ext?.toUpperCase() || "File";
 
+  const isUnchanged = content === (file?.content || "");
+
   return (
     <div className="border border-[#d0d7de] rounded-md bg-white overflow-hidden">
       {/* File header */}
@@ -54,24 +52,29 @@ const FileEditor = ({ repoId, file, onSave }) => {
             {langLabel}
           </span>
         </div>
-        <button
-          onClick={handleSave}
-          className={`flex items-center gap-1.5 px-3 py-[5px] text-[13px] font-medium rounded-md border transition-all cursor-pointer shrink-0
-            ${saved
-              ? "bg-[#2da44e] text-white border-[#2da44e]"
-              : "bg-[#2da44e] text-white border-[#2da44e] hover:bg-[#218838]"
-            }`}
-        >
-          {saved ? (
-            <>
-              <Check size={14} /> Saved!
-            </>
-          ) : (
-            <>
-              <Save size={14} /> <span className="hidden sm:inline">Commit changes</span><span className="sm:hidden">Save</span>
-            </>
-          )}
-        </button>
+        {isOwner && (
+          <button
+            onClick={handleSave}
+            disabled={isUnchanged && !saved}
+            className={`flex items-center gap-1.5 px-3 py-[5px] text-[13px] font-medium rounded-md border transition-all shrink-0
+              ${saved
+                ? "bg-[#2da44e] text-white border-[#2da44e]"
+                : isUnchanged
+                  ? "bg-[#f6f8fa] text-[#8c959f] border-[#d0d7de] cursor-not-allowed"
+                  : "bg-[#2da44e] text-white border-[#2da44e] hover:bg-[#218838] cursor-pointer"
+              }`}
+          >
+            {saved ? (
+              <>
+                <Check size={14} /> Saved!
+              </>
+            ) : (
+              <>
+                <Save size={14} /> <span className="hidden sm:inline">Commit changes</span><span className="sm:hidden">Save</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Editor area */}
@@ -83,6 +86,7 @@ const FileEditor = ({ repoId, file, onSave }) => {
             setContent(e.target.value);
             setSaved(false);
           }}
+          readOnly={!isOwner}
           spellCheck={false}
           placeholder="Start typing..."
         />

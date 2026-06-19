@@ -161,12 +161,6 @@ export default function Repositories() {
                 {activeTab === "my-forks" && "My forks"}
                 {activeTab === "admin-access" && "Admin access"}
               </h1>
-              <div className="flex items-center gap-3">
-                <button className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  Preview
-                </button>
-                <NewRepoBtn />
-              </div>
             </div>
 
             {/* Filter Bar Component */}

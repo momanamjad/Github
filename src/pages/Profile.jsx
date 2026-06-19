@@ -52,7 +52,7 @@ const Profile = () => {
         <ProfileSidebar user={user} />
         <div className="flex-1">
           <RepoList repos={repos} />
-          <ContributionGraph username={user.login} />
+          <ContributionGraph username={user.login} contributions={user.contributions} />
         </div>
       </div>
     </>

@@ -18,7 +18,8 @@ export const GitHubProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      if (res?.data?.user) {
+      if (res?.data?.accessToken) {
+        localStorage.setItem('github_token', res.data.accessToken);
         localStorage.setItem('github_user', JSON.stringify(res.data.user));
         setUser(res.data.user);
       }
@@ -30,7 +31,8 @@ export const GitHubProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ login: loginName, email, password }),
       });
-      if (res?.data?.user) {
+      if (res?.data?.accessToken) {
+        localStorage.setItem('github_token', res.data.accessToken);
         localStorage.setItem('github_user', JSON.stringify(res.data.user));
         setUser(res.data.user);
       }
@@ -79,13 +81,9 @@ export const GitHubProvider = ({ children }) => {
         };
     }, [refreshRepos]);
 
-    const logout = useCallback(async () => {
-        try {
-            await apiClient('/auth/logout', { method: 'POST' });
-        } catch (err) {
-            console.error('Logout error on backend:', err);
-        }
+    const logout = useCallback(() => {
         clearAllStorage();
+        localStorage.removeItem('github_token');
         setUser(null);
     }, []);
 

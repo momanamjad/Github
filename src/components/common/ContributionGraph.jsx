@@ -1,38 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
+import { getUser } from '../../services/GithubApi';
 import './ContributionGraph.css';
 
-const ContributionGraph = () => {
-  const [selectedYear, setSelectedYear] = useState(2024);
-  const years = [2026, 2025, 2024];
+const ContributionGraph = ({ username, contributions: initialContributions }) => {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [registrationYear, setRegistrationYear] = useState(currentYear);
+  const [contributions, setContributions] = useState(initialContributions || []);
+  const [loading, setLoading] = useState(!initialContributions);
 
-  const customData = [
-    { date: '2024-10-12', count: 1 },
-    { date: '2024-10-13', count: 4 },
-    { date: '2024-12-25', count: 12 },
-    { date: '2024-12-26', count: 5 },
-    { date: '2024-12-27', count: 4 },
-    { date: '2024-12-28', count: 1 },
-    { date: '2025-4-28', count: 1 },
-    { date: '2025-01-05', count: 7 },
-    { date: '2026-01-05', count: 7 },
-    { date: '2026-01-05', count: 7 },
+  useEffect(() => {
+    if (initialContributions) {
+      setContributions(initialContributions);
+      setLoading(false);
+      return;
+    }
 
-  ];
+    const fetchContribs = async () => {
+      try {
+        setLoading(true);
+        const userData = await getUser(username);
+        setContributions(userData.contributions || []);
+        if (userData.created_at) {
+          setRegistrationYear(new Date(userData.created_at).getFullYear());
+        }
+      } catch (err) {
+        console.error('Error fetching contributions:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (username) {
+      fetchContribs();
+    }
+  }, [username, initialContributions]);
+
+  const years = [];
+  for (let y = currentYear; y >= registrationYear; y--) {
+    years.push(y);
+  }
+
+  const filteredData = contributions.filter((item) => {
+    if (!item.date) return false;
+    const itemYear = parseInt(item.date.split('-')[0], 10);
+    return itemYear === selectedYear;
+  });
+
+  const totalContributions = filteredData.reduce((acc, curr) => acc + curr.count, 0);
+
+  if (loading) {
+    return (
+      <div className="gh-contribution-wrapper" style={{ justifyContent: 'center', alignItems: 'center', minHeight: '150px' }}>
+        <span>Loading contribution data...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="gh-contribution-wrapper">
       <div className="gh-main-content">
         <div className="gh-header">
-          <span>{customData.length * 52} contributions in the last year</span>
-          {/* <button className="gh-settings-btn">Contribution settings ▼</button> */}
+          <span>{totalContributions} contributions in {selectedYear}</span>
         </div>
 
         <div className="gh-calendar-card">
           <CalendarHeatmap
             startDate={new Date(`${selectedYear}-01-01`)}
             endDate={new Date(`${selectedYear}-12-31`)}
-            values={customData}
+            values={filteredData}
             classForValue={(value) => {
               if (!value || value.count === 0) return 'lvl-0';
               if (value.count < 3) return 'lvl-1';
@@ -41,19 +78,18 @@ const ContributionGraph = () => {
               return 'lvl-4';
             }}
           />
-         <div className="gh-footer">
-  <a href="#">Learn how we count contributions</a>
-  <div className="gh-legend">
-    <span>Less</span>
-    <div className="legend-box lvl-0"></div>
-    <div className="legend-box lvl-1"></div>
-    <div className="legend-box lvl-2"></div>
-    <div className="legend-box lvl-3"></div>
-    <div className="legend-box lvl-4"></div>
-    <span>More</span>
-  </div>
-</div>
-
+          <div className="gh-footer">
+            <a href="#">Learn how we count contributions</a>
+            <div className="gh-legend">
+              <span>Less</span>
+              <div className="legend-box lvl-0"></div>
+              <div className="legend-box lvl-1"></div>
+              <div className="legend-box lvl-2"></div>
+              <div className="legend-box lvl-3"></div>
+              <div className="legend-box lvl-4"></div>
+              <span>More</span>
+            </div>
+          </div>
         </div>
       </div>
 

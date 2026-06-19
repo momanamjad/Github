@@ -4,7 +4,7 @@
 // ============================================
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useGitHub } from "@/contexts/GitHubContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@ui/avatar";
 import { Card, CardContent } from "@ui/card";
@@ -19,6 +19,7 @@ import CompanyIcon from "../ui/icons/CompanyIcon";
 import LocationIcon from "../ui/icons/LocationIcon";
 import EmailIcon from "../ui/icons/EmailIcon";
 import { getUser } from "../../services/GithubApi";
+import { apiClient } from "../../services/apiClient";
 
 const ProfileSidebar = ({
   repositories = [],
@@ -34,6 +35,7 @@ const ProfileSidebar = ({
   const isOwner = user && user.login === username;
 
   const [userProfile, setUserProfile] = useState({
+    id: "",
     name: "",
     username: username,
     pronouns: "he/him",
@@ -48,6 +50,7 @@ const ProfileSidebar = ({
     socialLinks: ["", "", "", ""],
     followers: 0,
     following: 0,
+    isFollowing: false,
   });
 
   useEffect(() => {
@@ -55,6 +58,7 @@ const ProfileSidebar = ({
       try {
         const u = await getUser(username);
         setUserProfile({
+          id: u._id || u.id,
           name: u.name || u.login,
           username: u.login,
           pronouns: u.pronouns || "he/him",
@@ -69,6 +73,7 @@ const ProfileSidebar = ({
           socialLinks: ["", "", "", ""],
           followers: u.followers_count || 0,
           following: u.following_count || 0,
+          isFollowing: u.isFollowing || false,
         });
       } catch (err) {
         console.error("Failed to load profile for sidebar:", err);
@@ -76,6 +81,24 @@ const ProfileSidebar = ({
     };
     fetchProfile();
   }, [username]);
+
+  const handleFollowToggle = async () => {
+    if (!user) {
+      alert("Please log in to follow users.");
+      return;
+    }
+    try {
+      const res = await apiClient(`/users/${userProfile.id}/follow`, { method: "POST" });
+      const followed = res?.data?.message === "Followed";
+      setUserProfile((prev) => ({
+        ...prev,
+        isFollowing: followed,
+        followers: followed ? prev.followers + 1 : prev.followers - 1,
+      }));
+    } catch (e) {
+      alert("Failed to follow/unfollow: " + e.message);
+    }
+  };
 
   const handleSaveProfile = (updatedProfile) => {
     const newProfile = {
@@ -165,7 +188,7 @@ const ProfileSidebar = ({
               <p className="mt-3 text-[16px] text-[#24292f] leading-snug">{userProfile.bio}</p>
             )}
 
-            {isOwner && (
+            {isOwner ? (
               <div className="mt-4">
                 <Button
                   variant="editProfile"
@@ -175,17 +198,30 @@ const ProfileSidebar = ({
                   Edit profile
                 </Button>
               </div>
+            ) : (
+              <div className="mt-4">
+                <button
+                  className={`cursor-pointer w-full text-sm font-semibold rounded-md border py-1.5 transition-all
+                    ${userProfile.isFollowing
+                      ? "bg-[#f6f8fa] text-[#24292f] border-[#d0d7de] hover:bg-[#f3f4f6]"
+                      : "bg-[#2da44e] text-white border-[#2da44e] hover:bg-[#2c974b]"
+                    }`}
+                  onClick={handleFollowToggle}
+                >
+                  {userProfile.isFollowing ? "Unfollow" : "Follow"}
+                </button>
+              </div>
             )}
           </>
         )}
 
         <div className="flex gap-4 text-sm mt-4">
-          <span className="cursor-pointer text-[#596368] text-[14px] hover:text-blue-500">
+          <Link to={`/${userProfile.username}?tab=followers`} className="cursor-pointer text-[#596368] dark:text-[#8b949e] text-[14px] hover:text-blue-500 hover:underline">
             <strong>{userProfile.followers}</strong> followers
-          </span>
-          <span className="cursor-pointer text-[#596368] text-[14px] hover:text-blue-500">
+          </Link>
+          <Link to={`/${userProfile.username}?tab=following`} className="cursor-pointer text-[#596368] dark:text-[#8b949e] text-[14px] hover:text-blue-500 hover:underline">
             <strong>{userProfile.following}</strong> following
-          </span>
+          </Link>
         </div>
 
         {displayRepos.length > 0 && (
