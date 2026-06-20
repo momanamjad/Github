@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { updateNode } from "@services/fileSystemService.js";
+import { updateNode, addNode } from "@services/fileSystemService.js";
 import { CheckIcon, CodeIcon } from "@primer/octicons-react";
 
 const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
@@ -15,8 +15,18 @@ const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
 
   const handleSave = async () => {
     try {
-      await updateNode(repoId, file.path, { content });
-      if (onSave) onSave(file.path, content);
+      const isNew = !file._id && !file.id;
+      if (isNew) {
+        await addNode(repoId, file.parentPath, {
+          name: file.name,
+          path: file.path,
+          type: 'file',
+          content
+        });
+      } else {
+        await updateNode(repoId, file.path, { content });
+      }
+      if (onSave) onSave(file.path, content, isNew);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {

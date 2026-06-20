@@ -121,6 +121,7 @@ const NewRepoPage = () => {
         description: formData.description || "",
         visibility: formData.visibility,
         language: "JavaScript",
+        addReadme: formData.addReadme,
       });
       refreshRepos(); // Trigger global update
     } catch (error) {

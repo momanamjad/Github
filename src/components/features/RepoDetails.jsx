@@ -444,9 +444,29 @@ const RepoDetails = () => {
             useFallbackFiles(repoInfo);
           }
         } else {
-          if (repoInfo && repoInfo.fileTree) {
-            const tree = await getTree(repoInfo._id || repoInfo.id);
+          const repoId = repoInfo?._id || repoInfo?.id;
+          if (repoId) {
+            const tree = await getTree(repoId);
             setFileTree(tree);
+            // Fetch real commits for this repository
+            try {
+              const commitsRes = await apiClient(`/repos/${repoId}/commits`);
+              if (commitsRes && commitsRes.data) {
+                const formatted = (commitsRes.data || []).map(c => ({
+                  hash: (c._id || c.id || '').substring(0, 7),
+                  message: c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`,
+                  author: c.user?.login || 'unknown',
+                  avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
+                  date: formatGitHubDate(c.created_at),
+                  files: []
+                }));
+                if (formatted.length > 0) {
+                  setCommitsList(formatted);
+                }
+              }
+            } catch (commitErr) {
+              console.error("Failed to load real repository commits:", commitErr);
+            }
           } else {
             useFallbackFiles(repoInfo);
           }
@@ -522,20 +542,36 @@ const RepoDetails = () => {
     );
   }
 
-  const handleSaveFile = (filePath, content) => {
-    setSelectedFile(prev => prev && prev.path === filePath ? { ...prev, content } : prev);
-    const updateTreeNodes = (nodes) => {
-      return nodes.map(node => {
-        if (node.path === filePath) {
-          return { ...node, content };
+  const handleSaveFile = async (filePath, content, isNew = false) => {
+    setSelectedFile(null); // Close editor view and return to files view
+    if (repoData) {
+      const id = repoData._id || repoData.id;
+      if (id) {
+        try {
+          // Sync files tree
+          const tree = await getTree(id);
+          setFileTree(tree);
+          
+          // Refresh commits list
+          const commitsRes = await apiClient(`/repos/${id}/commits`);
+          if (commitsRes && commitsRes.data) {
+            const formatted = (commitsRes.data || []).map(c => ({
+              hash: (c._id || c.id || '').substring(0, 7),
+              message: c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`,
+              author: c.user?.login || 'unknown',
+              avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
+              date: formatGitHubDate(c.created_at),
+              files: []
+            }));
+            if (formatted.length > 0) {
+              setCommitsList(formatted);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to sync repo file tree and commits:", err);
         }
-        if (node.children) {
-          return { ...node, children: updateTreeNodes(node.children) };
-        }
-        return node;
-      });
-    };
-    setFileTree(prev => updateTreeNodes(prev));
+      }
+    }
   };
 
   const getFilesAtCurrentPath = () => {
@@ -1053,147 +1089,205 @@ const RepoDetails = () => {
                 </div>
               </div>
 
-              {/* Files Box Panel (Merged Commit Strip + Table List) */}
-              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22] mb-4">
-                {/* Commit Strip Header */}
-                <div className="bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] p-3 flex items-center justify-between text-xs text-[#57606a] dark:text-[#8b949e]">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <img
-                      src={commitsList[0]?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4"}
-                      alt="avatar"
-                      className="w-5 h-5 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
-                    />
-                    <span className="font-semibold text-[#1f2328] dark:text-white shrink-0">{commitsList[0]?.author}</span>
-                    <span 
-                      onClick={() => setActiveCommitDiff(commitsList[0])}
-                      className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline cursor-pointer font-medium truncate"
-                    >
-                      {commitsList[0]?.message}
-                    </span>
-                    <CheckIcon size={16} className="text-[#3fb950] shrink-0 ml-1" />
+              {/* Quick Setup when repository is empty */}
+              {(fileTree || []).length === 0 ? (
+                <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22] mb-4 text-left">
+                  <div className="bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] p-4">
+                    <h3 className="font-semibold text-sm text-[#24292f] dark:text-white">Quick setup — push your code using the CLI</h3>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-2">
-                    <span>{commitsList[0]?.date}</span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setActiveCommitDiff(commitsList[0])}
-                        className="font-mono text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer text-xs"
-                      >
-                        {commitsList[0]?.hash}
-                      </button>
-                      <span className="text-[#d0d7de] dark:text-[#30363d]">|</span>
-                      <span 
-                        onClick={() => setActiveRepoTab('commits')}
-                        className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]"
-                      >
-                        <span className="inline-flex items-center gap-1">
-                          <HistoryIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
-                          <strong>{repo.toLowerCase() === 'github' ? 162 : commitsList.length}</strong> commits
+                  <div className="p-6 space-y-6 text-xs text-[#24292f] dark:text-[#c9d1d9] font-sans">
+                    <div className="space-y-2">
+                      <p className="font-semibold text-[#57606a] dark:text-[#8b949e] text-[13px]">
+                        Option 1: Push an existing folder from your computer
+                      </p>
+                      <p className="text-gray-500">Open your local project folder in the terminal, then run these commands:</p>
+                      <div className="relative group bg-[#f6f8fa] dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 font-mono whitespace-pre text-[11px] leading-relaxed text-[#24292f] dark:text-[#c9d1d9] overflow-x-auto">
+                        <button 
+                          onClick={() => navigator.clipboard.writeText(`github-cli remote-link ${repoData?._id || repoData?.id || ''}\ngithub-cli remote-push`)}
+                          className="absolute top-2 right-2 px-2.5 py-1 bg-white dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded text-[10px] font-semibold font-sans cursor-pointer hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] active:scale-95 transition-all text-[#24292f] dark:text-white"
+                        >
+                          Copy
+                        </button>
+                        <span>
+                          {`# 1. Link your local directory to this remote repository\n`}
+                          <span className="text-[#0550ae] dark:text-[#79c0ff]">github-cli</span> remote-link <span className="text-[#0969da] dark:text-[#58a6ff] font-semibold">{repoData?._id || repoData?.id || ''}</span>{`\n\n`}
+                          {`# 2. Scan and push your files from the current folder\n`}
+                          <span className="text-[#0550ae] dark:text-[#79c0ff]">github-cli</span> remote-push
                         </span>
-                      </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 border-t border-[#d0d7de] dark:border-[#30363d] pt-6">
+                      <p className="font-semibold text-[#57606a] dark:text-[#8b949e] text-[13px]">
+                        Option 2: Create a new repository on the command line
+                      </p>
+                      <p className="text-gray-500">Initialize a new folder, create a remote repository, and push files:</p>
+                      <div className="relative group bg-[#f6f8fa] dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 font-mono whitespace-pre text-[11px] leading-relaxed text-[#24292f] dark:text-[#c9d1d9] overflow-x-auto">
+                        <button 
+                          onClick={() => navigator.clipboard.writeText(`github-cli remote-create ${repoData?.name || 'my-project'} "My new project description"\ngithub-cli remote-push`)}
+                          className="absolute top-2 right-2 px-2.5 py-1 bg-white dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded text-[10px] font-semibold font-sans cursor-pointer hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] active:scale-95 transition-all text-[#24292f] dark:text-white"
+                        >
+                          Copy
+                        </button>
+                        <span>
+                          {`# 1. Create a remote repository and initialize local config\n`}
+                          <span className="text-[#0550ae] dark:text-[#79c0ff]">github-cli</span> remote-create <span className="text-[#0969da] dark:text-[#58a6ff] font-semibold">{repoData?.name || 'my-project'}</span> "My new project description"{`\n\n`}
+                          {`# 2. Scan and push your files from the current folder\n`}
+                          <span className="text-[#0550ae] dark:text-[#79c0ff]">github-cli</span> remote-push
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-[#d0d7de] dark:border-[#30363d] pt-4 text-[11px] text-gray-500 dark:text-gray-400">
+                      💡 <strong>Note:</strong> If this is your first time using the CLI on this machine, run <code>github-cli login &lt;email&gt; &lt;password&gt;</code> once first to log in globally.
                     </div>
                   </div>
                 </div>
-
-                {/* Breadcrumbs for nested subfolders */}
-                {currentPath && (
-                  <div className="px-4 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d]">
-                    {renderBreadcrumbs()}
-                  </div>
-                )}
-
-                <table className="w-full text-left text-xs border-collapse">
-                  <tbody>
-                    {currentPath && (
-                      <tr 
-                        onClick={() => {
-                          const parts = currentPath.split('/');
-                          parts.pop();
-                          setCurrentPath(parts.join('/'));
-                        }}
-                        className="border-b border-[#d0d7de] dark:border-[#30363d] hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] cursor-pointer transition-colors"
-                      >
-                        <td className="px-4 py-2.5 font-bold text-[#57606a] dark:text-[#8b949e] flex items-center gap-2" colSpan={3}>
-                          <span>..</span>
-                        </td>
-                      </tr>
-                    )}
-                    
-                    {getFilesAtCurrentPath().map((item) => {
-                      const commitInfo = getFileCommitInfo(item.name);
-                      return (
-                        <tr 
-                          key={item.path}
-                          onClick={() => {
-                            if (item.type === 'dir') {
-                              setCurrentPath(item.path);
-                            } else {
-                              setSelectedFile(item);
-                            }
-                          }}
-                          className="border-b border-[#d0d7de] dark:border-[#30363d] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
+              ) : (
+                <>
+                  {/* Files Box Panel (Merged Commit Strip + Table List) */}
+                  <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22] mb-4">
+                    {/* Commit Strip Header */}
+                    <div className="bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] p-3 flex items-center justify-between text-xs text-[#57606a] dark:text-[#8b949e]">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={commitsList[0]?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4"}
+                          alt="avatar"
+                          className="w-5 h-5 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
+                        />
+                        <span className="font-semibold text-[#1f2328] dark:text-white shrink-0">{commitsList[0]?.author}</span>
+                        <span 
+                          onClick={() => setActiveCommitDiff(commitsList[0])}
+                          className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline cursor-pointer font-medium truncate"
                         >
-                          <td className="px-4 py-2.5 font-medium text-[#24292f] dark:text-white flex items-center gap-2 max-w-[200px] truncate">
-                            {item.type === 'dir' ? (
-                              <FileDirectoryFillIcon size={16} className="text-[#54a3ff] shrink-0" />
-                            ) : (
-                              <FileIcon size={16} className="text-[#57606a] dark:text-[#8b949e] shrink-0" />
-                            )}
-                            <span className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline truncate">
-                              {item.name}
+                          {commitsList[0]?.message}
+                        </span>
+                        <CheckIcon size={16} className="text-[#3fb950] shrink-0 ml-1" />
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 ml-2">
+                        <span>{commitsList[0]?.date}</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setActiveCommitDiff(commitsList[0])}
+                            className="font-mono text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer text-xs"
+                          >
+                            {commitsList[0]?.hash}
+                          </button>
+                          <span className="text-[#d0d7de] dark:text-[#30363d]">|</span>
+                          <span 
+                            onClick={() => setActiveRepoTab('commits')}
+                            className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]"
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <HistoryIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
+                              <strong>{repo.toLowerCase() === 'github' ? 162 : commitsList.length}</strong> commits
                             </span>
-                          </td>
-                          <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] truncate max-w-[300px]">
-                            {commitInfo.message}
-                          </td>
-                          <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] text-right whitespace-nowrap w-[120px]">
-                            {commitInfo.date}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                    {getFilesAtCurrentPath().length === 0 && (
-                      <tr>
-                        <td className="px-4 py-8 text-center text-[#57606a] dark:text-[#8b949e]" colSpan={3}>
-                          This directory is empty.
-                        </td>
-                      </tr>
+                    {/* Breadcrumbs for nested subfolders */}
+                    {currentPath && (
+                      <div className="px-4 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d]">
+                        {renderBreadcrumbs()}
+                      </div>
                     )}
-                  </tbody>
-                </table>
-              </div>
 
-              {/* README Section */}
-              {(() => {
-                const readmeFile = (fileTree || []).find(f => f.name.toLowerCase() === 'readme.md');
-                if (!readmeFile) return null;
-                return (
-                  <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-left">
-                    <div className="px-4 py-3 border-b border-[#d0d7de] dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#161b22] flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <BookIcon size={16} className="text-[#57606a] dark:text-[#8b949e]" />
-                        <span className="font-semibold text-xs text-[#24292f] dark:text-white font-sans">README.md</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button 
-                          onClick={() => setSelectedFile(readmeFile)}
-                          className="p-1 hover:bg-[#ebedf0] dark:hover:bg-[#30363d] rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer border-0"
-                          title="Edit README"
-                        >
-                          <PencilIcon size={14} />
-                        </button>
-                        <button className="p-1 hover:bg-[#ebedf0] dark:hover:bg-[#30363d] rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer border-0">
-                          <ListUnorderedIcon size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-6 prose dark:prose-invert max-w-none text-sm text-[#24292f] dark:text-[#c9d1d9] markdown-body">
-                      <MarkdownRenderer content={readmeFile.content || `# ${repoData?.name || ''}\n${repoData?.description || ''}`} />
-                    </div>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <tbody>
+                        {currentPath && (
+                          <tr 
+                            onClick={() => {
+                              const parts = currentPath.split('/');
+                              parts.pop();
+                              setCurrentPath(parts.join('/'));
+                            }}
+                            className="border-b border-[#d0d7de] dark:border-[#30363d] hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] cursor-pointer transition-colors"
+                          >
+                            <td className="px-4 py-2.5 font-bold text-[#57606a] dark:text-[#8b949e] flex items-center gap-2" colSpan={3}>
+                              <span>..</span>
+                            </td>
+                          </tr>
+                        )}
+                        
+                        {getFilesAtCurrentPath().map((item) => {
+                          const commitInfo = getFileCommitInfo(item.name);
+                          return (
+                            <tr 
+                              key={item.path}
+                              onClick={() => {
+                                if (item.type === 'dir') {
+                                  setCurrentPath(item.path);
+                                } else {
+                                  setSelectedFile(item);
+                                }
+                              }}
+                              className="border-b border-[#d0d7de] dark:border-[#30363d] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
+                            >
+                              <td className="px-4 py-2.5 font-medium text-[#24292f] dark:text-white flex items-center gap-2 max-w-[200px] truncate">
+                                {item.type === 'dir' ? (
+                                  <FileDirectoryFillIcon size={16} className="text-[#54a3ff] shrink-0" />
+                                ) : (
+                                  <FileIcon size={16} className="text-[#57606a] dark:text-[#8b949e] shrink-0" />
+                                )}
+                                <span className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline truncate">
+                                  {item.name}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] truncate max-w-[300px]">
+                                {commitInfo.message}
+                              </td>
+                              <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] text-right whitespace-nowrap w-[120px]">
+                                {commitInfo.date}
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {getFilesAtCurrentPath().length === 0 && (
+                          <tr>
+                            <td className="px-4 py-8 text-center text-[#57606a] dark:text-[#8b949e]" colSpan={3}>
+                              This directory is empty.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                );
-              })()}
+
+                  {/* README Section */}
+                  {(() => {
+                    const readmeFile = (fileTree || []).find(f => f.name.toLowerCase() === 'readme.md');
+                    if (!readmeFile) return null;
+                    return (
+                      <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-left">
+                        <div className="px-4 py-3 border-b border-[#d0d7de] dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#161b22] flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <BookIcon size={16} className="text-[#57606a] dark:text-[#8b949e]" />
+                            <span className="font-semibold text-xs text-[#24292f] dark:text-white font-sans">README.md</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button 
+                              onClick={() => setSelectedFile(readmeFile)}
+                              className="p-1 hover:bg-[#ebedf0] dark:hover:bg-[#30363d] rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer border-0"
+                              title="Edit README"
+                            >
+                              <PencilIcon size={14} />
+                            </button>
+                            <button className="p-1 hover:bg-[#ebedf0] dark:hover:bg-[#30363d] rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer border-0">
+                              <ListUnorderedIcon size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-6 prose dark:prose-invert max-w-none text-sm text-[#24292f] dark:text-[#c9d1d9] markdown-body">
+                          <MarkdownRenderer content={readmeFile.content || `# ${repoData?.name || ''}\n${repoData?.description || ''}`} />
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
             </div>
 
             {/* Right Column (25%): Sidebar (About, Releases, Deployments) */}
