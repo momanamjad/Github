@@ -2,18 +2,62 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getRepo } from "@services/GithubApi.jsx";
 import RepoHeader from "@features/RepoHeader";
-import RepoFileList from "@features/RepoFileList";
 import { getTree } from "@services/fileSystemService.js";
 import { getStoredRepositories } from "@services/storageService.js";
-import FileExplorer from "@components/FileExplorer.jsx";
 import FileEditor from "@components/FileEditor.jsx";
 import { useGitHub } from "@contexts/GitHubContext";
 import DiscussionsTab from "./tabs/DiscussionsTab";
 import ReactMarkdown from "react-markdown";
-import { Folder, File as FileIcon, GitBranch, Tag, ChevronDown, BookOpen, Pencil, List, History, Settings, ExternalLink, Info } from "lucide-react";
+import { Folder, File as FileIcon, GitBranch, Tag, ChevronDown, BookOpen, Pencil, List, History, Settings, ExternalLink, Shield, Info, BarChart2, PlayCircle, Bot, CircleDot, GitPullRequest, LayoutGrid, Check } from "lucide-react";
 
 
+// Helper to convert flat GitHub API tree to nested structure
+const buildNestedTree = (flatTree) => {
+  const root = [];
+  const map = {};
 
+  flatTree.sort((a, b) => a.path.localeCompare(b.path));
+
+  for (const node of flatTree) {
+    const parts = node.path.split('/');
+    const name = parts[parts.length - 1];
+    const parentPath = parts.slice(0, -1).join('/');
+    
+    const newNode = {
+      name,
+      path: node.path,
+      type: node.type === 'tree' ? 'dir' : 'file',
+      sha: node.sha,
+      html_url: `https://github.com/momanamjad/Github/blob/main/${node.path}`,
+      children: node.type === 'tree' ? [] : undefined
+    };
+
+    map[node.path] = newNode;
+
+    if (!parentPath) {
+      root.push(newNode);
+    } else {
+      const parent = map[parentPath];
+      if (parent && parent.children) {
+        parent.children.push(newNode);
+      } else {
+        root.push(newNode);
+      }
+    }
+  }
+  return root;
+};
+
+const formatGitHubDate = (dateString) => {
+  const diff = Date.now() - new Date(dateString).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  if (mins < 60) return `${mins} minutes ago`;
+  if (hours < 24) return `${hours} hours ago`;
+  if (days < 30) return `${days} days ago`;
+  return new Date(dateString).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+};
 
 const RepoDetails = () => {
   const { username, repo } = useParams();
@@ -22,73 +66,29 @@ const RepoDetails = () => {
   const [currentPath, setCurrentPath] = useState("");
 
   const [repoData, setRepoData] = useState(null);
-  const [files, setFiles] = useState([]);
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCommitDiff, setActiveCommitDiff] = useState(null);
 
-  // Mock commits data for the repository
+  // Commits list initialized with realistic fallbacks
   const [commitsList, setCommitsList] = useState([
     {
-      hash: "8f3a9e2",
-      message: "Refactor router config and add system dark mode listener",
-      author: username || "moman",
-      date: "2 hours ago",
-      files: [
-        {
-          name: "src/App.jsx",
-          additions: 11,
-          deletions: 2,
-          diff: `@@ -215,8 +215,17 @@
--  useEffect(() => {
--    initializeStorage();
--  }, []);
-+  useEffect(() => {
-+    initializeStorage();
-+
-+    // Automatic dark/light mode system theme listener
-+    const media = window.matchMedia('(prefers-color-scheme: dark)');
-+    const updateTheme = () => {
-+      if (media.matches) {
-+        document.documentElement.classList.add('dark');
-+      } else {
-+        document.documentElement.classList.remove('dark');
-+      }
-+    };
-+    updateTheme();
-+    media.addEventListener('change', updateTheme);
-+    return () => media.removeEventListener('change', updateTheme);
-+  }, []);`
-        },
-        {
-          name: "src/pages/Issues.jsx",
-          additions: 4,
-          deletions: 1,
-          diff: `@@ -67,5 +67,8 @@
--  const [selectedIssue, setSelectedIssue] = useState(null);
-+  const [selectedIssueId, setSelectedIssueId] = useState(null);
-+  const selectedIssue = issues.find(i => i.id === selectedIssueId);
-+  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);`
-        }
-      ]
+      hash: "8a39f04",
+      message: "feat: complete notifications, pin/star, discussions, and repository l...",
+      author: "momanamjad",
+      avatar_url: "https://avatars.githubusercontent.com/u/104862410?v=4",
+      date: "13 hours ago",
+      files: []
     },
     {
-      hash: "4c7b2e1",
-      message: "Fix layout scaling on profile tabs",
-      author: "alice",
-      date: "yesterday",
-      files: [
-        {
-          name: "src/pages/ProfileLayout.jsx",
-          additions: 3,
-          deletions: 1,
-          diff: `@@ -12,3 +12,5 @@
--  const tabs = ["overview", "repositories", "stars"];
-+  const tabs = ["overview", "repositories", "stars", "followers", "following"];`
-        }
-      ]
+      hash: "7d2b451",
+      message: "fix: restore PWA installability with correctly-sized icons and pr...",
+      author: "momanamjad",
+      avatar_url: "https://avatars.githubusercontent.com/u/104862410?v=4",
+      date: "last month",
+      files: []
     }
   ]);
 
@@ -98,50 +98,62 @@ const RepoDetails = () => {
         setLoading(true);
         setError(null);
 
-        const repoInfo = await getRepo(username, repo);
-        setRepoData(repoInfo);
-
-        // Sync backend repository info (containing DB fileTree) to local storage cache
-        if (repoInfo) {
-          const cachedRepos = getStoredRepositories();
-          const idx = cachedRepos.findIndex(r => r._id === repoInfo._id || r.id === repoInfo.id);
-          if (idx === -1) {
-            cachedRepos.push(repoInfo);
-          } else {
-            cachedRepos[idx] = { ...cachedRepos[idx], ...repoInfo };
-          }
-          localStorage.setItem('github_repositories', JSON.stringify(cachedRepos));
+        let repoInfo;
+        try {
+          repoInfo = await getRepo(username, repo);
+          setRepoData(repoInfo);
+        } catch (e) {
+          console.warn("Repo not found in local backend, generating configuration...");
+          repoInfo = {
+            name: repo,
+            owner: { login: username, avatar_url: "https://avatars.githubusercontent.com/u/104862410?v=4" },
+            visibility: "public",
+            description: "No description provided.",
+            stars_count: 1,
+            watchers_count: 0,
+            forks_count: 0,
+            issues_count: 0,
+            pulls_count: 0
+          };
+          setRepoData(repoInfo);
         }
 
-        if (repoInfo.fileTree) {
-          const tree = await getTree(repoInfo._id || repoInfo.id);
-          setFileTree(tree);
-          setFiles(tree);
+        // If this is the "Github" repository, fetch live data from the GitHub API!
+        if (repo.toLowerCase() === "github") {
+          try {
+            const treeRes = await fetch("https://api.github.com/repos/momanamjad/Github/git/trees/main?recursive=1");
+            const treeData = await treeRes.json();
+            if (treeData && treeData.tree) {
+              const nested = buildNestedTree(treeData.tree);
+              setFileTree(nested);
+            } else {
+              throw new Error("Failed to load GitHub tree structure");
+            }
+
+            const commitsRes = await fetch("https://api.github.com/repos/momanamjad/Github/commits?per_page=10");
+            const commitsData = await commitsRes.json();
+            if (Array.isArray(commitsData)) {
+              const formatted = commitsData.map(c => ({
+                hash: c.sha.substring(0, 7),
+                message: c.commit.message,
+                author: c.author?.login || c.commit.author.name,
+                avatar_url: c.author?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4",
+                date: formatGitHubDate(c.commit.author.date),
+                files: []
+              }));
+              setCommitsList(formatted);
+            }
+          } catch (apiErr) {
+            console.warn("GitHub API rate limit or network error, falling back to mock files:", apiErr);
+            useFallbackFiles(repoInfo);
+          }
         } else {
-          // For repos without a fileTree, show a default structure
-          const defaultContents = [
-            {
-              name: "src",
-              path: "src",
-              type: "dir",
-              html_url: `https://github.com/${username}/${repo}/tree/main/src`,
-            },
-            {
-              name: "README.md",
-              path: "README.md",
-              type: "file",
-              size: 2048,
-              html_url: `https://github.com/${username}/${repo}/blob/main/README.md`,
-            },
-            {
-              name: "package.json",
-              path: "package.json",
-              type: "file",
-              size: 845,
-              html_url: `https://github.com/${username}/${repo}/blob/main/package.json`,
-            },
-          ];
-          setFiles(defaultContents);
+          if (repoInfo && repoInfo.fileTree) {
+            const tree = await getTree(repoInfo._id || repoInfo.id);
+            setFileTree(tree);
+          } else {
+            useFallbackFiles(repoInfo);
+          }
         }
       } catch (err) {
         setError(err.message);
@@ -150,12 +162,49 @@ const RepoDetails = () => {
       }
     };
 
+    const useFallbackFiles = (repoInfo) => {
+      const fallbackTree = [
+        {
+          name: "public",
+          path: "public",
+          type: "dir",
+          children: [
+            { name: "index.html", path: "public/index.html", type: "file", content: "<!DOCTYPE html>\n<html>\n<head>\n  <title>GitHub Clone</title>\n</head>\n<body>\n  <div id=\"root\"></div>\n</body>\n</html>" },
+            { name: "manifest.json", path: "public/manifest.json", type: "file", content: "{\n  \"name\": \"GitHub Clone\",\n  \"short_name\": \"GitHub\"\n}" }
+          ]
+        },
+        {
+          name: "src",
+          path: "src",
+          type: "dir",
+          children: [
+            { name: "App.jsx", path: "src/App.jsx", type: "file", content: "import React from 'react';\nexport default function App() {\n  return <div>App</div>;\n}" },
+            { name: "main.jsx", path: "src/main.jsx", type: "file", content: "import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\nimport './index.css';\nReactDOM.createRoot(document.getElementById('root')).render(<App />);" },
+            { name: "index.css", path: "src/index.css", type: "file", content: "@tailwind base;\n@tailwind components;\n@tailwind utilities;" }
+          ]
+        },
+        {
+          name: "workflows",
+          path: "workflows",
+          type: "dir",
+          children: []
+        },
+        { name: ".gitignore", path: ".gitignore", type: "file", content: "node_modules/\ndist/\n.env" },
+        { name: "boneyard.config.json", path: "boneyard.config.json", type: "file", content: "{\n  \"unused\": []\n}" },
+        { name: "components.json", path: "components.json", type: "file", content: "{\n  \"style\": \"default\",\n  \"rsc\": false\n}" },
+        { name: "eslint.config.js", path: "eslint.config.js", type: "file", content: "export default [];" },
+        { name: "index.html", path: "index.html", type: "file", content: "<!DOCTYPE html><html></html>" },
+        { name: "jsconfig.json", path: "jsconfig.json", type: "file", content: "{\n  \"compilerOptions\": {}\n}" }
+      ];
+      setFileTree(fallbackTree);
+    };
+
     loadRepo();
   }, [username, repo]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-16 bg-white dark:bg-[#0d1117]">
         <div className="flex items-center gap-3 text-[#636c76]">
           <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -169,39 +218,18 @@ const RepoDetails = () => {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="border border-[#d0d7de] rounded-md p-6 bg-white text-center">
+      <div className="max-w-4xl mx-auto px-4 py-8 bg-white dark:bg-[#0d1117]">
+        <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-6 bg-white dark:bg-[#161b22] text-center">
           <p className="text-[#cf222e] text-[14px] font-medium">{error}</p>
         </div>
       </div>
     );
   }
 
-  const refreshTree = async () => {
-    if (!repoData) return;
-    const tree = await getTree(repoData._id || repoData.id);
-    setFileTree([...tree]);
-  };
-
-  const handleSelect = (node) => {
-    if (node && node.type === "file") {
-      setSelectedFile(node);
-    } else {
-      setSelectedFile(null);
-    }
-  };
-
-  const handleSaveFile = (path, newContent) => {
-    if (selectedFile && selectedFile.path === path) {
-      setSelectedFile({ ...selectedFile, content: newContent });
-    }
-  };
-
   const getFilesAtCurrentPath = () => {
-    const activeTree = fileTree.length > 0 ? fileTree : files;
-    if (!currentPath) return activeTree;
+    if (!currentPath) return fileTree;
     const parts = currentPath.split('/');
-    let currentChildren = activeTree;
+    let currentChildren = fileTree;
     for (const part of parts) {
       const found = currentChildren.find(node => node.name === part && node.type === 'dir');
       if (found) {
@@ -214,24 +242,51 @@ const RepoDetails = () => {
   };
 
   const getFileCommitInfo = (name) => {
-    const lower = name.toLowerCase();
-    if (lower.includes('readme')) {
-      return {
-        message: 'feat: update readme',
-        date: '3 weeks ago'
+    if (repo.toLowerCase() === 'github') {
+      const mapping = {
+        'public': {
+          message: 'fix: restore PWA installability with correctly-sized icons and pr...',
+          date: 'last month'
+        },
+        'src': {
+          message: 'feat: complete notifications, pin/star, discussions, and reposit...',
+          date: '13 hours ago'
+        },
+        'workflows': {
+          message: 'feat: complete notifications, pin/star, discussions, and reposit...',
+          date: '13 hours ago'
+        },
+        '.gitignore': {
+          message: 'feat: implement core GitHub-like application structure with r...',
+          date: '2 months ago'
+        },
+        'boneyard.config.json': {
+          message: 'feat: implement Home page with repository list, filtering, and...',
+          date: 'last month'
+        },
+        'components.json': {
+          message: 'first commit',
+          date: '5 months ago'
+        },
+        'eslint.config.js': {
+          message: 'feat: implement core GitHub-like application structure with r...',
+          date: '2 months ago'
+        },
+        'index.html': {
+          message: 'fix: correct title formatting in index.html',
+          date: 'last month'
+        },
+        'jsconfig.json': {
+          message: 'performance optized through lazyloading etc,',
+          date: '3 months ago'
+        },
+        'vite.config.js': {
+          message: 'performance optized through lazyloading etc,',
+          date: '3 months ago'
+        }
       };
-    }
-    if (lower.includes('package.json')) {
-      return {
-        message: 'chore: update dependencies',
-        date: '3 weeks ago'
-      };
-    }
-    if (lower === 'src' || lower === 'frontend' || lower === 'backend' || lower === 'admin') {
-      return {
-        message: 'feat: comprehensive app upgrades - security, features, code ...',
-        date: '3 weeks ago'
-      };
+      const key = name.toLowerCase();
+      if (mapping[key]) return mapping[key];
     }
     return {
       message: commitsList[0]?.message || 'Initial commit',
@@ -274,39 +329,51 @@ const RepoDetails = () => {
 
   const isOwner = user?.login === repoData?.owner?.login;
 
+  const tabs = [
+    { id: "code", label: "Code", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg> },
+    { id: "issues", label: "Issues", icon: <CircleDot className="w-4 h-4" />, count: repoData?.issues_count || 0 },
+    { id: "pulls", label: "Pull requests", icon: <GitPullRequest className="w-4 h-4" />, count: repoData?.pulls_count || 0 },
+    { id: "agents", label: "Agents", icon: <Bot className="w-4 h-4" /> },
+    { id: "actions", label: "Actions", icon: <PlayCircle className="w-4 h-4" /> },
+    { id: "projects", label: "Projects", icon: <LayoutGrid className="w-4 h-4" /> },
+    { id: "wiki", label: "Wiki", icon: <BookOpen className="w-4 h-4" /> },
+    { id: "security", label: "Security and quality", icon: <Shield className="w-4 h-4" />, badge: "1" },
+    { id: "insights", label: "Insights", icon: <BarChart2 className="w-4 h-4" /> },
+    { id: "discussions", label: "Discussions", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> },
+    ...(isOwner ? [{ id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> }] : [])
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] min-h-screen transition-colors">
       <RepoHeader repo={repoData} />
 
       {/* Repo Navigation Tabs */}
-      <div className="border-b border-[#d0d7de] dark:border-[#30363d] mb-4 mt-2">
-        <nav className="flex space-x-6" aria-label="Repository navigation">
-          <button
-            onClick={() => { setActiveRepoTab('code'); setSelectedFile(null); }}
-            className={`pb-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 -mb-[1px] ${
-              activeRepoTab === 'code'
-                ? 'border-[#fd8c73] text-[#1f2328] dark:text-white font-semibold'
-                : 'border-transparent text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white hover:border-[#d0d7de] dark:hover:border-[#30363d]'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
-            </svg>
-            Code
-          </button>
-          <button
-            onClick={() => { setActiveRepoTab('discussions'); setSelectedFile(null); }}
-            className={`pb-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 -mb-[1px] ${
-              activeRepoTab === 'discussions'
-                ? 'border-[#fd8c73] text-[#1f2328] dark:text-white font-semibold'
-                : 'border-transparent text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white hover:border-[#d0d7de] dark:hover:border-[#30363d]'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            Discussions
-          </button>
+      <div className="border-b border-[#d0d7de] dark:border-[#30363d] mb-4 mt-2 overflow-x-auto scrollbar-hide">
+        <nav className="flex space-x-2 sm:space-x-4 min-w-max pb-1" aria-label="Repository navigation">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveRepoTab(tab.id); setSelectedFile(null); }}
+              className={`pb-2 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 -mb-[1.5px] ${
+                activeRepoTab === tab.id
+                  ? 'border-[#fd8c73] text-[#1f2328] dark:text-white font-semibold'
+                  : 'border-transparent text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white hover:border-[#d0d7de] dark:hover:border-[#30363d]'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.count !== undefined && (
+                <span className="px-1.5 py-0.2 bg-[#ebedf0] dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full text-[10px] font-semibold">
+                  {tab.count}
+                </span>
+              )}
+              {tab.badge !== undefined && (
+                <span className="px-1.5 py-0.2 bg-[#afb8c1]/20 dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full text-[10px] font-semibold border border-[#d0d7de] dark:border-[#30363d]">
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          ))}
         </nav>
       </div>
 
@@ -325,7 +392,7 @@ const RepoDetails = () => {
             </div>
             <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
               <FileEditor
-                repoId={repoData._id || repoData.id}
+                repoId={repoData?._id || repoData?.id}
                 file={selectedFile}
                 onSave={handleSaveFile}
               />
@@ -390,19 +457,22 @@ const RepoDetails = () => {
 
               {/* Commit Strip (GitHub Style) */}
               <div className="bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-3 flex items-center justify-between text-xs text-[#57606a] dark:text-[#8b949e]">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-[#1f2328] dark:bg-[#30363d] text-white flex items-center justify-center font-bold text-[10px]">
-                    {(commitsList[0]?.author || "M").substring(0, 2).toUpperCase()}
-                  </div>
-                  <span className="font-semibold text-[#1f2328] dark:text-white">{commitsList[0]?.author}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <img
+                    src={commitsList[0]?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4"}
+                    alt="avatar"
+                    className="w-5 h-5 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
+                  />
+                  <span className="font-semibold text-[#1f2328] dark:text-white shrink-0">{commitsList[0]?.author}</span>
                   <span 
                     onClick={() => setActiveCommitDiff(commitsList[0])}
-                    className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline cursor-pointer font-medium"
+                    className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline cursor-pointer font-medium truncate"
                   >
                     {commitsList[0]?.message}
                   </span>
+                  <Check size={14} className="text-[#3fb950] shrink-0 ml-1" />
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0 ml-2">
                   <span>{commitsList[0]?.date}</span>
                   <div className="flex items-center gap-1.5">
                     <button
@@ -412,10 +482,10 @@ const RepoDetails = () => {
                       {commitsList[0]?.hash}
                     </button>
                     <span className="text-[#d0d7de] dark:text-[#30363d]">|</span>
-                    <span className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]" onClick={() => setActiveCommitDiff(commitsList[0])}>
+                    <span className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]">
                       <span className="inline-flex items-center gap-1">
                         <History size={12} />
-                        <strong>{commitsList.length}</strong> commits
+                        <strong>{repo.toLowerCase() === 'github' ? 162 : commitsList.length}</strong> commits
                       </span>
                     </span>
                   </div>
@@ -424,7 +494,7 @@ const RepoDetails = () => {
 
               {/* Breadcrumbs for nested subfolders */}
               {currentPath && (
-                <div className="px-1 py-1 bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md">
+                <div className="px-1.5 py-1.5 bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md">
                   {renderBreadcrumbs()}
                 </div>
               )}
@@ -433,7 +503,6 @@ const RepoDetails = () => {
               <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
                 <table className="w-full text-left text-xs border-collapse">
                   <tbody>
-                    {/* Up one directory row */}
                     {currentPath && (
                       <tr 
                         onClick={() => {
@@ -463,7 +532,6 @@ const RepoDetails = () => {
                           }}
                           className="border-b border-[#d0d7de] dark:border-[#30363d] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
                         >
-                          {/* Name column */}
                           <td className="px-4 py-2.5 font-medium text-[#24292f] dark:text-white flex items-center gap-2 max-w-[200px] truncate">
                             {item.type === 'dir' ? (
                               <Folder size={16} className="text-[#54a3ff] shrink-0" />
@@ -474,12 +542,10 @@ const RepoDetails = () => {
                               {item.name}
                             </span>
                           </td>
-                          {/* Commit message column */}
                           <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] truncate max-w-[300px]">
                             {commitInfo.message}
                           </td>
-                          {/* Commit date column */}
-                          <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] text-right whitespace-nowrap w-[100px]">
+                          <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] text-right whitespace-nowrap w-[120px]">
                             {commitInfo.date}
                           </td>
                         </tr>
@@ -499,7 +565,7 @@ const RepoDetails = () => {
 
               {/* README Section */}
               {(() => {
-                const readmeFile = (fileTree || files || []).find(f => f.name.toLowerCase() === 'readme.md');
+                const readmeFile = (fileTree || []).find(f => f.name.toLowerCase() === 'readme.md');
                 if (!readmeFile) return null;
                 return (
                   <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-left">
@@ -540,14 +606,14 @@ const RepoDetails = () => {
                   )}
                 </div>
                 <p className="text-xs text-[#24292f] dark:text-[#c9d1d9] leading-relaxed">
-                  {repoData?.description || "No description, website, or topics provided."}
+                  {repo.toLowerCase() === 'github' ? "feat: complete notifications, pin/star, discussions, and repository list." : (repoData?.description || "No description, website, or topics provided.")}
                 </p>
                 
                 {/* Website URL */}
                 <div className="flex items-center gap-1.5 text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline font-medium">
                   <ExternalLink size={12} />
-                  <a href={`https://${repo}.vercel.app`} target="_blank" rel="noreferrer" className="truncate">
-                    {repo}.vercel.app
+                  <a href="https://github-kappa-two.vercel.app" target="_blank" rel="noreferrer" className="truncate">
+                    github-kappa-two.vercel.app
                   </a>
                 </div>
 
@@ -565,19 +631,19 @@ const RepoDetails = () => {
                     <svg className="w-3.5 h-3.5 text-[#57606a] dark:text-[#8b949e]" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
                     </svg>
-                    <span><strong>{repoData?.stars_count || 0}</strong> stars</span>
+                    <span><strong>{repo.toLowerCase() === 'github' ? 1 : (repoData?.stars_count || 0)}</strong> star</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#24292f] dark:text-[#c9d1d9]">
                     <svg className="w-3.5 h-3.5 text-[#57606a] dark:text-[#8b949e]" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M8 2a5.002 5.002 0 0 0-3.205 8.844.75.75 0 0 1-.453 1.28A6.5 6.5 0 1 1 14.5 8a.75.75 0 0 1-1.5 0 5 5 0 0 0-5-5ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z" />
                     </svg>
-                    <span><strong>{repoData?.watchers_count || 0}</strong> watching</span>
+                    <span><strong>{repo.toLowerCase() === 'github' ? 0 : (repoData?.watchers_count || 0)}</strong> watching</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#24292f] dark:text-[#c9d1d9]">
                     <svg className="w-3.5 h-3.5 text-[#57606a] dark:text-[#8b949e]" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M5 3.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm0 2.122a2.25 2.25 0 1 0-1.5 0v.878A2.25 2.25 0 0 0 5.75 8.5h1.5v2.128a2.251 2.251 0 1 0 1.5 0V8.5h1.5a2.25 2.25 0 0 0 2.25-2.25v-.878a2.25 2.25 0 1 0-1.5 0v.878a.75.75 0 0 1-.75.75h-4.5A.75.75 0 0 1 5 6.25v-.878ZM5 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm7-9.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                     </svg>
-                    <span><strong>{repoData?.forks_count || 0}</strong> forks</span>
+                    <span><strong>{repo.toLowerCase() === 'github' ? 0 : (repoData?.forks_count || 0)}</strong> forks</span>
                   </div>
                 </div>
               </div>
@@ -597,37 +663,91 @@ const RepoDetails = () => {
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm text-[#24292f] dark:text-white flex items-center gap-1.5">
                   Deployments 
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#ebedf0] dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e]">
-                    175
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#ebedf0] dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e]">
+                    {repo.toLowerCase() === 'github' ? '202' : '2'}
                   </span>
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
-                    <span className="w-2.5 h-2.5 mt-1 rounded-full bg-[#10b981] shrink-0 animate-pulse"></span>
-                    <div className="min-w-0">
-                      <a href={`https://${repo}.vercel.app`} target="_blank" rel="noreferrer" className="font-semibold text-[#0969da] dark:text-[#58a6ff] hover:underline block truncate">
-                        Production – {repo}-frontend
-                      </a>
-                      <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">3 weeks ago</span>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
-                    <span className="w-2.5 h-2.5 mt-1 rounded-full bg-[#10b981] shrink-0"></span>
-                    <div className="min-w-0">
-                      <a href={`https://${repo}-backend.vercel.app`} target="_blank" rel="noreferrer" className="font-semibold text-[#0969da] dark:text-[#58a6ff] hover:underline block truncate">
-                        Production – {repo}-backend
-                      </a>
-                      <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">3 weeks ago</span>
-                    </div>
-                  </div>
+                  {repo.toLowerCase() === 'github' ? (
+                    <>
+                      <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
+                        <span className="w-2.5 h-2.5 mt-1 rounded-full bg-[#10b981] shrink-0"></span>
+                        <div className="min-w-0">
+                          <a href="https://github-kappa-two.vercel.app" target="_blank" rel="noreferrer" className="font-semibold text-[#24292f] dark:text-white hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline block truncate">
+                            Production
+                          </a>
+                          <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">13 hours ago</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
+                        <span className="w-2.5 h-2.5 mt-1.5 rounded-full bg-[#cf222e] shrink-0"></span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-[#57606a] dark:text-[#8b949e] block truncate">
+                            Production – github-tjpl
+                          </span>
+                          <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">last month</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
+                        <span className="w-2.5 h-2.5 mt-1.5 rounded-full bg-[#cf222e] shrink-0"></span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-[#57606a] dark:text-[#8b949e] block truncate">
+                            Production – github
+                          </span>
+                          <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">last month</span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-[#0969da] dark:text-[#58a6ff] hover:underline font-semibold cursor-pointer block mt-1">
+                        + 199 deployments
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
+                        <span className="w-2.5 h-2.5 mt-1 rounded-full bg-[#10b981] shrink-0 animate-pulse"></span>
+                        <div className="min-w-0">
+                          <a href={`https://${repo}.vercel.app`} target="_blank" rel="noreferrer" className="font-semibold text-[#0969da] dark:text-[#58a6ff] hover:underline block truncate">
+                            Production – {repo}-frontend
+                          </a>
+                          <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">3 weeks ago</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2.5 text-xs text-[#24292f] dark:text-[#c9d1d9]">
+                        <span className="w-2.5 h-2.5 mt-1 rounded-full bg-[#10b981] shrink-0"></span>
+                        <div className="min-w-0">
+                          <a href={`https://${repo}-backend.vercel.app`} target="_blank" rel="noreferrer" className="font-semibold text-[#0969da] dark:text-[#58a6ff] hover:underline block truncate">
+                            Production – {repo}-backend
+                          </a>
+                          <span className="text-[10px] text-[#57606a] dark:text-[#8b949e] block mt-0.5">3 weeks ago</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )
-      ) : (
+      ) : activeRepoTab === 'discussions' ? (
         <div className="py-4 sm:py-6">
-          <DiscussionsTab repoId={repoData._id || repoData.id} isOwner={isOwner} />
+          <DiscussionsTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+        </div>
+      ) : (
+        /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
+        <div className="py-12 max-w-2xl mx-auto text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-[#ebedf0] dark:bg-[#30363d] flex items-center justify-center mx-auto text-gray-500">
+            {tabs.find(t => t.id === activeRepoTab)?.icon}
+          </div>
+          <h3 className="text-lg font-semibold capitalize">{activeRepoTab} Tab</h3>
+          <p className="text-sm text-[#57606a] dark:text-[#8b949e]">
+            This section simulates the real GitHub {activeRepoTab} dashboard. Here you can view issues, pull requests, project boards, and integration settings mapped dynamically.
+          </p>
+          <button 
+            onClick={() => setActiveRepoTab('code')}
+            className="px-4 py-2 bg-[#0969da] text-white text-xs font-semibold rounded hover:bg-[#0855b3] transition-colors cursor-pointer border-0"
+          >
+            Go back to Code
+          </button>
         </div>
       )}
 
@@ -635,7 +755,6 @@ const RepoDetails = () => {
       {activeCommitDiff && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col">
-            {/* Modal Header */}
             <div className="p-4 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-[#24292f] dark:text-white font-sans">
@@ -653,7 +772,6 @@ const RepoDetails = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="bg-[#f6f8fa] dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded p-3 text-sm italic text-[#24292f] dark:text-white">
                 "{activeCommitDiff.message}"
@@ -667,7 +785,6 @@ const RepoDetails = () => {
                 <div className="space-y-4">
                   {activeCommitDiff.files.map((file, fileIdx) => (
                     <div key={fileIdx} className="border border-[#d0d7de] dark:border-[#30363d] rounded overflow-hidden">
-                      {/* File Header */}
                       <div className="px-4 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex justify-between items-center text-xs text-[#24292f] dark:text-white font-mono">
                         <span>{file.name}</span>
                         <div className="flex gap-2">
@@ -676,7 +793,6 @@ const RepoDetails = () => {
                         </div>
                       </div>
 
-                      {/* File Diff Content */}
                       <pre className="p-3 bg-[#f6f8fa] dark:bg-[#0d1117] overflow-x-auto text-[11px] font-mono leading-relaxed text-[#1f2328] dark:text-[#c9d1d9] whitespace-pre">
                         {file.diff.split('\n').map((line, lineIdx) => {
                           let lineStyle = "text-[#1f2328] dark:text-[#c9d1d9]";
@@ -700,7 +816,6 @@ const RepoDetails = () => {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-4 border-t border-[#d0d7de] dark:border-[#30363d] flex justify-end">
               <button 
                 onClick={() => setActiveCommitDiff(null)}
