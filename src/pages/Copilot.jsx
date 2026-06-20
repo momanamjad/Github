@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, Bot, User, CornerDownLeft, RefreshCw, Terminal, Check, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { apiClient } from "../services/apiClient";
 
 export default function CopilotChat() {
   const [messages, setMessages] = useState([
@@ -29,110 +30,28 @@ export default function CopilotChat() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI streamed response after a delay
-    setTimeout(() => {
-      let aiContent = "";
-      if (text.toLowerCase().includes("hook") || text.toLowerCase().includes("polling")) {
-        aiContent = `Here is a custom React hook \`usePolling\` to retrieve updates at set intervals:
-
-\`\`\`javascript
-import { useEffect, useRef } from 'react';
-
-export function usePolling(callback, delay) {
-  const savedCallback = useRef();
-
-  useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
-
-  useEffect(() => {
-    if (delay !== null) {
-      const id = setInterval(() => savedCallback.current(), delay);
-      return () => clearInterval(id);
-    }
-  }, [delay]);
-}
-\`\`\`
-
-### How to use it:
-\`\`\`jsx
-usePolling(() => {
-  fetchNotifications();
-}, 30000); // polls every 30 seconds
-\`\`\`
-`;
-      } else if (text.toLowerCase().includes("cors")) {
-        aiContent = `### What is CORS?
-Cross-Origin Resource Sharing (CORS) is a security mechanism implemented by browsers to restrict requests made from scripts to external domains.
-
-### Configuring CORS in Express:
-Install CORS middleware:
-\`\`\`bash
-npm install cors
-\`\`\`
-
-Mount it in your Express backend:
-\`\`\`javascript
-import express from 'express';
-import cors from 'cors';
-
-const app = express();
-
-app.use(cors({
-  origin: 'https://github-kappa-two.vercel.app',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE']
-}));
-\`\`\`
-`;
-      } else if (text.toLowerCase().includes("quicksort") || text.toLowerCase().includes("sort")) {
-        aiContent = `Here is the implementation of Quicksort in JavaScript:
-
-\`\`\`javascript
-function quicksort(arr) {
-  if (arr.length <= 1) return arr;
-
-  const pivot = arr[arr.length - 1];
-  const left = [];
-  const right = [];
-
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i] < pivot) {
-      left.push(arr[i]);
-    } else {
-      right.push(arr[i]);
-    }
-  }
-
-  return [...quicksort(left), pivot, ...quicksort(right)];
-}
-\`\`\`
-`;
-      } else {
-        aiContent = `I can definitely help you with that! Here is a solution matching your query:
-
-\`\`\`javascript
-// AI-assisted snippet
-function handleCodeQuery(query) {
-  console.log("Processing query:", query);
-  return {
-    success: true,
-    timestamp: new Date().toISOString(),
-    recommendation: "Use modular utility functions to optimize code execution times."
-  };
-}
-\`\`\`
-
-Let me know if you want me to expand this implementation or write automated test cases!`;
-      }
-
+    try {
+      const res = await apiClient("/copilot/chat", {
+        method: "POST",
+        body: JSON.stringify({ message: text })
+      });
+      
+      const aiContent = res.data?.response || "I couldn't process that request at this moment.";
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: aiContent
       }]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "Error communicating with AI Copilot service: " + err.message
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   useEffect(() => {

@@ -91,6 +91,75 @@ const RepoDetails = () => {
   const [newPrSource, setNewPrSource] = useState("main");
   const [newPrTarget, setNewPrTarget] = useState("main");
 
+  // Comment states
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [selectedPR, setSelectedPR] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newCommentText, setNewCommentText] = useState("");
+
+  const fetchIssueComments = async (issueId) => {
+    if (!repoData) return;
+    try {
+      setCommentsLoading(true);
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues/${issueId}/comments`);
+      setComments(res?.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const fetchPRComments = async (prId) => {
+    if (!repoData) return;
+    try {
+      setCommentsLoading(true);
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/pulls/${prId}/comments`);
+      setComments(res?.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const handlePostIssueComment = async (e) => {
+    e.preventDefault();
+    if (!newCommentText.trim() || !selectedIssue) return;
+    try {
+      const issueId = selectedIssue.id || selectedIssue._id;
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues/${issueId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ body: newCommentText })
+      });
+      if (res?.data) {
+        setComments(prev => [...prev, res.data]);
+        setNewCommentText("");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handlePostPRComment = async (e) => {
+    e.preventDefault();
+    if (!newCommentText.trim() || !selectedPR) return;
+    try {
+      const prId = selectedPR._id || selectedPR.id;
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/pulls/${prId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ body: newCommentText })
+      });
+      if (res?.data) {
+        setComments(prev => [...prev, res.data]);
+        setNewCommentText("");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Settings states
   const [editRepoName, setEditRepoName] = useState("");
   const [editRepoDesc, setEditRepoDesc] = useState("");
@@ -1130,224 +1199,421 @@ const RepoDetails = () => {
         </div>
       ) : activeRepoTab === 'issues' ? (
         <div className="py-4 space-y-4 max-w-4xl text-left">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md px-3 py-1.5 bg-[#f6f8fa] dark:bg-[#161b22] w-full max-w-md">
-              <Search size={16} className="text-[#57606a] dark:text-[#8b949e]" />
-              <input
-                type="text"
-                placeholder="Search all issues"
-                value={issuesSearchQuery}
-                onChange={(e) => setIssuesSearchQuery(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs w-full text-[#1f2328] dark:text-white"
-              />
-            </div>
-            <button
-              onClick={() => setIsCreatingIssue(!isCreatingIssue)}
-              className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
-            >
-              {isCreatingIssue ? "Cancel" : "New issue"}
-            </button>
-          </div>
-
-          {isCreatingIssue && (
-            <form onSubmit={handleCreateIssue} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3">
-              <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Create a new issue</h3>
-              <div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Title"
-                  value={newIssueTitle}
-                  onChange={(e) => setNewIssueTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
-                />
-              </div>
-              <div>
-                <textarea
-                  placeholder="Leave a comment"
-                  rows={4}
-                  value={newIssueDesc}
-                  onChange={(e) => setNewIssueDesc(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
-                />
-              </div>
-              <div className="flex justify-end">
+          {selectedIssue ? (
+            /* Issue Detail View */
+            <div className="space-y-4">
+              <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
                 <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                  onClick={() => { setSelectedIssue(null); setComments([]); }}
+                  className="text-xs font-semibold text-[#0969da] hover:underline bg-transparent border-0 cursor-pointer p-0 mb-3"
                 >
-                  Submit new issue
+                  ← Back to issues
                 </button>
-              </div>
-            </form>
-          )}
-
-          {issuesLoading ? (
-            <div className="text-center py-8 text-xs text-[#57606a]">Loading issues...</div>
-          ) : (
-            <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
-              <div className="px-4 py-3 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIssuesFilter("all")}
-                    className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'all' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
-                  >
-                    All Issues
-                  </button>
-                  <button
-                    onClick={() => setIssuesFilter("open")}
-                    className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'open' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
-                  >
-                    Open
-                  </button>
-                  <button
-                    onClick={() => setIssuesFilter("closed")}
-                    className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'closed' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
-                  >
-                    Closed
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-[#1f2328] dark:text-white">
+                    {selectedIssue.title} <span className="text-[#57606a] dark:text-[#8b949e] font-light">#{selectedIssue.number}</span>
+                  </h2>
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full text-white ${selectedIssue.status === 'open' ? 'bg-[#2da44e]' : 'bg-[#8250df]'}`}>
+                    {selectedIssue.status === 'open' ? 'Open' : 'Closed'}
+                  </span>
                 </div>
+                <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2">
+                  <span className="font-semibold text-[#24292f] dark:text-white">{selectedIssue.author}</span> opened this issue on {selectedIssue.updated}
+                </p>
               </div>
 
-              <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
-                {repoIssues
-                  .filter(i => {
-                    if (issuesFilter === 'open') return i.status === 'open';
-                    if (issuesFilter === 'closed') return i.status === 'closed';
-                    return true;
-                  })
-                  .filter(i => i.title.toLowerCase().includes(issuesSearchQuery.toLowerCase()))
-                  .map(issue => (
-                    <div key={issue.id} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-start gap-2.5 text-left transition-colors">
-                      <CircleDot size={16} className={`mt-0.5 shrink-0 ${issue.status === 'open' ? 'text-[#3fb950]' : 'text-[#a371f7]'}`} />
-                      <div className="min-w-0 flex-1">
-                        <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer">{issue.title}</span>
-                        <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
-                          #{issue.number} opened {issue.updated} by <span className="font-medium text-[#24292f] dark:text-[#c9d1d9]">{issue.author}</span>
-                        </p>
-                        {issue.description && (
-                          <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2 bg-[#f6f8fa] dark:bg-[#0d1117] p-2 rounded-md font-mono max-h-24 overflow-y-auto">
-                            {issue.description}
-                          </p>
-                        )}
+              {/* Description body */}
+              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9] whitespace-pre-wrap">
+                {selectedIssue.description || <i>No description provided.</i>}
+              </div>
+
+              {/* Comments list */}
+              <div className="space-y-4 pt-2">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments ({comments.length})</h3>
+                {commentsLoading ? (
+                  <div className="text-xs text-gray-500 text-center py-4">Loading comments...</div>
+                ) : (
+                  <div className="space-y-3">
+                    {comments.map(c => (
+                      <div key={c._id || c.id} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] overflow-hidden">
+                        <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={c.author?.avatar_url || "/profile.webp"}
+                              alt="avatar"
+                              className="w-5 h-5 rounded-full border object-cover"
+                            />
+                            <span className="font-semibold text-[#1f2328] dark:text-white">{c.author?.login || 'unknown'}</span>
+                            <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117] whitespace-pre-wrap">
+                          {c.body}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                {repoIssues.length === 0 && (
-                  <div className="p-8 text-center text-[#57606a] dark:text-[#8b949e] text-xs">
-                    No issues found matching your filters.
+                    ))}
+                    {comments.length === 0 && (
+                      <p className="text-xs text-gray-500 italic py-2">No comments yet. Be the first to comment!</p>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Comment submission form */}
+              <form onSubmit={handlePostIssueComment} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3 pt-3">
+                <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Leave a comment</h4>
+                <textarea
+                  required
+                  placeholder="Type your comment here..."
+                  rows={3}
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                  >
+                    Comment
+                  </button>
+                </div>
+              </form>
             </div>
+          ) : (
+            /* Issues list */
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md px-3 py-1.5 bg-[#f6f8fa] dark:bg-[#161b22] w-full max-w-md">
+                  <Search size={16} className="text-[#57606a] dark:text-[#8b949e]" />
+                  <input
+                    type="text"
+                    placeholder="Search all issues"
+                    value={issuesSearchQuery}
+                    onChange={(e) => setIssuesSearchQuery(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs w-full text-[#1f2328] dark:text-white"
+                  />
+                </div>
+                <button
+                  onClick={() => setIsCreatingIssue(!isCreatingIssue)}
+                  className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                >
+                  {isCreatingIssue ? "Cancel" : "New issue"}
+                </button>
+              </div>
+
+              {isCreatingIssue && (
+                <form onSubmit={handleCreateIssue} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3">
+                  <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Create a new issue</h3>
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Title"
+                      value={newIssueTitle}
+                      onChange={(e) => setNewIssueTitle(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                    />
+                  </div>
+                  <div>
+                    <textarea
+                      placeholder="Leave a comment"
+                      rows={4}
+                      value={newIssueDesc}
+                      onChange={(e) => setNewIssueDesc(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                    >
+                      Submit new issue
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {issuesLoading ? (
+                <div className="text-center py-8 text-xs text-[#57606a]">Loading issues...</div>
+              ) : (
+                <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+                  <div className="px-4 py-3 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setIssuesFilter("all")}
+                        className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'all' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
+                      >
+                        All Issues
+                      </button>
+                      <button
+                        onClick={() => setIssuesFilter("open")}
+                        className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'open' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
+                      >
+                        Open
+                      </button>
+                      <button
+                        onClick={() => setIssuesFilter("closed")}
+                        className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'closed' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
+                      >
+                        Closed
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+                    {repoIssues
+                      .filter(i => {
+                        if (issuesFilter === 'open') return i.status === 'open';
+                        if (issuesFilter === 'closed') return i.status === 'closed';
+                        return true;
+                      })
+                      .filter(i => i.title.toLowerCase().includes(issuesSearchQuery.toLowerCase()))
+                      .map(issue => (
+                        <div
+                          key={issue.id}
+                          onClick={() => { setSelectedIssue(issue); fetchIssueComments(issue.id); }}
+                          className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-start gap-2.5 text-left transition-colors cursor-pointer"
+                        >
+                          <CircleDot size={16} className={`mt-0.5 shrink-0 ${issue.status === 'open' ? 'text-[#3fb950]' : 'text-[#a371f7]'}`} />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline">{issue.title}</span>
+                            <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
+                              #{issue.number} opened {issue.updated} by <span className="font-medium text-[#24292f] dark:text-[#c9d1d9]">{issue.author}</span>
+                            </p>
+                            {issue.description && (
+                              <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2 bg-[#f6f8fa] dark:bg-[#0d1117] p-2 rounded-md font-mono max-h-24 overflow-y-auto">
+                                {issue.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    {repoIssues.length === 0 && (
+                      <div className="p-8 text-center text-[#57606a] dark:text-[#8b949e] text-xs">
+                        No issues found matching your filters.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : activeRepoTab === 'pulls' ? (
         <div className="py-4 space-y-4 max-w-4xl text-left">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Pull Requests</h3>
-            <button
-              onClick={() => setIsCreatingPR(!isCreatingPR)}
-              className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
-            >
-              {isCreatingPR ? "Cancel" : "New pull request"}
-            </button>
-          </div>
-
-          {isCreatingPR && (
-            <form onSubmit={handleCreatePR} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3">
-              <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Open a new Pull Request</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Source Branch</label>
-                  <input
-                    type="text"
-                    required
-                    value={newPrSource}
-                    onChange={(e) => setNewPrSource(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Target Branch</label>
-                  <input
-                    type="text"
-                    required
-                    value={newPrTarget}
-                    onChange={(e) => setNewPrTarget(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Pull request title"
-                  value={newPrTitle}
-                  onChange={(e) => setNewPrTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
-                />
-              </div>
-              <div>
-                <textarea
-                  placeholder="Describe your changes..."
-                  rows={3}
-                  value={newPrDesc}
-                  onChange={(e) => setNewPrDesc(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
-                />
-              </div>
-              <div className="flex justify-end">
+          {selectedPR ? (
+            /* Pull Request Detail View */
+            <div className="space-y-4">
+              <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
                 <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                  onClick={() => { setSelectedPR(null); setComments([]); }}
+                  className="text-xs font-semibold text-[#0969da] hover:underline bg-transparent border-0 cursor-pointer p-0 mb-3"
                 >
-                  Create pull request
+                  ← Back to pull requests
                 </button>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-[#1f2328] dark:text-white">
+                    {selectedPR.title}
+                  </h2>
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full text-white ${selectedPR.status === 'merged' ? 'bg-[#8250df]' : selectedPR.status === 'closed' ? 'bg-[#cf222e]' : 'bg-[#2da44e]'}`}>
+                    {selectedPR.status === 'merged' ? 'Merged' : selectedPR.status === 'closed' ? 'Closed' : 'Open'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2">
+                  from <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{selectedPR.sourceBranch}</span> into <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{selectedPR.targetBranch}</span> by <span className="font-semibold text-[#24292f] dark:text-white">{selectedPR.author?.login || 'unknown'}</span>
+                </p>
               </div>
-            </form>
-          )}
 
-          {prsLoading ? (
-            <div className="text-center py-8 text-xs text-[#57606a]">Loading pull requests...</div>
-          ) : (
-            <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
-              <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
-                {repoPRs.map(pr => (
-                  <div key={pr._id || pr.id} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 text-left transition-colors">
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <GitPullRequest size={16} className={`mt-0.5 shrink-0 ${pr.status === 'merged' ? 'text-[#a371f7]' : pr.status === 'closed' ? 'text-[#cf222e]' : 'text-[#3fb950]'}`} />
-                      <div className="min-w-0">
-                        <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer">{pr.title}</span>
-                        <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
-                          from <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{pr.sourceBranch}</span> into <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{pr.targetBranch}</span> by <span className="font-medium">{pr.author?.login || 'unknown'}</span>
-                        </p>
-                        {pr.description && <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1 italic truncate">{pr.description}</p>}
-                      </div>
-                    </div>
-                    {pr.status === 'open' && isOwner && (
-                      <button
-                        onClick={() => handleMergePR(pr._id || pr.id)}
-                        className="px-3 py-1 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0 shrink-0"
-                      >
-                        Merge PR
-                      </button>
-                    )}
-                    {pr.status === 'merged' && (
-                      <span className="px-2 py-0.5 bg-[#a371f7]/10 text-[#a371f7] text-[10px] font-semibold border border-[#a371f7]/30 rounded-full shrink-0">
-                        Merged
-                      </span>
-                    )}
+              {/* Description body */}
+              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9] whitespace-pre-wrap">
+                {selectedPR.description || <i>No description provided.</i>}
+              </div>
+
+              {selectedPR.status === 'open' && isOwner && (
+                <div className="bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 flex items-center justify-between">
+                  <div className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                    This pull request has no conflicts and can be merged automatically.
                   </div>
-                ))}
-                {repoPRs.length === 0 && (
-                  <div className="p-8 text-center text-[#57606a] dark:text-[#8b949e] text-xs">
-                    No pull requests created yet.
+                  <button
+                    onClick={async () => {
+                      await handleMergePR(selectedPR._id || selectedPR.id);
+                      setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
+                    }}
+                    className="px-3.5 py-1.5 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                  >
+                    Merge Pull Request
+                  </button>
+                </div>
+              )}
+
+              {/* Comments list */}
+              <div className="space-y-4 pt-2">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments ({comments.length})</h3>
+                {commentsLoading ? (
+                  <div className="text-xs text-gray-500 text-center py-4">Loading comments...</div>
+                ) : (
+                  <div className="space-y-3">
+                    {comments.map(c => (
+                      <div key={c._id || c.id} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] overflow-hidden">
+                        <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={c.author?.avatar_url || "/profile.webp"}
+                              alt="avatar"
+                              className="w-5 h-5 rounded-full border object-cover"
+                            />
+                            <span className="font-semibold text-[#1f2328] dark:text-white">{c.author?.login || 'unknown'}</span>
+                            <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117] whitespace-pre-wrap">
+                          {c.body}
+                        </div>
+                      </div>
+                    ))}
+                    {comments.length === 0 && (
+                      <p className="text-xs text-gray-500 italic py-2">No comments yet. Be the first to comment!</p>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Comment submission form */}
+              <form onSubmit={handlePostPRComment} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3 pt-3">
+                <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Leave a comment</h4>
+                <textarea
+                  required
+                  placeholder="Type your comment here..."
+                  rows={3}
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                  >
+                    Comment
+                  </button>
+                </div>
+              </form>
             </div>
+          ) : (
+            /* PRs list */
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Pull Requests</h3>
+                <button
+                  onClick={() => setIsCreatingPR(!isCreatingPR)}
+                  className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                >
+                  {isCreatingPR ? "Cancel" : "New pull request"}
+                </button>
+              </div>
+
+              {isCreatingPR && (
+                <form onSubmit={handleCreatePR} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3">
+                  <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Open a new Pull Request</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Source Branch</label>
+                      <input
+                        type="text"
+                        required
+                        value={newPrSource}
+                        onChange={(e) => setNewPrSource(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Target Branch</label>
+                      <input
+                        type="text"
+                        required
+                        value={newPrTarget}
+                        onChange={(e) => setNewPrTarget(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Pull request title"
+                      value={newPrTitle}
+                      onChange={(e) => setNewPrTitle(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                    />
+                  </div>
+                  <div>
+                    <textarea
+                      placeholder="Describe your changes..."
+                      rows={3}
+                      value={newPrDesc}
+                      onChange={(e) => setNewPrDesc(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                    >
+                      Create pull request
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {prsLoading ? (
+                <div className="text-center py-8 text-xs text-[#57606a]">Loading pull requests...</div>
+              ) : (
+                <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+                  <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+                    {repoPRs.map(pr => (
+                      <div
+                        key={pr._id || pr.id}
+                        onClick={() => { setSelectedPR(pr); fetchPRComments(pr._id || pr.id); }}
+                        className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 text-left transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <GitPullRequest size={16} className={`mt-0.5 shrink-0 ${pr.status === 'merged' ? 'text-[#a371f7]' : pr.status === 'closed' ? 'text-[#cf222e]' : 'text-[#3fb950]'}`} />
+                          <div className="min-w-0">
+                            <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline">{pr.title}</span>
+                            <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
+                              from <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{pr.sourceBranch}</span> into <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{pr.targetBranch}</span> by <span className="font-medium">{pr.author?.login || 'unknown'}</span>
+                            </p>
+                            {pr.description && <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1 italic truncate">{pr.description}</p>}
+                          </div>
+                        </div>
+                        {pr.status === 'open' && isOwner && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleMergePR(pr._id || pr.id); }}
+                            className="px-3 py-1 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0 shrink-0"
+                          >
+                            Merge PR
+                          </button>
+                        )}
+                        {pr.status === 'merged' && (
+                          <span className="px-2 py-0.5 bg-[#a371f7]/10 text-[#a371f7] text-[10px] font-semibold border border-[#a371f7]/30 rounded-full shrink-0">
+                            Merged
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {repoPRs.length === 0 && (
+                      <div className="p-8 text-center text-[#57606a] dark:text-[#8b949e] text-xs">
+                        No pull requests created yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : activeRepoTab === 'settings' ? (

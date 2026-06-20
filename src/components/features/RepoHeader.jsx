@@ -1,12 +1,48 @@
+import { useState, useEffect } from "react";
 import { GitFork, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import StarButton from "@common/StarButton";
 import PinButton from "@common/PinButton";
+import { apiClient } from "../../services/apiClient";
+import { useGitHub } from "../../contexts/GitHubContext";
 
 const RepoHeader = ({ repo }) => {
+  const { user } = useGitHub();
+  const [isWatching, setIsWatching] = useState(false);
+  const [watchersCount, setWatchersCount] = useState(repo?.watchers_count || 0);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (repo) {
+      setWatchersCount(repo.watchers_count || 0);
+      setIsWatching(repo.isWatching || false);
+    }
+  }, [repo]);
+
   if (!repo) return null;
 
   const isPrivate = repo.private || repo.visibility === "private";
+
+  const handleWatchClick = async () => {
+    if (!user) {
+      alert("Please log in to watch repositories.");
+      return;
+    }
+    if (loading) return;
+    setLoading(true);
+    try {
+      const repoId = repo._id || repo.id;
+      const res = await apiClient(`/repos/${repoId}/watch`, { method: "POST" });
+      if (res?.data) {
+        setIsWatching(res.data.isWatching);
+        setWatchersCount(res.data.watchers_count);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="pt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2">
@@ -42,13 +78,19 @@ const RepoHeader = ({ repo }) => {
           </span>
         </button>
 
-        <span className="flex items-center gap-1 px-3 py-[3px] text-[#24292f] border border-[#d0d7de] rounded-md bg-[#f6f8fa] font-medium select-none">
-          <Eye size={14} className="text-[#57606a]" />
-          <span>Watch</span>
+        <button
+          onClick={handleWatchClick}
+          disabled={loading}
+          className={`flex items-center gap-1 px-3 py-[3px] text-[#24292f] border border-[#d0d7de] rounded-md transition-colors cursor-pointer font-medium ${
+            isWatching ? "bg-[#f3f4f6] hover:bg-[#e5e7eb]" : "bg-[#f6f8fa] hover:bg-[#ebedf0]"
+          }`}
+        >
+          <Eye size={14} className={isWatching ? "text-blue-500 fill-blue-500" : "text-[#57606a]"} />
+          <span>{isWatching ? "Watching" : "Watch"}</span>
           <span className="ml-1 px-[6px] py-[1px] bg-white border border-[#d0d7de] rounded-full text-[11px] font-semibold text-[#636c76]">
-            {repo.watchers_count || 0}
+            {watchersCount}
           </span>
-        </span>
+        </button>
       </div>
     </div>
   );
