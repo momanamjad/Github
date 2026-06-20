@@ -380,6 +380,22 @@ const RepoDetails = () => {
     );
   }
 
+  const handleSaveFile = (filePath, content) => {
+    setSelectedFile(prev => prev && prev.path === filePath ? { ...prev, content } : prev);
+    const updateTreeNodes = (nodes) => {
+      return nodes.map(node => {
+        if (node.path === filePath) {
+          return { ...node, content };
+        }
+        if (node.children) {
+          return { ...node, children: updateTreeNodes(node.children) };
+        }
+        return node;
+      });
+    };
+    setFileTree(prev => updateTreeNodes(prev));
+  };
+
   const getFilesAtCurrentPath = () => {
     if (!currentPath) return fileTree;
     const parts = currentPath.split('/');
