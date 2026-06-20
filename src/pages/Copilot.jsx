@@ -1,155 +1,276 @@
-import React from 'react';
-import { Sparkles, Code, MessageSquare, Zap, Check } from 'lucide-react';
-import { Skeleton } from 'boneyard-js/react';
-import { CopilotSkeleton } from '../components/features/CopilotSkeleton';
-import { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Sparkles, Send, Bot, User, CornerDownLeft, RefreshCw, Terminal, Check, Copy } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
-const Copilot = () => {
-  const [isLoading, setIsLoading] = useState(true);
+export default function CopilotChat() {
+  const [messages, setMessages] = useState([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: "Hello! I am GitHub Copilot, your AI pair programmer. How can I help you write, debug, or document code today?"
+    }
+  ]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const chatEndRef = useRef(null);
+
+  const suggestedPrompts = [
+    { text: "Write a React hook for API polling", label: "React Hook" },
+    { text: "Explain how CORS works in Express", label: "CORS Details" },
+    { text: "Implement quicksort in JavaScript", label: "Algorithms" },
+    { text: "Find bug: console errors with undefined values", label: "Debugging" }
+  ];
+
+  const handleSend = async (text) => {
+    if (!text.trim() || isTyping) return;
+    
+    const userMsg = { id: Date.now().toString(), role: 'user', content: text };
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
+    setIsTyping(true);
+
+    // Simulate AI streamed response after a delay
+    setTimeout(() => {
+      let aiContent = "";
+      if (text.toLowerCase().includes("hook") || text.toLowerCase().includes("polling")) {
+        aiContent = `Here is a custom React hook \`usePolling\` to retrieve updates at set intervals:
+
+\`\`\`javascript
+import { useEffect, useRef } from 'react';
+
+export function usePolling(callback, delay) {
+  const savedCallback = useRef();
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
-  const features = [
-    {
-      icon: Code,
-      title: 'Code completions',
-      description: 'Get AI-powered code suggestions as you type'
-    },
-    {
-      icon: MessageSquare,
-      title: 'Chat assistance',
-      description: 'Ask questions and get explanations in natural language'
-    },
-    {
-      icon: Zap,
-      title: 'Fast and efficient',
-      description: 'Speed up your development workflow'
-    }
-  ];
+    savedCallback.current = callback;
+  }, [callback]);
 
-  const benefits = [
-    'Write code faster with AI-powered suggestions',
-    'Learn new APIs and frameworks quickly',
-    'Get explanations for complex code',
-    'Generate tests and documentation',
-    'Fix bugs and errors efficiently'
-  ];
+  useEffect(() => {
+    if (delay !== null) {
+      const id = setInterval(() => savedCallback.current(), delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
+\`\`\`
+
+### How to use it:
+\`\`\`jsx
+usePolling(() => {
+  fetchNotifications();
+}, 30000); // polls every 30 seconds
+\`\`\`
+`;
+      } else if (text.toLowerCase().includes("cors")) {
+        aiContent = `### What is CORS?
+Cross-Origin Resource Sharing (CORS) is a security mechanism implemented by browsers to restrict requests made from scripts to external domains.
+
+### Configuring CORS in Express:
+Install CORS middleware:
+\`\`\`bash
+npm install cors
+\`\`\`
+
+Mount it in your Express backend:
+\`\`\`javascript
+import express from 'express';
+import cors from 'cors';
+
+const app = express();
+
+app.use(cors({
+  origin: 'https://github-kappa-two.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE']
+}));
+\`\`\`
+`;
+      } else if (text.toLowerCase().includes("quicksort") || text.toLowerCase().includes("sort")) {
+        aiContent = `Here is the implementation of Quicksort in JavaScript:
+
+\`\`\`javascript
+function quicksort(arr) {
+  if (arr.length <= 1) return arr;
+
+  const pivot = arr[arr.length - 1];
+  const left = [];
+  const right = [];
+
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] < pivot) {
+      left.push(arr[i]);
+    } else {
+      right.push(arr[i]);
+    }
+  }
+
+  return [...quicksort(left), pivot, ...quicksort(right)];
+}
+\`\`\`
+`;
+      } else {
+        aiContent = `I can definitely help you with that! Here is a solution matching your query:
+
+\`\`\`javascript
+// AI-assisted snippet
+function handleCodeQuery(query) {
+  console.log("Processing query:", query);
+  return {
+    success: true,
+    timestamp: new Date().toISOString(),
+    recommendation: "Use modular utility functions to optimize code execution times."
+  };
+}
+\`\`\`
+
+Let me know if you want me to expand this implementation or write automated test cases!`;
+      }
+
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: aiContent
+      }]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const CopyButton = ({ text }) => {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = () => {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded border-0 cursor-pointer transition-colors"
+      >
+        {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+      </button>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Skeleton 
-          name="copilot" 
-          loading={isLoading} 
-          fixture={<CopilotSkeleton />}
-        >
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="w-8 h-8 text-purple-600" />
-              <h1 className="text-3xl font-bold text-gray-900">GitHub Copilot</h1>
-            </div>
-            <p className="text-lg text-gray-600 max-w-3xl">
-              Your AI pair programmer that helps you write code faster and with less effort
-            </p>
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] max-w-7xl mx-auto bg-white dark:bg-[#0d1117] transition-colors border border-[#d0d7de] dark:border-[#30363d] rounded-lg overflow-hidden my-4">
+      {/* Left sidebar: Prompts & Helper */}
+      <div className="w-full lg:w-64 bg-[#f6f8fa] dark:bg-[#161b22] border-r border-[#d0d7de] dark:border-[#30363d] p-4 flex flex-col justify-between">
+        <div className="space-y-4 text-left">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <h3 className="font-bold text-sm text-[#1f2328] dark:text-white">Copilot Suggestions</h3>
           </div>
+          <p className="text-xs text-[#57606a] dark:text-[#8b949e]">
+            Select a preset prompt below to test intelligent responses and code completion structures.
+          </p>
+          <div className="space-y-2">
+            {suggestedPrompts.map((p, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSend(p.text)}
+                className="w-full text-left p-2.5 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] hover:border-purple-500 dark:hover:border-purple-500 rounded-md text-xs font-semibold cursor-pointer text-[#1f2328] dark:text-[#c9d1d9] transition-all hover:shadow-sm"
+              >
+                <div className="text-purple-600 dark:text-purple-400 font-bold mb-0.5">{p.label}</div>
+                <div className="truncate text-gray-500">{p.text}</div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Hero Section */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-8 mb-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Code smarter, not harder
-                </h2>
-                <p className="text-gray-700 mb-6">
-                  GitHub Copilot uses AI to suggest code and entire functions in real-time, 
-                  right from your editor. Available for Visual Studio Code, Visual Studio, 
-                  Neovim, and JetBrains IDEs.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button className="inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Copilot
-                  </button>
-                  <button className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                    Learn more
-                  </button>
-                </div>
+        <div className="border-t border-[#d0d7de] dark:border-[#30363d] pt-3 text-left space-y-1">
+          <span className="text-[11px] text-gray-400 font-semibold block uppercase tracking-wider">Workspace Mode</span>
+          <div className="flex items-center gap-1.5 text-xs text-[#24292f] dark:text-white font-semibold">
+            <Terminal size={14} className="text-purple-600" />
+            <span>Interactive Chatbot</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main chat window */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-[#0d1117]">
+        {/* Messages drawer */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          {messages.map((m) => (
+            <div
+              key={m.id}
+              className={`flex gap-3 max-w-3xl text-left ${m.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border shrink-0 ${m.role === 'user' ? 'bg-[#ebedf0] border-gray-300 dark:bg-gray-800' : 'bg-purple-100 border-purple-300 text-purple-700'}`}>
+                {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
               </div>
-              <div className="bg-white rounded-lg p-4 shadow-md border border-gray-200">
-                <div className="space-y-2 font-mono text-sm">
-                  <div className="text-gray-600">// Function to calculate fibonacci</div>
-                  <div className="text-purple-600">function fibonacci(n) {'{'}</div>
-                  <div className="text-gray-400 pl-4">  // Copilot suggestion...</div>
-                  <div className="text-gray-800 pl-4">  if (n {'<='} 1) return n;</div>
-                  <div className="text-gray-800 pl-4">  return fibonacci(n - 1) + fibonacci(n - 2);</div>
-                  <div className="text-purple-600">{'}'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Features Grid */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Features</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-300 rounded-lg p-6 hover:shadow-md transition-shadow"
-                >
-                  <feature.icon className="w-10 h-10 text-purple-600 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Benefits List */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">What you can do</h2>
-            <div className="bg-gray-50 border border-gray-300 rounded-lg p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-gray-700">{benefit}</p>
+              <div className={`relative px-4 py-2.5 rounded-lg text-xs md:text-sm shadow-sm ${m.role === 'user' ? 'bg-purple-600 text-white font-medium' : 'bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] text-[#1f2328] dark:text-[#c9d1d9] prose dark:prose-invert max-w-full'}`}>
+                {m.role === 'assistant' ? (
+                  <div className="relative pt-2">
+                    <ReactMarkdown
+                      components={{
+                        pre: ({ node, ...props }) => (
+                          <div className="relative my-2">
+                            <pre className="p-3 bg-[#ebedf0] dark:bg-[#0d1117] rounded-md overflow-x-auto text-xs font-mono leading-relaxed" {...props} />
+                            <CopyButton text={node?.children?.[0]?.children?.[0]?.value || props.children?.props?.children || ""} />
+                          </div>
+                        ),
+                        code: ({ ...props }) => <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded font-mono text-purple-600 dark:text-purple-400" {...props} />
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
                   </div>
-                ))}
+                ) : (
+                  <span>{m.content}</span>
+                )}
               </div>
             </div>
-          </div>
+          ))}
 
-          {/* Usage Stats */}
-          <div className="border border-gray-300 rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Copilot usage</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-purple-50 rounded-lg">
-                <p className="text-3xl font-bold text-purple-600 mb-2">0</p>
-                <p className="text-sm text-gray-600">Suggestions accepted</p>
+          {isTyping && (
+            <div className="flex gap-3 max-w-3xl text-left">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center border bg-purple-100 border-purple-300 text-purple-700 shrink-0">
+                <Bot size={16} />
               </div>
-              <div className="text-center p-6 bg-blue-50 rounded-lg">
-                <p className="text-3xl font-bold text-blue-600 mb-2">0</p>
-                <p className="text-sm text-gray-600">Lines of code generated</p>
-              </div>
-              <div className="text-center p-6 bg-green-50 rounded-lg">
-                <p className="text-3xl font-bold text-green-600 mb-2">0%</p>
-                <p className="text-sm text-gray-600">Time saved</p>
+              <div className="px-4 py-2.5 rounded-lg bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] flex items-center gap-1">
+                <RefreshCw size={14} className="animate-spin text-purple-600" />
+                <span className="text-xs text-[#57606a] dark:text-[#8b949e]">Copilot is typing…</span>
               </div>
             </div>
-            <p className="text-center text-sm text-gray-500 mt-6">
-              Start using Copilot to see your stats
-            </p>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input box */}
+        <div className="p-4 border-t border-[#d0d7de] dark:border-[#30363d] bg-white dark:bg-[#0d1117]">
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
+            className="flex items-center gap-2 relative bg-[#f6f8fa] dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md px-3 py-1.5 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500"
+          >
+            <input
+              type="text"
+              placeholder="Ask Copilot a question or start coding..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 bg-transparent border-0 outline-none text-xs md:text-sm text-[#1f2328] dark:text-white placeholder-gray-400 py-1.5"
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isTyping}
+              className="flex items-center justify-center w-8 h-8 rounded-md bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition-colors cursor-pointer border-0 shrink-0"
+            >
+              <Send size={14} />
+            </button>
+          </form>
+          <div className="flex items-center justify-between mt-2 text-[10px] text-gray-400">
+            <span>Copilot responses are generated using advanced coding models.</span>
+            <div className="flex items-center gap-1">
+              <span>Press Enter</span>
+              <CornerDownLeft size={10} />
+            </div>
           </div>
-        </Skeleton>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Copilot;
+}

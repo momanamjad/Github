@@ -1,17 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, X, Clock, User, ChevronDown, MessageSquare } from 'lucide-react';
 import EmptyStateClockIcon from "../components/ui/icons/EmptyStateClockIcon";
 import EmptyStateDiscussionIcon from "../components/ui/icons/EmptyStateDiscussionIcon";
 import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 import { useGitHub } from "../contexts/GitHubContext";
+import { apiClient } from "../services/apiClient";
 
 export default function GitHubClone() {
   const [mainSection, setMainSection] = useState('projects');  
   const [projectTab, setProjectTab] = useState('recently-viewed');  
   const [discussionTab, setDiscussionTab] = useState('created'); 
   const [searchQuery, setSearchQuery] = useState('');
-  const { user } = useGitHub();
+  const { user, repositories } = useGitHub();
   const activeUsername = user?.login || "moman";
+
+  const [discussionsList, setDiscussionsList] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchGlobalDiscussions = async () => {
+    if (!repositories || repositories.length === 0) return;
+    setLoading(true);
+    try {
+      const allPromises = repositories.map(async (repo) => {
+        try {
+          const res = await apiClient(`/repos/${repo._id || repo.id}/discussions`);
+          return (res?.data || []).map(d => ({ ...d, repoName: repo.name, repoOwner: repo.owner?.login || user?.login }));
+        } catch (e) {
+          console.warn(e);
+          return [];
+        }
+      });
+      const resolved = await Promise.all(allPromises);
+      setDiscussionsList(resolved.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGlobalDiscussions();
+  }, [repositories]);
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -235,18 +265,63 @@ export default function GitHubClone() {
                   </div>
                 </div>
 
-                {/* Empty State for Discussions */}
-                <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 mb-4 flex items-center justify-center">
-                    <EmptyStateDiscussionIcon className="w-12 h-12 text-gray-400" />
+                {loading ? (
+                  <div className="text-center py-12 text-sm text-gray-500">Loading discussions...</div>
+                ) : discussionsList.length > 0 ? (
+                  <div className="border border-gray-200 rounded-md divide-y divide-gray-200 bg-white">
+                    {discussionsList
+                      .filter(d => {
+                        const q = searchQuery.toLowerCase();
+                        if (discussionTab === 'created') {
+                          return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
+                        } else {
+                          return d.replies?.some(r => r.author?.login === activeUsername) && d.title.toLowerCase().includes(q);
+                        }
+                      })
+                      .map(d => (
+                        <div key={d._id} className="p-4 hover:bg-gray-50 flex items-start gap-3 text-left">
+                          <MessageSquare className="w-5 h-5 text-[#238636] mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                              <span className="font-semibold text-gray-700">{d.repoOwner}/{d.repoName}</span>
+                              <span>•</span>
+                              <span className="capitalize">Category: {d.category}</span>
+                            </div>
+                            <h4 className="text-sm font-semibold text-gray-900 mt-0.5">
+                              <a href={`/${d.repoOwner}/${d.repoName}`} className="hover:text-blue-600 hover:underline">
+                                {d.title}
+                              </a>
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              started {new Date(d.createdAt).toLocaleDateString()} by <span className="font-semibold">{d.creator?.login}</span> · {d.replies?.length || 0} replies
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    {discussionsList.filter(d => {
+                      const q = searchQuery.toLowerCase();
+                      if (discussionTab === 'created') {
+                        return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
+                      } else {
+                        return d.replies?.some(r => r.author?.login === activeUsername) && d.title.toLowerCase().includes(q);
+                      }
+                    }).length === 0 && (
+                      <div className="p-12 text-center text-xs text-gray-500">No discussions match your filter criteria.</div>
+                    )}
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No discussions match the selected filters.
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Discussions are used to ask questions and have open-ended conversations.
-                  </p>
-                </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-md p-16 flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                      <EmptyStateDiscussionIcon className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      No discussions match the selected filters.
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Discussions are used to ask questions and have open-ended conversations.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

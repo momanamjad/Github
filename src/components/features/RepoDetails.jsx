@@ -9,6 +9,7 @@ import { useGitHub } from "@contexts/GitHubContext";
 import DiscussionsTab from "./tabs/DiscussionsTab";
 import ReactMarkdown from "react-markdown";
 import { Folder, File as FileIcon, GitBranch, Tag, ChevronDown, BookOpen, Pencil, List, History, Settings, ExternalLink, Shield, Info, BarChart2, PlayCircle, Bot, CircleDot, GitPullRequest, LayoutGrid, Check } from "lucide-react";
+import { apiClient } from "@services/apiClient.js";
 
 
 // Helper to convert flat GitHub API tree to nested structure
@@ -72,6 +73,41 @@ const RepoDetails = () => {
   const [error, setError] = useState(null);
   const [activeCommitDiff, setActiveCommitDiff] = useState(null);
 
+  // Issues states
+  const [repoIssues, setRepoIssues] = useState([]);
+  const [issuesLoading, setIssuesLoading] = useState(false);
+  const [issuesFilter, setIssuesFilter] = useState("all"); // 'all' | 'open' | 'closed'
+  const [issuesSearchQuery, setIssuesSearchQuery] = useState("");
+  const [isCreatingIssue, setIsCreatingIssue] = useState(false);
+  const [newIssueTitle, setNewIssueTitle] = useState("");
+  const [newIssueDesc, setNewIssueDesc] = useState("");
+
+  // PRs states
+  const [repoPRs, setRepoPRs] = useState([]);
+  const [prsLoading, setPrsLoading] = useState(false);
+  const [isCreatingPR, setIsCreatingPR] = useState(false);
+  const [newPrTitle, setNewPrTitle] = useState("");
+  const [newPrDesc, setNewPrDesc] = useState("");
+  const [newPrSource, setNewPrSource] = useState("main");
+  const [newPrTarget, setNewPrTarget] = useState("main");
+
+  // Settings states
+  const [editRepoName, setEditRepoName] = useState("");
+  const [editRepoDesc, setEditRepoDesc] = useState("");
+  const [editRepoVisibility, setEditRepoVisibility] = useState("public");
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState({ text: "", type: "" });
+
+  // Branch & Tag management states
+  const [branches, setBranches] = useState(["main"]);
+  const [tags, setTags] = useState([]);
+  const [currentBranch, setCurrentBranch] = useState("main");
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+  const [branchFilterQuery, setBranchFilterQuery] = useState("");
+  const [newBranchInput, setNewBranchInput] = useState("");
+  const [newTagInput, setNewTagInput] = useState("");
+  const [activeSelectorTab, setActiveSelectorTab] = useState("branches"); // "branches" | "tags"
+
   // Commits list initialized with realistic fallbacks
   const [commitsList, setCommitsList] = useState([
     {
@@ -91,6 +127,124 @@ const RepoDetails = () => {
       files: []
     }
   ]);
+
+  // Load Issues/PRs dynamically when tabs are clicked
+  useEffect(() => {
+    const fetchIssues = async () => {
+      if (!repoData) return;
+      try {
+        setIssuesLoading(true);
+        const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues`);
+        if (res && res.data) {
+          // Format issues correctly
+          const formatted = (res.data || []).map(issue => ({
+            id: issue._id,
+            title: issue.title,
+            number: issue.number || Math.floor(Math.random() * 900) + 100,
+            status: issue.state || 'open',
+            author: issue.creator?.login || 'unknown',
+            updated: new Date(issue.updated_at || issue.created_at).toLocaleDateString(),
+            description: issue.description || '',
+          }));
+          setRepoIssues(formatted);
+        }
+      } catch (err) {
+        console.error("Failed to load issues:", err);
+      } finally {
+        setIssuesLoading(false);
+      }
+    };
+
+    const fetchPRs = async () => {
+      if (!repoData) return;
+      try {
+        setPrsLoading(true);
+        const res = await apiClient(`/repos/${repoData._id || repoData.id}/pulls`);
+        if (res && res.data) {
+          setRepoPRs(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load Pull Requests:", err);
+      } finally {
+        setPrsLoading(false);
+      }
+    };
+
+    if (activeRepoTab === 'issues') {
+      fetchIssues();
+    } else if (activeRepoTab === 'pulls') {
+      fetchPRs();
+    }
+  }, [activeRepoTab, repoData]);
+
+  // Sync settings inputs when repoData changes
+  useEffect(() => {
+    if (repoData) {
+      setEditRepoName(repoData.name);
+      setEditRepoDesc(repoData.description || "");
+      setEditRepoVisibility(repoData.visibility || "public");
+    }
+  }, [repoData]);
+
+  // Load branches & tags
+  useEffect(() => {
+    const fetchBranchesAndTags = async () => {
+      if (!repoData || (!repoData._id && !repoData.id)) return;
+      try {
+        const id = repoData._id || repoData.id;
+        const branchesRes = await apiClient(`/repos/${id}/branches`);
+        if (branchesRes && branchesRes.data) {
+          setBranches(branchesRes.data);
+        }
+        const tagsRes = await apiClient(`/repos/${id}/tags`);
+        if (tagsRes && tagsRes.data) {
+          setTags(tagsRes.data);
+        }
+      } catch (err) {
+        console.warn("Failed to load branches and tags from backend:", err);
+      }
+    };
+    fetchBranchesAndTags();
+  }, [repoData]);
+
+  const handleCreateBranch = async (e) => {
+    e.preventDefault();
+    if (!newBranchInput.trim() || !repoData) return;
+    try {
+      const id = repoData._id || repoData.id;
+      const res = await apiClient(`/repos/${id}/branches`, {
+        method: 'POST',
+        body: JSON.stringify({ name: newBranchInput.trim() }),
+      });
+      if (res && res.data) {
+        setBranches(res.data);
+        setCurrentBranch(newBranchInput.trim());
+        setNewBranchInput("");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to create branch");
+    }
+  };
+
+  const handleCreateTag = async (e) => {
+    e.preventDefault();
+    if (!newTagInput.trim() || !repoData) return;
+    try {
+      const id = repoData._id || repoData.id;
+      const res = await apiClient(`/repos/${id}/tags`, {
+        method: 'POST',
+        body: JSON.stringify({ name: newTagInput.trim() }),
+      });
+      if (res && res.data) {
+        setTags(res.data);
+        setNewTagInput("");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to create tag");
+    }
+  };
 
   useEffect(() => {
     const loadRepo = async () => {
@@ -294,6 +448,116 @@ const RepoDetails = () => {
     };
   };
 
+  const handleCreateIssue = async (e) => {
+    e.preventDefault();
+    if (!newIssueTitle.trim()) return;
+    try {
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: newIssueTitle,
+          description: newIssueDesc,
+        }),
+      });
+      if (res && res.data) {
+        const formatted = {
+          id: res.data._id,
+          title: res.data.title,
+          number: res.data.number || Math.floor(Math.random() * 900) + 100,
+          status: res.data.state || 'open',
+          author: res.data.creator?.login || user?.login || 'unknown',
+          updated: new Date(res.data.updated_at || res.data.created_at).toLocaleDateString(),
+          description: res.data.description || '',
+        };
+        setRepoIssues(prev => [formatted, ...prev]);
+        setNewIssueTitle("");
+        setNewIssueDesc("");
+        setIsCreatingIssue(false);
+      }
+    } catch (err) {
+      console.error("Failed to create issue:", err);
+    }
+  };
+
+  const handleCreatePR = async (e) => {
+    e.preventDefault();
+    if (!newPrTitle.trim()) return;
+    try {
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/pulls`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: newPrTitle,
+          description: newPrDesc,
+          sourceBranch: newPrSource,
+          targetBranch: newPrTarget,
+        }),
+      });
+      if (res && res.data) {
+        setRepoPRs(prev => [res.data, ...prev]);
+        setNewPrTitle("");
+        setNewPrDesc("");
+        setIsCreatingPR(false);
+      }
+    } catch (err) {
+      console.error("Failed to create PR:", err);
+    }
+  };
+
+  const handleMergePR = async (prId) => {
+    try {
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}/pulls/${prId}/merge`, {
+        method: 'POST',
+      });
+      if (res && res.data) {
+        setRepoPRs(prev => prev.map(pr => pr._id === prId ? { ...pr, status: 'merged' } : pr));
+      }
+    } catch (err) {
+      console.error("Failed to merge PR:", err);
+    }
+  };
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setSettingsSaving(true);
+    setSettingsMessage({ text: "", type: "" });
+    try {
+      const res = await apiClient(`/repos/${repoData._id || repoData.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: editRepoName,
+          description: editRepoDesc,
+          visibility: editRepoVisibility,
+        }),
+      });
+      if (res && res.data) {
+        setRepoData(res.data);
+        setSettingsMessage({ text: "Repository updated successfully!", type: "success" });
+      }
+    } catch (err) {
+      setSettingsMessage({ text: err.message || "Failed to update settings.", type: "error" });
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleDeleteRepo = async () => {
+    const confirmName = prompt(`To confirm deletion, type the repository name "${repoData.name}":`);
+    if (confirmName !== repoData.name) {
+      alert("Repository name confirmation mismatch. Deletion cancelled.");
+      return;
+    }
+    try {
+      await apiClient(`/repos/${repoData._id || repoData.id}`, {
+        method: 'DELETE',
+      });
+      alert("Repository deleted successfully!");
+      window.location.href = `/${username}`;
+    } catch (err) {
+      console.error("Failed to delete repository:", err);
+      alert(err.message || "Failed to delete repository.");
+    }
+  };
+
   const renderBreadcrumbs = () => {
     const parts = currentPath.split('/').filter(Boolean);
     return (
@@ -331,8 +595,8 @@ const RepoDetails = () => {
 
   const tabs = [
     { id: "code", label: "Code", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg> },
-    { id: "issues", label: "Issues", icon: <CircleDot className="w-4 h-4" />, count: repoData?.issues_count || 0 },
-    { id: "pulls", label: "Pull requests", icon: <GitPullRequest className="w-4 h-4" />, count: repoData?.pulls_count || 0 },
+    { id: "issues", label: "Issues", icon: <CircleDot className="w-4 h-4" />, count: repoIssues.length || repoData?.issues_count || 0 },
+    { id: "pulls", label: "Pull requests", icon: <GitPullRequest className="w-4 h-4" />, count: repoPRs.length || repoData?.pulls_count || 0 },
     { id: "agents", label: "Agents", icon: <Bot className="w-4 h-4" /> },
     { id: "actions", label: "Actions", icon: <PlayCircle className="w-4 h-4" /> },
     { id: "projects", label: "Projects", icon: <LayoutGrid className="w-4 h-4" /> },
@@ -405,20 +669,136 @@ const RepoDetails = () => {
             <div className="flex-1 lg:w-3/4 space-y-4 text-left">
               {/* Branch header & Controls */}
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] text-xs font-semibold hover:bg-[#ebedf0] dark:hover:bg-[#30363d] cursor-pointer">
-                    <GitBranch size={14} className="text-[#57606a] dark:text-[#8b949e]" />
-                    <span>main</span>
-                    <ChevronDown size={12} className="text-[#57606a] dark:text-[#8b949e]" />
+                <div className="flex items-center gap-2 relative">
+                  <div>
+                    <button
+                      onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] text-xs font-semibold hover:bg-[#ebedf0] dark:hover:bg-[#30363d] cursor-pointer text-[#1f2328] dark:text-[#c9d1d9] outline-none"
+                    >
+                      <GitBranch size={14} className="text-[#57606a] dark:text-[#8b949e]" />
+                      <span>{currentBranch}</span>
+                      <ChevronDown size={12} className="text-[#57606a] dark:text-[#8b949e]" />
+                    </button>
+
+                    {isBranchDropdownOpen && (
+                      <div className="absolute left-0 mt-1 w-72 bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md shadow-lg z-30 overflow-hidden">
+                        <div className="p-3 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Switch branches/tags</span>
+                          <button
+                            onClick={() => setIsBranchDropdownOpen(false)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-white bg-transparent border-0 cursor-pointer text-xs font-semibold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div className="p-2 border-b border-[#d0d7de] dark:border-[#30363d] space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Filter branches/tags"
+                            value={branchFilterQuery}
+                            onChange={(e) => setBranchFilterQuery(e.target.value)}
+                            className="w-full px-2.5 py-1.5 bg-[#f6f8fa] dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded text-xs outline-none focus:border-[#58a6ff]"
+                          />
+                          <div className="flex border-b border-[#d0d7de] dark:border-[#30363d]">
+                            <button
+                              onClick={() => { setActiveSelectorTab("branches"); setBranchFilterQuery(""); }}
+                              className={`flex-1 pb-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${activeSelectorTab === "branches" ? "border-[#fd8c73] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
+                            >
+                              Branches
+                            </button>
+                            <button
+                              onClick={() => { setActiveSelectorTab("tags"); setBranchFilterQuery(""); }}
+                              className={`flex-1 pb-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${activeSelectorTab === "tags" ? "border-[#fd8c73] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
+                            >
+                              Tags
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="max-h-48 overflow-y-auto divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+                          {activeSelectorTab === "branches" ? (
+                            branches
+                              .filter(b => b.toLowerCase().includes(branchFilterQuery.toLowerCase()))
+                              .map(b => (
+                                <button
+                                  key={b}
+                                  onClick={() => { setCurrentBranch(b); setIsBranchDropdownOpen(false); }}
+                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] flex items-center justify-between border-0 bg-transparent cursor-pointer ${b === currentBranch ? "font-bold text-[#1f2328] dark:text-white" : "text-[#57606a] dark:text-[#8b949e]"}`}
+                                >
+                                  <span>{b}</span>
+                                  {b === currentBranch && <Check size={12} className="text-[#0969da]" />}
+                                </button>
+                              ))
+                          ) : (
+                            tags.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-gray-500">No tags found</div>
+                            ) : (
+                              tags
+                                .filter(t => t.toLowerCase().includes(branchFilterQuery.toLowerCase()))
+                                .map(t => (
+                                  <button
+                                    key={t}
+                                    onClick={() => { setCurrentBranch(t); setIsBranchDropdownOpen(false); }}
+                                    className={`w-full text-left px-3 py-2 text-xs hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] flex items-center justify-between border-0 bg-transparent cursor-pointer ${t === currentBranch ? "font-bold text-[#1f2328] dark:text-white" : "text-[#57606a] dark:text-[#8b949e]"}`}
+                                  >
+                                    <span>{t}</span>
+                                    {t === currentBranch && <Check size={12} className="text-[#0969da]" />}
+                                  </button>
+                                ))
+                            )
+                          )}
+                        </div>
+
+                        <div className="p-3 bg-[#f6f8fa] dark:bg-[#161b22] border-t border-[#d0d7de] dark:border-[#30363d]">
+                          {activeSelectorTab === "branches" ? (
+                            <form onSubmit={handleCreateBranch} className="flex gap-2">
+                              <input
+                                type="text"
+                                required
+                                placeholder="New branch name"
+                                value={newBranchInput}
+                                onChange={(e) => setNewBranchInput(e.target.value)}
+                                className="flex-1 px-2 py-1 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded text-[11px] outline-none"
+                              />
+                              <button
+                                type="submit"
+                                className="px-2 py-1 bg-[#238636] hover:bg-[#2ea043] text-white text-[11px] font-semibold rounded cursor-pointer border-0"
+                              >
+                                Create
+                              </button>
+                            </form>
+                          ) : (
+                            <form onSubmit={handleCreateTag} className="flex gap-2">
+                              <input
+                                type="text"
+                                required
+                                placeholder="New tag name"
+                                value={newTagInput}
+                                onChange={(e) => setNewTagInput(e.target.value)}
+                                className="flex-1 px-2 py-1 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded text-[11px] outline-none"
+                              />
+                              <button
+                                type="submit"
+                                className="px-2 py-1 bg-[#238636] hover:bg-[#2ea043] text-white text-[11px] font-semibold rounded cursor-pointer border-0"
+                              >
+                                Create
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                   <div className="flex items-center gap-3 text-xs text-[#57606a] dark:text-[#8b949e] font-semibold ml-2">
                     <span className="flex items-center gap-1">
                       <GitBranch size={13} />
-                      1 Branch
+                      {branches.length} {branches.length === 1 ? 'Branch' : 'Branches'}
                     </span>
                     <span className="flex items-center gap-1">
                       <Tag size={13} />
-                      0 Tags
+                      {tags.length} {tags.length === 1 ? 'Tag' : 'Tags'}
                     </span>
                   </div>
                 </div>
@@ -731,6 +1111,330 @@ const RepoDetails = () => {
       ) : activeRepoTab === 'discussions' ? (
         <div className="py-4 sm:py-6">
           <DiscussionsTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+        </div>
+      ) : activeRepoTab === 'issues' ? (
+        <div className="py-4 space-y-4 max-w-4xl text-left">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md px-3 py-1.5 bg-[#f6f8fa] dark:bg-[#161b22] w-full max-w-md">
+              <Search size={16} className="text-[#57606a] dark:text-[#8b949e]" />
+              <input
+                type="text"
+                placeholder="Search all issues"
+                value={issuesSearchQuery}
+                onChange={(e) => setIssuesSearchQuery(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs w-full text-[#1f2328] dark:text-white"
+              />
+            </div>
+            <button
+              onClick={() => setIsCreatingIssue(!isCreatingIssue)}
+              className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+            >
+              {isCreatingIssue ? "Cancel" : "New issue"}
+            </button>
+          </div>
+
+          {isCreatingIssue && (
+            <form onSubmit={handleCreateIssue} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3">
+              <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Create a new issue</h3>
+              <div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Title"
+                  value={newIssueTitle}
+                  onChange={(e) => setNewIssueTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                />
+              </div>
+              <div>
+                <textarea
+                  placeholder="Leave a comment"
+                  rows={4}
+                  value={newIssueDesc}
+                  onChange={(e) => setNewIssueDesc(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                >
+                  Submit new issue
+                </button>
+              </div>
+            </form>
+          )}
+
+          {issuesLoading ? (
+            <div className="text-center py-8 text-xs text-[#57606a]">Loading issues...</div>
+          ) : (
+            <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+              <div className="px-4 py-3 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIssuesFilter("all")}
+                    className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'all' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
+                  >
+                    All Issues
+                  </button>
+                  <button
+                    onClick={() => setIssuesFilter("open")}
+                    className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'open' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
+                  >
+                    Open
+                  </button>
+                  <button
+                    onClick={() => setIssuesFilter("closed")}
+                    className={`hover:text-[#1f2328] dark:hover:text-white font-medium cursor-pointer bg-transparent border-0 ${issuesFilter === 'closed' ? 'text-[#1f2328] dark:text-white font-bold' : 'text-[#57606a] dark:text-[#8b949e]'}`}
+                  >
+                    Closed
+                  </button>
+                </div>
+              </div>
+
+              <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+                {repoIssues
+                  .filter(i => {
+                    if (issuesFilter === 'open') return i.status === 'open';
+                    if (issuesFilter === 'closed') return i.status === 'closed';
+                    return true;
+                  })
+                  .filter(i => i.title.toLowerCase().includes(issuesSearchQuery.toLowerCase()))
+                  .map(issue => (
+                    <div key={issue.id} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-start gap-2.5 text-left transition-colors">
+                      <CircleDot size={16} className={`mt-0.5 shrink-0 ${issue.status === 'open' ? 'text-[#3fb950]' : 'text-[#a371f7]'}`} />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer">{issue.title}</span>
+                        <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
+                          #{issue.number} opened {issue.updated} by <span className="font-medium text-[#24292f] dark:text-[#c9d1d9]">{issue.author}</span>
+                        </p>
+                        {issue.description && (
+                          <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2 bg-[#f6f8fa] dark:bg-[#0d1117] p-2 rounded-md font-mono max-h-24 overflow-y-auto">
+                            {issue.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {repoIssues.length === 0 && (
+                  <div className="p-8 text-center text-[#57606a] dark:text-[#8b949e] text-xs">
+                    No issues found matching your filters.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : activeRepoTab === 'pulls' ? (
+        <div className="py-4 space-y-4 max-w-4xl text-left">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Pull Requests</h3>
+            <button
+              onClick={() => setIsCreatingPR(!isCreatingPR)}
+              className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+            >
+              {isCreatingPR ? "Cancel" : "New pull request"}
+            </button>
+          </div>
+
+          {isCreatingPR && (
+            <form onSubmit={handleCreatePR} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3">
+              <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Open a new Pull Request</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Source Branch</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPrSource}
+                    onChange={(e) => setNewPrSource(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Target Branch</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPrTarget}
+                    onChange={(e) => setNewPrTarget(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Pull request title"
+                  value={newPrTitle}
+                  onChange={(e) => setNewPrTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                />
+              </div>
+              <div>
+                <textarea
+                  placeholder="Describe your changes..."
+                  rows={3}
+                  value={newPrDesc}
+                  onChange={(e) => setNewPrDesc(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff]"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                >
+                  Create pull request
+                </button>
+              </div>
+            </form>
+          )}
+
+          {prsLoading ? (
+            <div className="text-center py-8 text-xs text-[#57606a]">Loading pull requests...</div>
+          ) : (
+            <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+              <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+                {repoPRs.map(pr => (
+                  <div key={pr._id || pr.id} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 text-left transition-colors">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <GitPullRequest size={16} className={`mt-0.5 shrink-0 ${pr.status === 'merged' ? 'text-[#a371f7]' : pr.status === 'closed' ? 'text-[#cf222e]' : 'text-[#3fb950]'}`} />
+                      <div className="min-w-0">
+                        <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer">{pr.title}</span>
+                        <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
+                          from <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{pr.sourceBranch}</span> into <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{pr.targetBranch}</span> by <span className="font-medium">{pr.author?.login || 'unknown'}</span>
+                        </p>
+                        {pr.description && <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1 italic truncate">{pr.description}</p>}
+                      </div>
+                    </div>
+                    {pr.status === 'open' && isOwner && (
+                      <button
+                        onClick={() => handleMergePR(pr._id || pr.id)}
+                        className="px-3 py-1 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0 shrink-0"
+                      >
+                        Merge PR
+                      </button>
+                    )}
+                    {pr.status === 'merged' && (
+                      <span className="px-2 py-0.5 bg-[#a371f7]/10 text-[#a371f7] text-[10px] font-semibold border border-[#a371f7]/30 rounded-full shrink-0">
+                        Merged
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {repoPRs.length === 0 && (
+                  <div className="p-8 text-center text-[#57606a] dark:text-[#8b949e] text-xs">
+                    No pull requests created yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : activeRepoTab === 'settings' ? (
+        <div className="py-4 max-w-2xl text-left space-y-6">
+          <form onSubmit={handleSaveSettings} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-6 bg-white dark:bg-[#161b22] space-y-4">
+            <h3 className="text-base font-semibold text-[#1f2328] dark:text-white border-b border-[#d0d7de] dark:border-[#30363d] pb-2">Repository Settings</h3>
+            {settingsMessage.text && (
+              <div className={`p-3 text-xs rounded-md border ${settingsMessage.type === 'success' ? 'bg-[#3fb950]/10 border-[#3fb950]/30 text-[#3fb950]' : 'bg-[#f85149]/10 border-[#f85149]/30 text-[#f85149]'}`}>
+                {settingsMessage.text}
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-[#1f2328] dark:text-white">Repository Name</label>
+              <input
+                type="text"
+                required
+                value={editRepoName}
+                onChange={(e) => setEditRepoName(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-[#1f2328] dark:text-white">Description</label>
+              <textarea
+                value={editRepoDesc}
+                onChange={(e) => setEditRepoDesc(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-[#1f2328] dark:text-white">Visibility</label>
+              <select
+                value={editRepoVisibility}
+                onChange={(e) => setEditRepoVisibility(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
+              >
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={settingsSaving}
+                className="px-4 py-2 bg-[#238636] hover:bg-[#2ea043] disabled:opacity-50 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+              >
+                {settingsSaving ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </form>
+
+          <div className="border border-[#f85149]/30 rounded-md p-6 bg-white dark:bg-[#161b22] space-y-4">
+            <h3 className="text-base font-semibold text-[#f85149] border-b border-[#f85149]/20 pb-2">Danger Zone</h3>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Delete this repository</h4>
+                <p className="text-[11px] text-[#57606a] dark:text-[#8b949e] mt-0.5">Once you delete a repository, there is no going back. Please be certain.</p>
+              </div>
+              <button
+                onClick={handleDeleteRepo}
+                className="px-3 py-2 bg-[#f85149] hover:bg-[#da3633] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+              >
+                Delete this repository
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : activeRepoTab === 'commits' ? (
+        <div className="py-4 max-w-4xl text-left space-y-4">
+          <h3 className="text-sm font-semibold text-[#1f2328] dark:text-white">Commit History</h3>
+          <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+            <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
+              {commitsList.map((commit, idx) => (
+                <div key={idx} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 transition-colors">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <img
+                      src={commit.avatar_url}
+                      alt="author avatar"
+                      className="w-8 h-8 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
+                    />
+                    <div className="min-w-0">
+                      <span
+                        onClick={() => setActiveCommitDiff(commit)}
+                        className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer block truncate"
+                      >
+                        {commit.message}
+                      </span>
+                      <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
+                        <span className="font-semibold text-[#24292f] dark:text-white">{commit.author}</span> committed {commit.date}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveCommitDiff(commit)}
+                    className="font-mono text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-[#f6f8fa] dark:bg-[#21262d] px-2.5 py-1 rounded border border-[#d0d7de] dark:border-[#30363d] cursor-pointer"
+                  >
+                    {commit.hash}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
