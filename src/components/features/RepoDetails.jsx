@@ -920,52 +920,52 @@ const RepoDetails = () => {
                 </div>
               </div>
 
-              {/* Commit Strip (GitHub Style) */}
-              <div className="bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-3 flex items-center justify-between text-xs text-[#57606a] dark:text-[#8b949e]">
-                <div className="flex items-center gap-2 min-w-0">
-                  <img
-                    src={commitsList[0]?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4"}
-                    alt="avatar"
-                    className="w-5 h-5 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
-                  />
-                  <span className="font-semibold text-[#1f2328] dark:text-white shrink-0">{commitsList[0]?.author}</span>
-                  <span 
-                    onClick={() => setActiveCommitDiff(commitsList[0])}
-                    className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline cursor-pointer font-medium truncate"
-                  >
-                    {commitsList[0]?.message}
-                  </span>
-                  <Check size={14} className="text-[#3fb950] shrink-0 ml-1" />
-                </div>
-                <div className="flex items-center gap-3 shrink-0 ml-2">
-                  <span>{commitsList[0]?.date}</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
+              {/* Files Box Panel (Merged Commit Strip + Table List) */}
+              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22] mb-4">
+                {/* Commit Strip Header */}
+                <div className="bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] p-3 flex items-center justify-between text-xs text-[#57606a] dark:text-[#8b949e]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <img
+                      src={commitsList[0]?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4"}
+                      alt="avatar"
+                      className="w-5 h-5 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
+                    />
+                    <span className="font-semibold text-[#1f2328] dark:text-white shrink-0">{commitsList[0]?.author}</span>
+                    <span 
                       onClick={() => setActiveCommitDiff(commitsList[0])}
-                      className="font-mono text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer text-xs"
+                      className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline cursor-pointer font-medium truncate"
                     >
-                      {commitsList[0]?.hash}
-                    </button>
-                    <span className="text-[#d0d7de] dark:text-[#30363d]">|</span>
-                    <span className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]">
-                      <span className="inline-flex items-center gap-1">
-                        <History size={12} />
-                        <strong>{repo.toLowerCase() === 'github' ? 162 : commitsList.length}</strong> commits
-                      </span>
+                      {commitsList[0]?.message}
                     </span>
+                    <Check size={14} className="text-[#3fb950] shrink-0 ml-1" />
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <span>{commitsList[0]?.date}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setActiveCommitDiff(commitsList[0])}
+                        className="font-mono text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer text-xs"
+                      >
+                        {commitsList[0]?.hash}
+                      </button>
+                      <span className="text-[#d0d7de] dark:text-[#30363d]">|</span>
+                      <span className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]">
+                        <span className="inline-flex items-center gap-1">
+                          <History size={12} />
+                          <strong>{repo.toLowerCase() === 'github' ? 162 : commitsList.length}</strong> commits
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Breadcrumbs for nested subfolders */}
-              {currentPath && (
-                <div className="px-1.5 py-1.5 bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md">
-                  {renderBreadcrumbs()}
-                </div>
-              )}
+                {/* Breadcrumbs for nested subfolders */}
+                {currentPath && (
+                  <div className="px-4 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d]">
+                    {renderBreadcrumbs()}
+                  </div>
+                )}
 
-              {/* Files Table List */}
-              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
                 <table className="w-full text-left text-xs border-collapse">
                   <tbody>
                     {currentPath && (
