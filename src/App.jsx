@@ -16,6 +16,8 @@ const Repositories  = lazy(() => import("@features/tabs/Repositories"));
 const Stars         = lazy(() => import("@features/tabs/Stars"));
 const Followers     = lazy(() => import("@features/tabs/Followers"));
 const Following     = lazy(() => import("@features/tabs/Following"));
+const ProjectsTab   = lazy(() => import("@features/tabs/Projects"));
+const PackagesTab   = lazy(() => import("@features/tabs/Packages"));
 const RepoDetails   = lazy(() => import("@features/RepoDetails"));
 const NewRepoPage   = lazy(() => import("@features/NewRepoPage"));
 
@@ -206,6 +208,8 @@ const AppContent = () => {
           <Route path="/:username" element={<ProfileLayout />}>
             <Route index               element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
+            <Route path="projects"     element={<ProjectsTab />} />
+            <Route path="packages"     element={<PackagesTab />} />
             <Route path="stars"        element={<Stars />} />
             <Route path="followers"    element={<NavigateToQuery tab="followers" />} />
             <Route path="following"    element={<NavigateToQuery tab="following" />} />

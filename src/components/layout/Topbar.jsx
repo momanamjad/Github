@@ -13,10 +13,14 @@ const IconButton = ({ children, label, onClick }) => (
     className="
       flex items-center justify-center
       w-8 h-8
-      text-[#59636e]
+      text-[#57606a]
+      dark:text-[#8b949e]
       border
-      border-[#C8D1DA]
-      hover:bg-[#D1D9E0]
+      border-[#d0d7de]
+      dark:border-[#30363d]
+      hover:bg-[#eaeef2]
+      dark:hover:bg-[#30363d]
+      bg-transparent
       rounded-[9px]
       transition-colors
       cursor-pointer
@@ -27,7 +31,7 @@ const IconButton = ({ children, label, onClick }) => (
   </button>
 );
 
-const Divider = () => <div className="w-px h-6 bg-[#d1d9e0] mx-1 lg:mx-2" />;
+const Divider = () => <div className="w-px h-6 bg-[#d0d7de] dark:bg-[#30363d] mx-1 lg:mx-2" />;
 
 const TopBarActions = () => {
   const navigate = useNavigate();

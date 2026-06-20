@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
-  Users,
-  BookOpen,
-  GitFork,
-  Settings,
-  Plus,
-} from "lucide-react";
+  PeopleIcon,
+  BookIcon,
+  RepoForkedIcon,
+  GearIcon,
+  PlusIcon,
+} from "@primer/octicons-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { useGitHub } from "@/contexts/GitHubContext";
 import { useSearchParams } from "react-router-dom";
@@ -111,7 +111,7 @@ export default function Repositories() {
   }, [repositories, activeTab, searchQuery, filterType, filterLanguage, sortOrder, user]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] transition-colors">
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -119,21 +119,21 @@ export default function Repositories() {
           <div className="w-full lg:w-64 flex-shrink-0">
             <nav className="space-y-1">
               {[
-                { id: "my-repositories", label: "My repositories", icon: BookOpen },
-                { id: "my-contributions", label: "My contributions", icon: Users },
-                { id: "my-forks", label: "My forks", icon: GitFork },
-                { id: "admin-access", label: "Admin access", icon: Settings },
+                { id: "my-repositories", label: "My repositories", icon: BookIcon },
+                { id: "my-contributions", label: "My contributions", icon: PeopleIcon },
+                { id: "my-forks", label: "My forks", icon: RepoForkedIcon },
+                { id: "admin-access", label: "Admin access", icon: GearIcon },
               ].map((tab) => (
-                <div key={tab.id} className={`relative transition-all ${activeTab === tab.id ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
+                <div key={tab.id} className={`relative transition-all ${activeTab === tab.id ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-[#f78166] before:rounded-r-md" : ""}`}>
                   <button
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md ${
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all rounded-md border-0 cursor-pointer ${
                       activeTab === tab.id
-                        ? "bg-[#ECEEF0] text-[#24292f] font-medium"
-                        : "text-[#57606a] hover:bg-[#f6f8fa]"
+                        ? "bg-[#ECEEF0] dark:bg-[#21262d] text-[#24292f] dark:text-white font-medium"
+                        : "text-[#57606a] dark:text-[#8b949e] hover:bg-[#f6f8fa] dark:hover:bg-[#161b22]"
                     }`}
                   >
-                    <tab.icon className="w-4 h-4" />
+                    <tab.icon size={16} />
                     <span>{tab.label}</span>
                   </button>
                 </div>
@@ -142,9 +142,9 @@ export default function Repositories() {
               {/* Views Section */}
               <div className="pt-6">
                 <div className="flex items-center justify-between px-3 mb-2">
-                  <span className="text-sm font-medium text-gray-700">Views</span>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-[#8b949e]">Views</span>
+                  <button className="text-gray-400 dark:text-[#8b949e] hover:text-gray-600 dark:hover:text-gray-300 border-0 bg-transparent cursor-pointer">
+                    <PlusIcon size={16} />
                   </button>
                 </div>
               </div>
@@ -155,7 +155,7 @@ export default function Repositories() {
           <div className="flex-1">
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl font-semibold text-gray-900">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {activeTab === "my-contributions" && "My contributions"}
                 {activeTab === "my-repositories" && "My repositories"}
                 {activeTab === "my-forks" && "My forks"}
@@ -177,9 +177,9 @@ export default function Repositories() {
             />
 
             {/* Repository Count */}
-            <div className="py-2 border-b border-gray-200 mb-4">
-              <p className="text-sm text-gray-600">
-                <span className="font-semibold text-gray-900">{filteredRepositories.length}</span> repositories
+            <div className="py-2 border-b border-gray-200 dark:border-[#30363d] mb-4">
+              <p className="text-sm text-gray-600 dark:text-[#8b949e]">
+                <span className="font-semibold text-gray-900 dark:text-white">{filteredRepositories.length}</span> repositories
               </p>
             </div>
 
@@ -203,15 +203,15 @@ export default function Repositories() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 mt-16">
+      <footer className="border-t border-gray-200 dark:border-[#30363d] mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-600">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#57606a] dark:text-[#8b949e]">
             <div className="flex items-center gap-2">
               <FooterGithubIcon className="w-6 h-6" />
               <span>© 2026 GitHub, Inc.</span>
             </div>
             {["Terms", "Privacy", "Security", "Status", "Community", "Docs", "Contact", "Manage cookies", "Do not share my personal information"].map(item => (
-              <a key={item} href="#" className="hover:text-blue-600 hover:underline">
+              <a key={item} href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 {item}
               </a>
             ))}

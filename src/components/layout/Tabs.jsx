@@ -86,7 +86,7 @@ const Tabs = ({ username }) => {
         height={2}
         onLoaderFinished={() => setProgress(0)}
       />
-      <div className="px-2 sm:px-4 py-0 bg-[#F6F8FA] border-b border-[#d0d7de]">
+      <div className="px-2 sm:px-4 py-0 bg-[#F6F8FA] dark:bg-[#0d1117] border-b border-[#d0d7de] dark:border-[#30363d] transition-colors">
         <div className="mx-auto text-[14px]">
           {/* ── Desktop: all tabs inline ── */}
           <nav className="hidden sm:flex gap-2 -mb-px">
@@ -115,8 +115,8 @@ const Tabs = ({ username }) => {
             <div className="relative shrink-0 ml-auto flex flex-col justify-end pt-1 -mb-[1px]" ref={moreRef}>
               <button
                 onClick={() => setMoreOpen((prev) => !prev)}
-                className="flex items-center gap-1 px-3 py-1.5 mb-[3px] text-sm whitespace-nowrap transition-colors duration-200 cursor-pointer
-                  text-[#636c76] hover:bg-[#eaeef2] rounded-md"
+                className="flex items-center gap-1 px-3 py-1.5 mb-[3px] text-sm whitespace-nowrap transition-colors duration-200 cursor-pointer border-0 bg-transparent
+                  text-[#636c76] dark:text-[#8b949e] hover:bg-[#eaeef2] dark:hover:bg-[#21262d] rounded-md"
               >
                 <span>More</span>
                 <ChevronDownIcon
@@ -130,11 +130,11 @@ const Tabs = ({ username }) => {
                     className="fixed inset-0 z-40"
                     onClick={() => setMoreOpen(false)}
                   />
-                  <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-[#d0d7de] rounded-md shadow-lg z-50 py-1">
+                  <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md shadow-lg z-50 py-1">
                     {moreTabs.map((item) => {
                       const isActive =
-                        location.pathname === item.to ||
-                        location.pathname.startsWith(item.to + "/");
+                         location.pathname === item.to ||
+                         location.pathname.startsWith(item.to + "/");
                       return (
                         <button
                           key={item.label}
@@ -142,13 +142,13 @@ const Tabs = ({ username }) => {
                             navigate(item.to);
                             setMoreOpen(false);
                           }}
-                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm text-left hover:bg-[#f6f8fa] transition-colors cursor-pointer
-                            ${isActive ? "font-semibold text-[#1f2328]" : "text-[#1f2328]"}`}
+                          className={`w-full flex items-center gap-2 px-4 py-2 text-sm text-left hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] transition-colors cursor-pointer border-0 bg-transparent
+                            ${isActive ? "font-semibold text-[#1f2328] dark:text-white" : "text-[#1f2328] dark:text-[#c9d1d9]"}`}
                         >
                           {item.icon && <item.icon size={16} />}
                           <span>{item.label}</span>
                           {item.count > 0 && (
-                            <span className="bg-[#e8e8e8] text-[#636c76] text-[11px] font-medium px-[6px] py-[1px] rounded-full min-w-[20px] text-center">
+                            <span className="bg-[#e8e8e8] dark:bg-[#30363d] text-[#636c76] dark:text-[#8b949e] text-[11px] font-medium px-[6px] py-[1px] rounded-full min-w-[20px] text-center ml-auto">
                               {item.count}
                             </span>
                           )}
@@ -174,7 +174,7 @@ const Tab = ({ to, icon: Icon, label, end, count }) => {
       className={({ isActive }) =>
         `flex flex-col justify-end shrink-0 text-sm whitespace-nowrap pt-1 pb-0 -mb-[1px]
         ${isActive
-          ? "border-b-2 border-[#FD8C73]"
+          ? "border-b-2 border-[#f78166]"
           : ""
         }`
       }
@@ -182,13 +182,13 @@ const Tab = ({ to, icon: Icon, label, end, count }) => {
       {({ isActive }) => (
         <div
           className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-md mb-[3px] transition-colors duration-200
-            hover:bg-[#eaeef2]
-            ${isActive ? "font-semibold text-[#1f2328]" : "text-[#1f2328]"}`}
+            hover:bg-[#eaeef2] dark:hover:bg-[#21262d]
+            ${isActive ? "font-semibold text-[#1f2328] dark:text-white" : "text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white"}`}
         >
           {Icon && <span className="hidden sm:inline-flex"><Icon size={16} /></span>}
           <span>{label}</span>
           {count > 0 && (
-            <span className="bg-[#e8e8e8] text-[#636c76] text-[11px] font-medium px-[6px] py-[1px] rounded-full min-w-[20px] text-center">
+            <span className="bg-[#e8e8e8] dark:bg-[#30363d] text-[#636c76] dark:text-[#8b949e] text-[11px] font-medium px-[6px] py-[1px] rounded-full min-w-[20px] text-center">
               {count}
             </span>
           )}

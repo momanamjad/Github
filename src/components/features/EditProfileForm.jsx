@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, MapPin, Link as LinkIcon } from "lucide-react";
+import { Building2, MapPin, Link as LinkIcon, Camera } from "lucide-react";
+import { apiClient } from "../../services/apiClient";
 
 const timezones = [
   "(GMT-12:00) International Date Line West",
@@ -54,7 +55,33 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
       userProfile?.timezone || "(GMT-12:00) International Date Line West",
     website: userProfile?.website || "",
     socialLinks: userProfile?.socialLinks || ["", "", "", ""],
+    avatar: userProfile?.avatar || "/profile.webp",
   });
+
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("avatar", file);
+
+    try {
+      setUploading(true);
+      const res = await apiClient("/upload", {
+        method: "POST",
+        body: data,
+      });
+      if (res.success && res.url) {
+        handleInputChange("avatar", res.url);
+      }
+    } catch (err) {
+      alert("Failed to upload avatar: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -78,6 +105,40 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
 
   return (
     <div className="space-y-4 py-4 w-full">
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">Profile picture</Label>
+        <div className="flex items-center gap-4">
+          <div className="relative w-16 h-16 rounded-full overflow-hidden border border-[#d0d7de]">
+            <img src={formData.avatar} alt="Avatar Preview" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <input
+              type="file"
+              id="avatar-upload"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+              disabled={uploading}
+            />
+            <label htmlFor="avatar-upload">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="cursor-pointer"
+                disabled={uploading}
+                onClick={() =>
+                  document.getElementById("avatar-upload").click()
+                }
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                {uploading ? "Uploading..." : "Change picture"}
+              </Button>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-1">
         <Label htmlFor="name" className="text-sm font-semibold">
           Name

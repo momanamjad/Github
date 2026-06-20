@@ -16,17 +16,48 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
   const [showForm, setShowForm] = useState(false);
   const [issueTitle, setIssueTitle] = useState("");
   const [issueBody, setIssueBody] = useState("");
+  const [selectedLabels, setSelectedLabels] = useState([]);
+
+  const labelsOptions = [
+    { name: "bug", color: "bg-[#f85149] text-white", label: "Bug 🔴" },
+    { name: "enhancement", color: "bg-[#58a6ff] text-black", label: "Enhancement 🔵" },
+    { name: "documentation", color: "bg-[#57ab5a] text-white", label: "Documentation 🟢" },
+    { name: "duplicate", color: "bg-[#d3c6ff] text-black", label: "Duplicate 🟡" }
+  ];
 
   const handleSelectRepo = (repo) => {
     setSelectedRepo(repo);
   };
 
-  const handleBlankIssueClick = () => {
+  const handleTemplateClick = (templateType) => {
     if (!selectedRepo) {
       alert("Please select a repository first.");
       return;
     }
+    
+    if (templateType === "bug") {
+      setIssueTitle("[BUG] ");
+      setIssueBody("### Expected Behavior\n\n### Actual Behavior\n\n### Steps to Reproduce\n1.\n2.\n3.");
+      setSelectedLabels(["bug"]);
+    } else if (templateType === "feature") {
+      setIssueTitle("[FEATURE] ");
+      setIssueBody("### Pitch / Use Case\n\n### Proposed Solution\n\n### Additional Context");
+      setSelectedLabels(["enhancement"]);
+    } else {
+      setIssueTitle("");
+      setIssueBody("");
+      setSelectedLabels([]);
+    }
+    
     setShowForm(true);
+  };
+
+  const handleLabelToggle = (labelName) => {
+    if (selectedLabels.includes(labelName)) {
+      setSelectedLabels(prev => prev.filter(l => l !== labelName));
+    } else {
+      setSelectedLabels(prev => [...prev, labelName]);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -40,7 +71,7 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
         body: JSON.stringify({
           title: issueTitle,
           description: issueBody,
-          labels: []
+          labels: selectedLabels
         })
       });
 
@@ -54,8 +85,9 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
         status: res.data?.state || "open",
         author: activeUsername,
         updated: "Just now",
-        labels: res.data?.labels || [],
+        labels: res.data?.labels || selectedLabels,
         assignee: null,
+        description: issueBody
       };
 
       // Sync local storage as well for fallback consistency
@@ -95,18 +127,6 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
           </h3>
           <div className="flex gap-3">
             <button
-              data-component="IconButton"
-              type="button"
-              className="prc-Button-ButtonBase-9n-Xk CreateIssueDialogHeader-module__CopyToClipboardButton__kzd6gM7 prc-Button-IconButton-fyge7 bg-transparent border-0 text-gray-400 hover:text-gray-600 cursor-pointer"
-              data-loading="false"
-              data-no-visuals="true"
-              data-size="medium"
-              data-variant="invisible"
-              aria-labelledby="_r_1c_"
-            >
-              <CopyToClipboardIcon display="inline-block" overflow="visible" />
-            </button>
-            <button
               onClick={onClose}
               className="hover:bg-[#F3F4F6] dark:hover:bg-[#30363d] p-1.5 rounded-md text-[#59636E] dark:text-[#8b949e] transition-colors border-0 bg-transparent cursor-pointer"
             >
@@ -132,6 +152,32 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
               />
             </div>
 
+            {/* Labels Selection */}
+            <div>
+              <label className="block text-sm font-semibold text-[#1f2328] dark:text-white mb-1.5">
+                Labels
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {labelsOptions.map(opt => {
+                  const active = selectedLabels.includes(opt.name);
+                  return (
+                    <button
+                      key={opt.name}
+                      type="button"
+                      onClick={() => handleLabelToggle(opt.name)}
+                      className={`px-3 py-1 text-xs font-semibold rounded-full border cursor-pointer transition-all ${
+                        active 
+                          ? `${opt.color} border-transparent scale-105 shadow-sm` 
+                          : "bg-gray-100 dark:bg-[#21262d] text-[#57606a] dark:text-[#8b949e] border-[#d0d7de] dark:border-[#30363d]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="flex-1 flex flex-col">
               <label className="block text-sm font-semibold text-[#1f2328] dark:text-white mb-1.5">
                 Description
@@ -151,7 +197,7 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
                 onClick={() => setShowForm(false)}
                 className="px-4 py-2 border border-[#d0d7de] dark:border-[#30363d] text-xs font-semibold rounded-md transition-colors cursor-pointer bg-white dark:bg-[#21262d] text-[#1f2328] dark:text-[#c9d1d9] hover:bg-[#f6f8fa] dark:hover:bg-[#30363d]"
               >
-                Cancel
+                Back
               </button>
               <button
                 type="submit"
@@ -175,21 +221,46 @@ const OpenIssueModal = ({ onClose, username, onSubmit }) => {
                 onSelect={handleSelectRepo}
               />
             </div>
+            
             <div className="mt-4 text-sm border-y border-[#d0d7de] dark:border-[#30363d] bg-[#EFF2F5] dark:bg-[#161b22] text-gray-800 dark:text-white pt-2 pb-2 pl-4 pr-2">
-              Templates and forms
+              Issue Templates
             </div>
-            <div 
-              onClick={handleBlankIssueClick}
-              className="hover:bg-[#F3F4F6] dark:hover:bg-[#21262d] rounded-lg ml-2 mr-2 cursor-pointer transition-colors"
-            >
-              <div className="mt-1 flex gap-4 justify-between items-center p-4 pb-2">
-                <h1 className="text-lg font-semibold text-[#1f2328] dark:text-white">Blank Issue</h1>
-                <span id="_r_5r_--trailing-visual" className="flex-shrink-0 text-gray-400">
-                  <ArrowRightIcon display="inline-block" overflow="visible" />
-                </span>
+
+            <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d] px-2">
+              {/* Bug Report Template */}
+              <div 
+                onClick={() => handleTemplateClick("bug")}
+                className="hover:bg-[#F3F4F6] dark:hover:bg-[#21262d] rounded-lg cursor-pointer transition-colors p-4 flex justify-between items-center"
+              >
+                <div className="text-left">
+                  <h4 className="text-sm font-semibold text-[#f85149] dark:text-[#f85149]">Bug Report 🔴</h4>
+                  <p className="text-xs text-gray-500 dark:text-[#8b949e] mt-1">Report a software bug, error, or system defect.</p>
+                </div>
+                <ArrowRightIcon display="inline-block" overflow="visible" className="text-gray-400" />
               </div>
-              <div className="mb-2 pb-1 pl-4 text-sm text-gray-500 dark:text-[#8b949e]">
-                <p>Create a new issue from scratch</p>
+
+              {/* Feature Request Template */}
+              <div 
+                onClick={() => handleTemplateClick("feature")}
+                className="hover:bg-[#F3F4F6] dark:hover:bg-[#21262d] rounded-lg cursor-pointer transition-colors p-4 flex justify-between items-center"
+              >
+                <div className="text-left">
+                  <h4 className="text-sm font-semibold text-[#58a6ff] dark:text-[#58a6ff]">Feature Request 🔵</h4>
+                  <p className="text-xs text-gray-500 dark:text-[#8b949e] mt-1">Propose a new feature, improvement, or idea.</p>
+                </div>
+                <ArrowRightIcon display="inline-block" overflow="visible" className="text-gray-400" />
+              </div>
+
+              {/* Blank Issue */}
+              <div 
+                onClick={() => handleTemplateClick("blank")}
+                className="hover:bg-[#F3F4F6] dark:hover:bg-[#21262d] rounded-lg cursor-pointer transition-colors p-4 flex justify-between items-center"
+              >
+                <div className="text-left">
+                  <h4 className="text-sm font-semibold text-[#1f2328] dark:text-white">Blank Issue</h4>
+                  <p className="text-xs text-gray-500 dark:text-[#8b949e] mt-1">Create a new issue from scratch.</p>
+                </div>
+                <ArrowRightIcon display="inline-block" overflow="visible" className="text-gray-400" />
               </div>
             </div>
           </div>

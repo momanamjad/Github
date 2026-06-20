@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Search, ChevronDown, Check, Tag, User } from "lucide-react";
+import { PlusIcon, SearchIcon, ChevronDownIcon, CheckIcon, TagIcon, PersonIcon } from "@primer/octicons-react";
 import FilterModal from "../components/FilterModal";
 import { useGitHub } from "../contexts/GitHubContext";
 import { apiClient } from "@/services/apiClient";
@@ -67,6 +67,10 @@ export default function GitHubIssues() {
     window.addEventListener("github_clone_issues_updated", handleIssuesUpdate);
     return () => window.removeEventListener("github_clone_issues_updated", handleIssuesUpdate);
   }, [repositories]);
+
+  const handleCreateIssue = (newlyCreated) => {
+    fetchBackendIssues();
+  };
 
   const tabs = [
     { id: "assigned", label: "Assigned to me", icon: "user" },
@@ -237,7 +241,7 @@ export default function GitHubIssues() {
                   Views
                 </h3>
                 <button className="text-[#57606a] dark:text-[#8b949e] hover:text-[#24292f] dark:hover:text-white">
-                  <Plus className="w-4 h-4" />
+                  <PlusIcon size={16} />
                 </button>
               </div>
               <div className="space-y-1">
@@ -379,7 +383,7 @@ export default function GitHubIssues() {
                               className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] flex items-center justify-between text-[#1f2328] dark:text-[#c9d1d9] bg-transparent border-0 cursor-pointer"
                             >
                               <span>{user}</span>
-                              {selectedIssue.assignee === user && <Check className="w-3.5 h-3.5 text-[#0969da] dark:text-[#58a6ff]" />}
+                              {selectedIssue.assignee === user && <CheckIcon size={14} className="text-[#0969da] dark:text-[#58a6ff]" />}
                             </button>
                           ))}
                         </div>
@@ -426,7 +430,7 @@ export default function GitHubIssues() {
                               className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] flex items-center justify-between text-[#1f2328] dark:text-[#c9d1d9] bg-transparent border-0 cursor-pointer"
                             >
                               <span>{label}</span>
-                              {selectedIssue.labels.includes(label) && <Check className="w-3.5 h-3.5 text-[#0969da] dark:text-[#58a6ff]" />}
+                              {selectedIssue.labels.includes(label) && <CheckIcon size={14} className="text-[#0969da] dark:text-[#58a6ff]" />}
                             </button>
                           ))}
                         </div>
@@ -460,7 +464,7 @@ export default function GitHubIssues() {
                       placeholder="Search all issues..."
                     />
                     <button className="px-3 py-2 hover:bg-[#D1D9E0] dark:hover:bg-[#30363d] bg-[#EFF2F5] dark:bg-[#161b22] border-l border-[#d0d7de] dark:border-[#30363d] rounded-r-md transition-colors border-y-0 border-r-0 cursor-pointer">
-                      <Search className="w-5 h-5 text-[#57606a] dark:text-[#8b949e]" />
+                      <SearchIcon size={16} className="text-[#57606a] dark:text-[#8b949e]" />
                     </button>
                   </div>
                 </div>
@@ -474,7 +478,7 @@ export default function GitHubIssues() {
                       <button className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors bg-transparent border-0 cursor-pointer text-[#24292f] dark:text-white">
                         <IssuesVariantIcon className="w-4 h-4" />
                         <span>Updated</span>
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDownIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                       </button>
                     </div>
                   </div>

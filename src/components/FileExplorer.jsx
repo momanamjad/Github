@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Folder,
-  FolderOpen,
-  File as FileIcon,
-  FilePlus,
-  FolderPlus,
-  Pencil,
-  Trash2,
-  Check,
-  X,
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
+  FileDirectoryFillIcon,
+  FileIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  CheckIcon,
+  XIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+} from "@primer/octicons-react";
 import { addNode, moveNode, deleteNode } from "@services/fileSystemService.js";
 
 const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
@@ -124,10 +122,10 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
               style={{ paddingLeft }}
             >
               <span onClick={() => toggle(fullPath)} className="shrink-0 text-[#636c76] dark:text-[#8b949e]">
-                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                {isOpen ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
               </span>
               <span className="shrink-0 text-[#54aeff]">
-                {isOpen ? <FolderOpen size={16} /> : <Folder size={16} />}
+                <FileDirectoryFillIcon size={16} />
               </span>
 
               {isRenaming ? (
@@ -162,7 +160,7 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                       setInlineCreate({ parentPath: fullPath, type: "file" });
                     }}
                   >
-                    <FilePlus size={14} />
+                    <PlusIcon size={14} />
                   </ActionBtn>
                   <ActionBtn
                     title="New folder"
@@ -171,13 +169,13 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
                       setInlineCreate({ parentPath: fullPath, type: "dir" });
                     }}
                   >
-                    <FolderPlus size={14} />
+                    <PlusIcon size={14} />
                   </ActionBtn>
                   <ActionBtn title="Rename" onClick={() => startRename(fullPath, node.name)}>
-                    <Pencil size={13} />
+                    <PencilIcon size={13} />
                   </ActionBtn>
                   <ActionBtn title="Delete" onClick={() => removeNode(fullPath, node.name)} variant="danger">
-                    <Trash2 size={13} />
+                    <TrashIcon size={13} />
                   </ActionBtn>
                 </div>
               )}
@@ -238,10 +236,10 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
           {!isRenaming && (
             <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-auto">
               <ActionBtn title="Rename" onClick={() => startRename(fullPath, node.name)}>
-                <Pencil size={13} />
+                <PencilIcon size={13} />
               </ActionBtn>
               <ActionBtn title="Delete" onClick={() => removeNode(fullPath, node.name)} variant="danger">
-                <Trash2 size={13} />
+                <TrashIcon size={13} />
               </ActionBtn>
             </div>
           )}
@@ -258,13 +256,13 @@ const FileExplorer = ({ repoId, tree, onSelect, refreshTree }) => {
           onClick={() => setInlineCreate({ parentPath: "", type: "file" })}
           className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] dark:text-[#c9d1d9] bg-white dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-[#f3f4f6] dark:hover:bg-[#30363d] transition-colors cursor-pointer"
         >
-          <FilePlus size={14} /> File
+          <PlusIcon size={14} /> File
         </button>
         <button
           onClick={() => setInlineCreate({ parentPath: "", type: "dir" })}
           className="flex items-center gap-1.5 px-2 py-1 text-[12px] text-[#24292f] dark:text-[#c9d1d9] bg-white dark:bg-[#21262d] border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-[#f3f4f6] dark:hover:bg-[#30363d] transition-colors cursor-pointer"
         >
-          <FolderPlus size={14} /> Folder
+          <PlusIcon size={14} /> Folder
         </button>
       </div>
 
@@ -321,7 +319,7 @@ const InlineInput = React.forwardRef(({ type, depth, onCommit, onCancel }, ref) 
     >
       <span className="shrink-0 w-[14px]" />
       <span className="shrink-0 text-[#636c76] dark:text-[#8b949e]">
-        {type === "dir" ? <Folder size={16} /> : <FileIcon size={16} />}
+        {type === "dir" ? <FileDirectoryFillIcon size={16} /> : <FileIcon size={16} />}
       </span>
       <input
         ref={ref}

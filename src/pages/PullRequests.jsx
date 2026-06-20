@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Check } from 'lucide-react';
+import { SearchIcon, CheckIcon } from '@primer/octicons-react';
 import { useGitHub } from "../contexts/GitHubContext";
 import { apiClient } from "../services/apiClient";
 import StatusOpenIcon from "../components/ui/icons/StatusOpenIcon";
@@ -98,7 +98,7 @@ const PullRequests = () => {
         setPullRequests(formatted);
       }
     } catch (err) {
-      console.error("Failed to fetch PRs:", err);
+      console.error(err);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -107,7 +107,18 @@ const PullRequests = () => {
 
   useEffect(() => {
     fetchAllPRs();
-  }, [user, repositories]);
+  }, [repositories, user]);
+
+  useEffect(() => {
+    const handlePRUpdate = () => {
+      isFetchingRef.current = false;
+      fetchAllPRs();
+    };
+    window.addEventListener("github_clone_pulls_updated", handlePRUpdate);
+    return () => window.removeEventListener("github_clone_pulls_updated", handlePRUpdate);
+  }, [repositories, user]);
+
+  const activePRs = pullRequests.length > 0 ? pullRequests : defaultPullRequests;
 
   const handleCreatePR = async (e) => {
     e.preventDefault();
@@ -168,7 +179,7 @@ const PullRequests = () => {
     }
   };
 
-  const filteredPullRequests = pullRequests.filter(pr => {
+  const filteredPullRequests = activePRs.filter(pr => {
     // Apply tab filters
     if (selectedTab === "Created") {
       if (pr.author !== user?.login) return false;
@@ -216,7 +227,7 @@ const PullRequests = () => {
                 className="w-full bg-[#F6F8FA] text-[#59636e] border border-github-border rounded-md py-2 pl-8 pr-3 text-sm focus:outline-none focus:border-[#2f81f7] focus:ring-1 focus:ring-[#2f81f7]"
                 placeholder="Search pull requests..."
               />
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#848d97]" />
+              <SearchIcon size={16} className="absolute left-2.5 top-3 text-[#848d97]" />
             </div>
             {user && (
               <button
@@ -239,7 +250,7 @@ const PullRequests = () => {
             <StatusOpenIcon className="w-4 h-4 text-github-text" />
             <span className="text-github-text">{filteredPullRequests.length} Results</span>
             <div className="flex gap-3">
-              <Check className="w-4 h-4 text-github-muted" />
+              <CheckIcon size={16} className="text-github-muted mt-0.5" />
               <span className="text-github-muted">
                 {
                   filteredPullRequests.filter(

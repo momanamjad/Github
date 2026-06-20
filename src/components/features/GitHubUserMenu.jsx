@@ -207,8 +207,12 @@ const GitHubUserMenu = () => {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm transition-opacity group-hover:opacity-80 cursor-pointer">
-          {username.substring(0, 2).toUpperCase()}
+        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#d0d7de] dark:border-[#30363d] flex items-center justify-center bg-gray-100 flex-shrink-0 transition-opacity group-hover:opacity-80 cursor-pointer">
+          <img
+            src={user.avatar_url || "/profile.webp"}
+            alt={username}
+            className="w-full h-full object-cover"
+          />
         </div>
       </button>
 
@@ -222,8 +226,12 @@ const GitHubUserMenu = () => {
 
           {/* User Profile Header */}
           <div className="flex items-center gap-3 p-4 border-b border-github-border bg-white relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold text-base flex-shrink-0">
-              {username.substring(0, 2).toUpperCase()}
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d0d7de] dark:border-[#30363d] flex items-center justify-center bg-gray-100 flex-shrink-0">
+              <img
+                src={user.avatar_url || "/profile.webp"}
+                alt={username}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-github-text font-semibold text-[14px]">{username}</div>

@@ -7,8 +7,33 @@ import { getStoredRepositories } from "@services/storageService.js";
 import FileEditor from "@components/FileEditor.jsx";
 import { useGitHub } from "@contexts/GitHubContext";
 import DiscussionsTab from "./tabs/DiscussionsTab";
-import ReactMarkdown from "react-markdown";
-import { Folder, File as FileIcon, GitBranch, Tag, ChevronDown, BookOpen, Pencil, List, History, Settings, ExternalLink, Shield, Info, BarChart2, PlayCircle, Bot, CircleDot, GitPullRequest, LayoutGrid, Check } from "lucide-react";
+import ProjectsTab from "./tabs/ProjectsTab";
+import ActionsTab from "./tabs/ActionsTab";
+import MarkdownRenderer from "../common/MarkdownRenderer";
+import {
+  FileDirectoryFillIcon,
+  FileIcon,
+  GitBranchIcon,
+  TagIcon,
+  ChevronDownIcon,
+  BookIcon,
+  PencilIcon,
+  HistoryIcon,
+  GearIcon,
+  LinkExternalIcon,
+  ShieldIcon,
+  GraphIcon,
+  PlayIcon,
+  HubotIcon,
+  IssueOpenedIcon,
+  GitPullRequestIcon,
+  ProjectIcon,
+  CheckIcon,
+  CommentDiscussionIcon,
+  CodeIcon,
+  ListUnorderedIcon,
+  SearchIcon
+} from "@primer/octicons-react";
 import { apiClient } from "@services/apiClient.js";
 
 
@@ -63,10 +88,11 @@ const formatGitHubDate = (dateString) => {
 const RepoDetails = () => {
   const { username, repo } = useParams();
   const { user } = useGitHub();
+  const [repoData, setRepoData] = useState(null);
+  const isOwner = user?.login === repoData?.owner?.login;
   const [activeRepoTab, setActiveRepoTab] = useState("code");
   const [currentPath, setCurrentPath] = useState("");
 
-  const [repoData, setRepoData] = useState(null);
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,6 +103,7 @@ const RepoDetails = () => {
   const [repoIssues, setRepoIssues] = useState([]);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [issuesFilter, setIssuesFilter] = useState("all"); // 'all' | 'open' | 'closed'
+  const [issuesLabelFilter, setIssuesLabelFilter] = useState("all"); // 'all' | 'bug' | 'enhancement' | 'documentation' | 'duplicate'
   const [issuesSearchQuery, setIssuesSearchQuery] = useState("");
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
   const [newIssueTitle, setNewIssueTitle] = useState("");
@@ -167,6 +194,14 @@ const RepoDetails = () => {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState({ text: "", type: "" });
 
+  // Secrets states
+  const [secretsList, setSecretsList] = useState([]);
+  const [loadingSecrets, setLoadingSecrets] = useState(false);
+  const [newSecretName, setNewSecretName] = useState("");
+  const [newSecretValue, setNewSecretValue] = useState("");
+  const [secretsSaving, setSecretsSaving] = useState(false);
+  const [secretsError, setSecretsError] = useState("");
+
   // Branch & Tag management states
   const [branches, setBranches] = useState(["main"]);
   const [tags, setTags] = useState([]);
@@ -214,6 +249,7 @@ const RepoDetails = () => {
             author: issue.creator?.login || 'unknown',
             updated: new Date(issue.updated_at || issue.created_at).toLocaleDateString(),
             description: issue.description || '',
+            labels: issue.labels || [],
           }));
           setRepoIssues(formatted);
         }
@@ -239,12 +275,39 @@ const RepoDetails = () => {
       }
     };
 
+    const fetchCommits = async () => {
+      if (!repoData) return;
+      try {
+        const id = repoData._id || repoData.id;
+        const res = await apiClient(`/repos/${id}/commits`);
+        if (res && res.data) {
+          const formatted = (res.data || []).map(c => ({
+            hash: (c._id || c.id || '').substring(0, 7),
+            message: c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`,
+            author: c.user?.login || 'unknown',
+            avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
+            date: formatGitHubDate(c.created_at),
+            files: []
+          }));
+          if (formatted.length > 0) {
+            setCommitsList(formatted);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load commits:", err);
+      }
+    };
+
     if (activeRepoTab === 'issues') {
       fetchIssues();
     } else if (activeRepoTab === 'pulls') {
       fetchPRs();
+    } else if (activeRepoTab === 'commits') {
+      fetchCommits();
+    } else if (activeRepoTab === 'settings' && isOwner) {
+      fetchSecrets();
     }
-  }, [activeRepoTab, repoData]);
+  }, [activeRepoTab, repoData, isOwner]);
 
   // Sync settings inputs when repoData changes
   useEffect(() => {
@@ -263,7 +326,12 @@ const RepoDetails = () => {
         const id = repoData._id || repoData.id;
         const branchesRes = await apiClient(`/repos/${id}/branches`);
         if (branchesRes && branchesRes.data) {
-          setBranches(branchesRes.data);
+          const list = branchesRes.data || [];
+          if (!list.includes('main')) {
+            setBranches(['main', ...list]);
+          } else {
+            setBranches(list);
+          }
         }
         const tagsRes = await apiClient(`/repos/${id}/tags`);
         if (tagsRes && tagsRes.data) {
@@ -286,7 +354,12 @@ const RepoDetails = () => {
         body: JSON.stringify({ name: newBranchInput.trim() }),
       });
       if (res && res.data) {
-        setBranches(res.data);
+        const list = res.data || [];
+        if (!list.includes('main')) {
+          setBranches(['main', ...list]);
+        } else {
+          setBranches(list);
+        }
         setCurrentBranch(newBranchInput.trim());
         setNewBranchInput("");
       }
@@ -643,6 +716,68 @@ const RepoDetails = () => {
     }
   };
 
+  const fetchSecrets = async () => {
+    if (!repoData) return;
+    try {
+      setLoadingSecrets(true);
+      setSecretsError("");
+      const id = repoData._id || repoData.id;
+      const res = await apiClient(`/repos/${id}/secrets`);
+      if (res && res.data) {
+        setSecretsList(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+      setSecretsError(err.message || "Failed to load secrets.");
+    } finally {
+      setLoadingSecrets(false);
+    }
+  };
+
+  const handleCreateSecret = async (e) => {
+    e.preventDefault();
+    if (!newSecretName.trim() || !newSecretValue.trim() || !repoData) return;
+    try {
+      setSecretsSaving(true);
+      setSecretsError("");
+      const id = repoData._id || repoData.id;
+      const res = await apiClient(`/repos/${id}/secrets`, {
+        method: "POST",
+        body: JSON.stringify({ name: newSecretName, value: newSecretValue })
+      });
+      if (res && res.data) {
+        setSecretsList(prev => {
+          const exists = prev.some(s => s.name === res.data.name);
+          if (exists) {
+            return prev.map(s => s.name === res.data.name ? res.data : s);
+          }
+          return [res.data, ...prev];
+        });
+        setNewSecretName("");
+        setNewSecretValue("");
+      }
+    } catch (err) {
+      console.error(err);
+      setSecretsError(err.message || "Failed to save secret.");
+    } finally {
+      setSecretsSaving(false);
+    }
+  };
+
+  const handleDeleteSecret = async (secretId) => {
+    if (!repoData) return;
+    try {
+      const id = repoData._id || repoData.id;
+      await apiClient(`/repos/${id}/secrets/${secretId}`, {
+        method: "DELETE"
+      });
+      setSecretsList(prev => prev.filter(s => s._id !== secretId));
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to delete secret.");
+    }
+  };
+
   const renderBreadcrumbs = () => {
     const parts = currentPath.split('/').filter(Boolean);
     return (
@@ -676,20 +811,18 @@ const RepoDetails = () => {
     );
   };
 
-  const isOwner = user?.login === repoData?.owner?.login;
-
   const tabs = [
-    { id: "code", label: "Code", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg> },
-    { id: "issues", label: "Issues", icon: <CircleDot className="w-4 h-4" />, count: repoIssues.length || repoData?.issues_count || 0 },
-    { id: "pulls", label: "Pull requests", icon: <GitPullRequest className="w-4 h-4" />, count: repoPRs.length || repoData?.pulls_count || 0 },
-    { id: "agents", label: "Agents", icon: <Bot className="w-4 h-4" /> },
-    { id: "actions", label: "Actions", icon: <PlayCircle className="w-4 h-4" /> },
-    { id: "projects", label: "Projects", icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: "wiki", label: "Wiki", icon: <BookOpen className="w-4 h-4" /> },
-    { id: "security", label: "Security and quality", icon: <Shield className="w-4 h-4" />, badge: "1" },
-    { id: "insights", label: "Insights", icon: <BarChart2 className="w-4 h-4" /> },
-    { id: "discussions", label: "Discussions", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> },
-    ...(isOwner ? [{ id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> }] : [])
+    { id: "code", label: "Code", icon: <CodeIcon size={16} /> },
+    { id: "issues", label: "Issues", icon: <IssueOpenedIcon size={16} />, count: repoIssues.length || repoData?.issues_count || 0 },
+    { id: "pulls", label: "Pull requests", icon: <GitPullRequestIcon size={16} />, count: repoPRs.length || repoData?.pulls_count || 0 },
+    { id: "agents", label: "Agents", icon: <HubotIcon size={16} /> },
+    { id: "actions", label: "Actions", icon: <PlayIcon size={16} /> },
+    { id: "projects", label: "Projects", icon: <ProjectIcon size={16} /> },
+    { id: "wiki", label: "Wiki", icon: <BookIcon size={16} /> },
+    { id: "security", label: "Security and quality", icon: <ShieldIcon size={16} />, badge: "1" },
+    { id: "insights", label: "Insights", icon: <GraphIcon size={16} /> },
+    { id: "discussions", label: "Discussions", icon: <CommentDiscussionIcon size={16} /> },
+    ...(isOwner ? [{ id: "settings", label: "Settings", icon: <GearIcon size={16} /> }] : [])
   ];
 
   return (
@@ -705,7 +838,7 @@ const RepoDetails = () => {
               onClick={() => { setActiveRepoTab(tab.id); setSelectedFile(null); }}
               className={`pb-2 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 -mb-[1.5px] ${
                 activeRepoTab === tab.id
-                  ? 'border-[#fd8c73] text-[#1f2328] dark:text-white font-semibold'
+                  ? 'border-[#f78166] text-[#1f2328] dark:text-white font-semibold'
                   : 'border-transparent text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white hover:border-[#d0d7de] dark:hover:border-[#30363d]'
               }`}
             >
@@ -760,9 +893,9 @@ const RepoDetails = () => {
                       onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
                       className="flex items-center gap-1.5 px-3 py-1.5 border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] text-xs font-semibold hover:bg-[#ebedf0] dark:hover:bg-[#30363d] cursor-pointer text-[#1f2328] dark:text-[#c9d1d9] outline-none"
                     >
-                      <GitBranch size={14} className="text-[#57606a] dark:text-[#8b949e]" />
+                      <GitBranchIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                       <span>{currentBranch}</span>
-                      <ChevronDown size={12} className="text-[#57606a] dark:text-[#8b949e]" />
+                      <ChevronDownIcon size={12} className="text-[#57606a] dark:text-[#8b949e]" />
                     </button>
 
                     {isBranchDropdownOpen && (
@@ -788,13 +921,13 @@ const RepoDetails = () => {
                           <div className="flex border-b border-[#d0d7de] dark:border-[#30363d]">
                             <button
                               onClick={() => { setActiveSelectorTab("branches"); setBranchFilterQuery(""); }}
-                              className={`flex-1 pb-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${activeSelectorTab === "branches" ? "border-[#fd8c73] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
+                              className={`flex-1 pb-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${activeSelectorTab === "branches" ? "border-[#f78166] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
                             >
                               Branches
                             </button>
                             <button
                               onClick={() => { setActiveSelectorTab("tags"); setBranchFilterQuery(""); }}
-                              className={`flex-1 pb-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${activeSelectorTab === "tags" ? "border-[#fd8c73] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
+                              className={`flex-1 pb-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${activeSelectorTab === "tags" ? "border-[#f78166] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
                             >
                               Tags
                             </button>
@@ -812,7 +945,7 @@ const RepoDetails = () => {
                                   className={`w-full text-left px-3 py-2 text-xs hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] flex items-center justify-between border-0 bg-transparent cursor-pointer ${b === currentBranch ? "font-bold text-[#1f2328] dark:text-white" : "text-[#57606a] dark:text-[#8b949e]"}`}
                                 >
                                   <span>{b}</span>
-                                  {b === currentBranch && <Check size={12} className="text-[#0969da]" />}
+                                  {b === currentBranch && <CheckIcon size={14} className="text-[#0969da] dark:text-[#58a6ff]" />}
                                 </button>
                               ))
                           ) : (
@@ -828,7 +961,7 @@ const RepoDetails = () => {
                                     className={`w-full text-left px-3 py-2 text-xs hover:bg-[#f6f8fa] dark:hover:bg-[#30363d] flex items-center justify-between border-0 bg-transparent cursor-pointer ${t === currentBranch ? "font-bold text-[#1f2328] dark:text-white" : "text-[#57606a] dark:text-[#8b949e]"}`}
                                   >
                                     <span>{t}</span>
-                                    {t === currentBranch && <Check size={12} className="text-[#0969da]" />}
+                                    {t === currentBranch && <CheckIcon size={14} className="text-[#0969da] dark:text-[#58a6ff]" />}
                                   </button>
                                 ))
                             )
@@ -878,11 +1011,11 @@ const RepoDetails = () => {
 
                   <div className="flex items-center gap-3 text-xs text-[#57606a] dark:text-[#8b949e] font-semibold ml-2">
                     <span className="flex items-center gap-1">
-                      <GitBranch size={13} />
+                      <GitBranchIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                       {branches.length} {branches.length === 1 ? 'Branch' : 'Branches'}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Tag size={13} />
+                      <TagIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                       {tags.length} {tags.length === 1 ? 'Tag' : 'Tags'}
                     </span>
                   </div>
@@ -911,11 +1044,11 @@ const RepoDetails = () => {
                     className="px-3 py-1.5 border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] text-xs font-semibold text-[#24292f] dark:text-white hover:bg-[#ebedf0] dark:hover:bg-[#30363d] cursor-pointer transition-colors flex items-center gap-1"
                   >
                     Add file
-                    <ChevronDown size={10} />
+                    <ChevronDownIcon size={12} className="opacity-75" />
                   </button>
-                  <button className="px-3 py-1.5 border border-transparent rounded-md bg-[#1f883d] text-xs font-semibold text-white hover:bg-[#1a7f37] cursor-pointer transition-colors flex items-center gap-1">
+                  <button className="px-3 py-1.5 border border-transparent rounded-md bg-[#2ea44f] hover:bg-[#2c974b] text-xs font-semibold text-white cursor-pointer transition-colors flex items-center gap-1">
                     <span>Code</span>
-                    <ChevronDown size={10} />
+                    <ChevronDownIcon size={12} className="opacity-75" />
                   </button>
                 </div>
               </div>
@@ -937,7 +1070,7 @@ const RepoDetails = () => {
                     >
                       {commitsList[0]?.message}
                     </span>
-                    <Check size={14} className="text-[#3fb950] shrink-0 ml-1" />
+                    <CheckIcon size={16} className="text-[#3fb950] shrink-0 ml-1" />
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-2">
                     <span>{commitsList[0]?.date}</span>
@@ -949,9 +1082,12 @@ const RepoDetails = () => {
                         {commitsList[0]?.hash}
                       </button>
                       <span className="text-[#d0d7de] dark:text-[#30363d]">|</span>
-                      <span className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]">
+                      <span 
+                        onClick={() => setActiveRepoTab('commits')}
+                        className="font-semibold text-[#24292f] dark:text-white cursor-pointer hover:text-[#0969da] dark:hover:text-[#58a6ff]"
+                      >
                         <span className="inline-flex items-center gap-1">
-                          <History size={12} />
+                          <HistoryIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                           <strong>{repo.toLowerCase() === 'github' ? 162 : commitsList.length}</strong> commits
                         </span>
                       </span>
@@ -999,7 +1135,7 @@ const RepoDetails = () => {
                         >
                           <td className="px-4 py-2.5 font-medium text-[#24292f] dark:text-white flex items-center gap-2 max-w-[200px] truncate">
                             {item.type === 'dir' ? (
-                              <Folder size={16} className="text-[#54a3ff] shrink-0" />
+                              <FileDirectoryFillIcon size={16} className="text-[#54a3ff] shrink-0" />
                             ) : (
                               <FileIcon size={16} className="text-[#57606a] dark:text-[#8b949e] shrink-0" />
                             )}
@@ -1036,7 +1172,7 @@ const RepoDetails = () => {
                   <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-left">
                     <div className="px-4 py-3 border-b border-[#d0d7de] dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#161b22] flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <BookOpen size={16} className="text-[#57606a] dark:text-[#8b949e]" />
+                        <BookIcon size={16} className="text-[#57606a] dark:text-[#8b949e]" />
                         <span className="font-semibold text-xs text-[#24292f] dark:text-white font-sans">README.md</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -1045,15 +1181,15 @@ const RepoDetails = () => {
                           className="p-1 hover:bg-[#ebedf0] dark:hover:bg-[#30363d] rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer border-0"
                           title="Edit README"
                         >
-                          <Pencil size={14} />
+                          <PencilIcon size={14} />
                         </button>
                         <button className="p-1 hover:bg-[#ebedf0] dark:hover:bg-[#30363d] rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer border-0">
-                          <List size={14} />
+                          <ListUnorderedIcon size={14} />
                         </button>
                       </div>
                     </div>
                     <div className="p-6 prose dark:prose-invert max-w-none text-sm text-[#24292f] dark:text-[#c9d1d9] markdown-body">
-                      <ReactMarkdown>{readmeFile.content || `# ${repoData?.name || ''}\n${repoData?.description || ''}`}</ReactMarkdown>
+                      <MarkdownRenderer content={readmeFile.content || `# ${repoData?.name || ''}\n${repoData?.description || ''}`} />
                     </div>
                   </div>
                 );
@@ -1067,7 +1203,7 @@ const RepoDetails = () => {
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm text-[#24292f] dark:text-white">About</h3>
                   {isOwner && (
-                    <Settings size={14} className="text-[#57606a] dark:text-[#8b949e] hover:text-[#0969da] cursor-pointer" />
+                    <GearIcon size={14} className="text-[#57606a] dark:text-[#8b949e] hover:text-[#0969da] dark:hover:text-[#58a6ff] cursor-pointer" />
                   )}
                 </div>
                 <p className="text-xs text-[#24292f] dark:text-[#c9d1d9] leading-relaxed">
@@ -1076,7 +1212,7 @@ const RepoDetails = () => {
                 
                 {/* Website URL */}
                 <div className="flex items-center gap-1.5 text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline font-medium">
-                  <ExternalLink size={12} />
+                  <LinkExternalIcon size={12} />
                   <a href="https://github-kappa-two.vercel.app" target="_blank" rel="noreferrer" className="truncate">
                     github-kappa-two.vercel.app
                   </a>
@@ -1085,11 +1221,11 @@ const RepoDetails = () => {
                 {/* Additional Quick Stats */}
                 <div className="space-y-2.5 pt-3">
                   <div className="flex items-center gap-2 text-xs text-[#24292f] dark:text-[#c9d1d9]">
-                    <BookOpen size={14} className="text-[#57606a] dark:text-[#8b949e]" />
+                    <BookIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                     <span>Readme</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#24292f] dark:text-[#c9d1d9]">
-                    <History size={14} className="text-[#57606a] dark:text-[#8b949e]" />
+                    <HistoryIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
                     <span>Activity</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#24292f] dark:text-[#c9d1d9]">
@@ -1222,9 +1358,8 @@ const RepoDetails = () => {
                 </p>
               </div>
 
-              {/* Description body */}
-              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9] whitespace-pre-wrap">
-                {selectedIssue.description || <i>No description provided.</i>}
+              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9]">
+                {selectedIssue.description ? <MarkdownRenderer content={selectedIssue.description} /> : <i>No description provided.</i>}
               </div>
 
               {/* Comments list */}
@@ -1247,8 +1382,8 @@ const RepoDetails = () => {
                             <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117] whitespace-pre-wrap">
-                          {c.body}
+                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117]">
+                          <MarkdownRenderer content={c.body} />
                         </div>
                       </div>
                     ))}
@@ -1285,7 +1420,7 @@ const RepoDetails = () => {
             <>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md px-3 py-1.5 bg-[#f6f8fa] dark:bg-[#161b22] w-full max-w-md">
-                  <Search size={16} className="text-[#57606a] dark:text-[#8b949e]" />
+                  <SearchIcon size={16} className="text-[#57606a] dark:text-[#8b949e]" />
                   <input
                     type="text"
                     placeholder="Search all issues"
@@ -1339,7 +1474,7 @@ const RepoDetails = () => {
                 <div className="text-center py-8 text-xs text-[#57606a]">Loading issues...</div>
               ) : (
                 <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
-                  <div className="px-4 py-3 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                  <div className="px-4 py-3 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setIssuesFilter("all")}
@@ -1360,6 +1495,21 @@ const RepoDetails = () => {
                         Closed
                       </button>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-[#57606a] dark:text-[#8b949e]">Filter Label:</span>
+                      <select
+                        value={issuesLabelFilter}
+                        onChange={(e) => setIssuesLabelFilter(e.target.value)}
+                        className="px-2 py-1 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded text-[11px] outline-none"
+                      >
+                        <option value="all">All Labels</option>
+                        <option value="bug">bug 🔴</option>
+                        <option value="enhancement">enhancement 🔵</option>
+                        <option value="documentation">documentation 🟢</option>
+                        <option value="duplicate">duplicate 🟡</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
@@ -1369,6 +1519,10 @@ const RepoDetails = () => {
                         if (issuesFilter === 'closed') return i.status === 'closed';
                         return true;
                       })
+                      .filter(i => {
+                        if (issuesLabelFilter === 'all') return true;
+                        return i.labels && i.labels.includes(issuesLabelFilter);
+                      })
                       .filter(i => i.title.toLowerCase().includes(issuesSearchQuery.toLowerCase()))
                       .map(issue => (
                         <div
@@ -1376,9 +1530,23 @@ const RepoDetails = () => {
                           onClick={() => { setSelectedIssue(issue); fetchIssueComments(issue.id); }}
                           className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-start gap-2.5 text-left transition-colors cursor-pointer"
                         >
-                          <CircleDot size={16} className={`mt-0.5 shrink-0 ${issue.status === 'open' ? 'text-[#3fb950]' : 'text-[#a371f7]'}`} />
+                          <IssueOpenedIcon size={16} className={`mt-0.5 shrink-0 ${issue.status === 'open' ? 'text-[#3fb950]' : 'text-[#a371f7]'}`} />
                           <div className="min-w-0 flex-1">
-                            <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline">{issue.title}</span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline">{issue.title}</span>
+                              {issue.labels && issue.labels.map(lbl => {
+                                let labelStyle = "bg-[#f6f8fa] text-gray-800 dark:bg-[#30363d] dark:text-white";
+                                if (lbl === "bug") labelStyle = "bg-[#f85149] text-white";
+                                else if (lbl === "enhancement") labelStyle = "bg-[#58a6ff] text-black";
+                                else if (lbl === "documentation") labelStyle = "bg-[#57ab5a] text-white";
+                                else if (lbl === "duplicate") labelStyle = "bg-[#d3c6ff] text-black";
+                                return (
+                                  <span key={lbl} className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${labelStyle}`}>
+                                    {lbl}
+                                  </span>
+                                );
+                              })}
+                            </div>
                             <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
                               #{issue.number} opened {issue.updated} by <span className="font-medium text-[#24292f] dark:text-[#c9d1d9]">{issue.author}</span>
                             </p>
@@ -1426,9 +1594,8 @@ const RepoDetails = () => {
                 </p>
               </div>
 
-              {/* Description body */}
-              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9] whitespace-pre-wrap">
-                {selectedPR.description || <i>No description provided.</i>}
+              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9]">
+                {selectedPR.description ? <MarkdownRenderer content={selectedPR.description} /> : <i>No description provided.</i>}
               </div>
 
               {selectedPR.status === 'open' && isOwner && (
@@ -1468,8 +1635,8 @@ const RepoDetails = () => {
                             <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117] whitespace-pre-wrap">
-                          {c.body}
+                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117]">
+                          <MarkdownRenderer content={c.body} />
                         </div>
                       </div>
                     ))}
@@ -1581,7 +1748,7 @@ const RepoDetails = () => {
                         className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 text-left transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-2.5 min-w-0">
-                          <GitPullRequest size={16} className={`mt-0.5 shrink-0 ${pr.status === 'merged' ? 'text-[#a371f7]' : pr.status === 'closed' ? 'text-[#cf222e]' : 'text-[#3fb950]'}`} />
+                          <GitPullRequestIcon size={16} className={`mt-0.5 shrink-0 ${pr.status === 'merged' ? 'text-[#8250df]' : pr.status === 'closed' ? 'text-[#cf222e]' : 'text-[#2da44e]'}`} />
                           <div className="min-w-0">
                             <span className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline">{pr.title}</span>
                             <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
@@ -1666,6 +1833,84 @@ const RepoDetails = () => {
             </div>
           </form>
 
+          {/* Action Secrets panel */}
+          <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-6 bg-white dark:bg-[#161b22] space-y-4">
+            <h3 className="text-base font-semibold text-[#1f2328] dark:text-white border-b border-[#d0d7de] dark:border-[#30363d] pb-2">Actions secrets</h3>
+            <p className="text-xs text-[#57606a] dark:text-[#8b949e]">
+              Secrets are environment variables that are encrypted. They are only exposed to GitHub Actions runner pipelines.
+            </p>
+
+            {secretsError && (
+              <div className="p-3 text-xs rounded border bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900 text-red-600 dark:text-red-400">
+                {secretsError}
+              </div>
+            )}
+
+            {/* List existing secrets */}
+            <div className="space-y-2 pt-2">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Repository secrets ({secretsList.length})</h4>
+              {loadingSecrets ? (
+                <div className="text-xs text-gray-500 py-2">Loading secrets...</div>
+              ) : (
+                <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d] border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] overflow-hidden">
+                  {secretsList.map(sec => (
+                    <div key={sec._id} className="p-3 flex items-center justify-between text-xs font-mono">
+                      <div>
+                        <span className="font-bold text-gray-700 dark:text-gray-300">{sec.name}</span>
+                        <span className="ml-4 text-gray-400">••••••••</span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteSecret(sec._id)}
+                        className="px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:text-red-500 border border-red-200 dark:border-red-900 rounded bg-transparent hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {secretsList.length === 0 && (
+                    <div className="p-4 text-center text-xs text-gray-500 italic">No secrets configured yet.</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Add new secret form */}
+            <form onSubmit={handleCreateSecret} className="border-t border-[#d0d7de] dark:border-[#30363d] pt-4 mt-2 space-y-3 text-left">
+              <h4 className="text-xs font-bold text-gray-700 dark:text-gray-200">New repository secret</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Name (e.g. GH_TOKEN)"
+                    value={newSecretName}
+                    onChange={(e) => setNewSecretName(e.target.value.toUpperCase())}
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded text-xs outline-none focus:border-[#58a6ff]"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Value"
+                    value={newSecretValue}
+                    onChange={(e) => setNewSecretValue(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded text-xs outline-none focus:border-[#58a6ff]"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={secretsSaving}
+                  className="px-3.5 py-1.5 bg-[#f6f8fa] dark:bg-[#21262d] hover:bg-[#ebedf0] dark:hover:bg-[#30363d] border border-[#d0d7de] dark:border-[#30363d] text-xs font-semibold text-gray-800 dark:text-white rounded cursor-pointer transition-colors"
+                >
+                  {secretsSaving ? "Adding..." : "Add secret"}
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className="border border-[#f85149]/30 rounded-md p-6 bg-white dark:bg-[#161b22] space-y-4">
             <h3 className="text-base font-semibold text-[#f85149] border-b border-[#f85149]/20 pb-2">Danger Zone</h3>
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1718,6 +1963,10 @@ const RepoDetails = () => {
             </div>
           </div>
         </div>
+      ) : activeRepoTab === 'projects' ? (
+        <ProjectsTab repoId={repoData?._id || repoData?.id} />
+      ) : activeRepoTab === 'actions' ? (
+        <ActionsTab repoId={repoData?._id || repoData?.id} />
       ) : (
         /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
         <div className="py-12 max-w-2xl mx-auto text-center space-y-4">

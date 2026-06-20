@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import DragIcon from "../../../public/customIcons/DragIcon";
 import ReposotoryIcon from "../../../public/customIcons/ReposotoryIcon";
-import { Star } from "lucide-react";
+import { Star, GitFork } from "lucide-react";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import { useState, useEffect } from "react";
 import { getStoredStarredRepos, starRepository, unstarRepository } from "@services/storageService.js";
@@ -14,7 +14,7 @@ const PinnedRepoCard = ({
   isOverlay,
 }) => {
   const [isStarred, setIsStarred] = useState(false);
-  const [starCount, setStarCount] = useState(repo?.stars || repo?.stargazers_count || 0);
+  const [starCount, setStarCount] = useState(repo?.stars_count || repo?.stargazers_count || repo?.stars || 0);
 
   const authorLogin = author || repo?.author || repo?.owner?.login || "moman";
 
@@ -108,13 +108,15 @@ const PinnedRepoCard = ({
                 className={isStarred ? "fill-[#e3b341] text-[#e3b341]" : "text-[#636c76]"} 
               />
             </button>
-            <div
-              {...dragHandleProps?.listeners}
-              {...dragHandleProps?.attributes}
-              className="p-2 -m-1 rounded hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
-            >
-              <DragIcon />
-            </div>
+            {dragHandleProps && (
+              <div
+                {...dragHandleProps.listeners}
+                {...dragHandleProps.attributes}
+                className="p-2 -m-1 rounded hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
+              >
+                <DragIcon />
+              </div>
+            )}
           </div>
         </div>
 
@@ -123,7 +125,7 @@ const PinnedRepoCard = ({
         </p>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-[#636c76] mt-4">
+      <div className="flex flex-wrap items-center gap-4 text-xs text-[#636c76] mt-4">
         {repo.language && (
           <span className="flex items-center gap-1">
             <span
@@ -134,10 +136,19 @@ const PinnedRepoCard = ({
           </span>
         )}
 
-        <span className="flex items-center gap-1">
-          <Star size={12} className="text-[#636c76]" />
-          {starCount}
-        </span>
+        {starCount > 0 && (
+          <span className="flex items-center gap-1">
+            <Star size={12} className="text-[#636c76]" />
+            {starCount}
+          </span>
+        )}
+
+        {repo.forks_count > 0 && (
+          <span className="flex items-center gap-1">
+            <GitFork size={12} className="text-[#636c76]" />
+            {repo.forks_count}
+          </span>
+        )}
       </div>
     </article>
   );
