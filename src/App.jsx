@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate, useParams, useLocation } from "react-router-dom";
 import * as Pages from "./pages";
 import OpenMenuLayout from "./layout/OpenMenuLayout";
 import { initializeStorage } from "@services/storageService";
@@ -39,6 +39,13 @@ const AuthPage = () => {
   const { login, register } = useGitHub();
 
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (pathname !== "/") {
+      navigate("/", { replace: true });
+    }
+  }, [pathname, navigate]);
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
