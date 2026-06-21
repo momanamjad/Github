@@ -4,6 +4,7 @@ import { useGitHub } from "@contexts/GitHubContext";
 import { useClickOutside } from "@hooks/useGitHub_hooks";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { registerUser } from "../../services/GithubApi";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 // Icons
 import ProfileIcon from '../../../public/customIcons/ProfileIcon';
@@ -190,6 +191,17 @@ const GitHubUserMenu = () => {
                     )}
                   </button>
                 </div>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-github-border"></div>
+                  <span className="flex-shrink mx-3 text-github-muted text-xs font-normal">or</span>
+                  <div className="flex-grow border-t border-github-border"></div>
+                </div>
+
+                <GoogleSignInButton
+                  onSuccess={() => setIsAuthModalOpen(false)}
+                  onFailure={(err) => setErrorMsg(err.message || "Google Sign-In failed")}
+                />
               </form>
             </div>
           </div>

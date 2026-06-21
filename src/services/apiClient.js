@@ -1,5 +1,40 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://gtihub-backend.vercel.app/api';
 
+export const getBackendBaseUrl = () => {
+  return API_URL.replace(/\/api$/, '');
+};
+
+export const resolveAvatarUrl = (url) => {
+  if (!url) return "/profile.webp";
+  if (typeof url === 'string' && url.startsWith('http://localhost:5000')) {
+    return url.replace('http://localhost:5000', getBackendBaseUrl());
+  }
+  return url;
+};
+
+const normalizeUrls = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') {
+    if (obj.startsWith('http://localhost:5000/uploads/')) {
+      return obj.replace('http://localhost:5000', getBackendBaseUrl());
+    }
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(normalizeUrls);
+  }
+  if (typeof obj === 'object') {
+    const newObj = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = normalizeUrls(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+};
+
 let isRefreshing = false;
 let refreshSubscribers = [];
 
@@ -72,11 +107,13 @@ export const apiClient = async (endpoint, options = {}) => {
     response = await retryOriginalRequest;
   }
 
-  const data = await response.json();
+  let data = await response.json();
 
   if (!response.ok) {
     throw new Error(data.message || 'Something went wrong');
   }
+
+  data = normalizeUrls(data);
 
   return data;
 };

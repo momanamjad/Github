@@ -6,6 +6,7 @@ import { initializeStorage } from "@services/storageService";
 import { useGitHub, GitHubProvider } from "@contexts/GitHubContext";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
 import Buddy from "./bot/Buddy";
+import GoogleSignInButton from "./components/features/GoogleSignInButton";
 import "./bones/registry";
 
 
@@ -137,6 +138,23 @@ const AuthPage = () => {
               )}
             </button>
           </form>
+
+          <div className="relative flex py-3 items-center">
+            <div className="flex-grow border-t border-[#d0d7de] dark:border-[#30363d]"></div>
+            <span className="flex-shrink mx-3 text-[#57606a] dark:text-[#8b949e] text-xs font-normal">or</span>
+            <div className="flex-grow border-t border-[#d0d7de] dark:border-[#30363d]"></div>
+          </div>
+
+          <GoogleSignInButton
+            onSuccess={(u) => {
+              if (u?.login) {
+                navigate(`/${u.login}`);
+              } else {
+                navigate("/");
+              }
+            }}
+            onFailure={(err) => setErrorMsg(err.message || "Google Sign-In failed")}
+          />
 
           <div className="mt-6 text-center text-sm border-t border-[#d0d7de] dark:border-[#30363d] pt-4">
             {activeTab === 'login' ? (

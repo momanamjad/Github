@@ -34,6 +34,19 @@ const NotificationCenter = () => {
 
     if (!user) return;
 
+    // Vercel serverless deployments do not support Socket.io stateful connections.
+    // Fall back to polling for notifications if we are using the Vercel hosted backend.
+    const isVercel = SOCKET_URL.includes("vercel.app");
+
+    if (isVercel) {
+      const interval = setInterval(() => {
+        fetchNotifications();
+      }, 30000); // Poll every 30s
+      return () => {
+        clearInterval(interval);
+      };
+    }
+
     const socket = io(SOCKET_URL, {
       withCredentials: true,
       transports: ['websocket', 'polling']

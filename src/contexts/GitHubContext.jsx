@@ -1,11 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage } from '../services/storageService';
-import { apiClient } from '../services/apiClient';
+import { apiClient, resolveAvatarUrl } from '../services/apiClient';
 
 const GitHubContext = createContext();
 
 export const GitHubProvider = ({ children }) => {
-    const [user, setUser] = useState(() => getStoredUser());
+    const [user, setUser] = useState(() => {
+        const u = getStoredUser();
+        if (u && u.avatar_url) {
+            u.avatar_url = resolveAvatarUrl(u.avatar_url);
+        }
+        return u;
+    });
     const [status, setStatus] = useState(() => {
         const u = getStoredUser();
         return u?.status || { emoji: '', text: '', isBusy: false };
@@ -17,6 +23,19 @@ export const GitHubProvider = ({ children }) => {
       const res = await apiClient('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
+      });
+      if (res?.data?.accessToken) {
+        localStorage.setItem('github_token', res.data.accessToken);
+        localStorage.setItem('github_user', JSON.stringify(res.data.user));
+        setUser(res.data.user);
+      }
+      return res;
+    }, []);
+
+    const loginWithGoogle = useCallback(async (credential) => {
+      const res = await apiClient('/auth/google-signin', {
+        method: 'POST',
+        body: JSON.stringify({ credential }),
       });
       if (res?.data?.accessToken) {
         localStorage.setItem('github_token', res.data.accessToken);
@@ -144,9 +163,10 @@ export const GitHubProvider = ({ children }) => {
         isStatusModalOpen,
         setIsStatusModalOpen,
         login,
+        loginWithGoogle,
         register,
         logout
-    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login, register, logout]);
+    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login, loginWithGoogle, register, logout]);
 
     return (
         <GitHubContext.Provider value={value}>
