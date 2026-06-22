@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Navigate, Route, Routes, useNavigate, useParams, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import * as Pages from "./pages";
 import OpenMenuLayout from "./layout/OpenMenuLayout";
 import { initializeStorage } from "@services/storageService";
@@ -42,7 +42,7 @@ const AuthPage = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (pathname !== "/") {
+    if (pathname !== "/" && pathname !== "/forgot-password" && pathname !== "/reset-password") {
       navigate("/", { replace: true });
     }
   }, [pathname, navigate]);
@@ -120,7 +120,14 @@ const AuthPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5 text-[#24292f] dark:text-white">Password</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-sm font-medium text-[#24292f] dark:text-white">Password</label>
+                {activeTab === 'login' && (
+                  <Link to="/forgot-password" className="text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline">
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <input
                 type="password"
                 required
@@ -201,8 +208,23 @@ const NavigateToQuery = ({ tab }) => {
 
 const AppContent = () => {
   const { user } = useGitHub();
+  const { pathname } = useLocation();
 
   if (!user) {
+    if (pathname === '/forgot-password') {
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <Pages.ForgotPassword />
+        </Suspense>
+      );
+    }
+    if (pathname === '/reset-password') {
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <Pages.ResetPassword />
+        </Suspense>
+      );
+    }
     return <AuthPage />;
   }
 
