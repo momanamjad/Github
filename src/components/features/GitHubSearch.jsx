@@ -1,14 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, Book, FileText, FileCode2 } from 'lucide-react';
+import { Search, X, Book, FileText, FileCode2, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getRepos } from '@services/GithubApi.jsx';
+import { getRepos, searchReposApi } from '@services/GithubApi.jsx';
 import { useGitHub } from '@/contexts/GitHubContext';
 import ReposotoryIcon from '../../../public/customIcons/ReposotoryIcon';
 import { useScrollLock } from '../../hooks/useScrollLock';
 
+const OPERATOR_SUGGESTIONS = [
+  { label: 'stars:>10', value: 'stars:>10 ' },
+  { label: 'stars:>100', value: 'stars:>100 ' },
+  { label: 'forks:>5', value: 'forks:>5 ' },
+  { label: 'forks:>50', value: 'forks:>50 ' },
+  { label: 'language:JavaScript', value: 'language:JavaScript ' },
+  { label: 'language:TypeScript', value: 'language:TypeScript ' },
+  { label: 'language:HTML', value: 'language:HTML ' },
+  { label: 'language:CSS', value: 'language:CSS ' },
+  { label: 'visibility:public', value: 'visibility:public ' },
+  { label: 'visibility:private', value: 'visibility:private ' }
+];
 
 export default function GitHubSearch({ isOpen, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { repositories: repos, user } = useGitHub();
   const modalRef = useRef(null);
   const inputRef = useRef(null);
@@ -37,7 +51,10 @@ export default function GitHubSearch({ isOpen, onClose }) {
       return () => clearTimeout(id);
     } else {
       // Clear query async when modal closes
-      const clearId = setTimeout(() => setSearchQuery(''), 0);
+      const clearId = setTimeout(() => {
+        setSearchQuery('');
+        setSearchResults([]);
+      }, 0);
       return () => clearTimeout(clearId);
     }
   }, [isOpen, location.pathname, username]);
@@ -56,15 +73,39 @@ export default function GitHubSearch({ isOpen, onClose }) {
     };
   }, [isOpen, onClose]);
 
+  // Debounced backend search
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query) {
+      setSearchResults([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const results = await searchReposApi(query);
+        // Backend pagination returns { repos, total } or similar, but searchReposApi resolves res.data. Let's make sure it handles either arrays or nested properties.
+        const reposList = results?.repos || (Array.isArray(results) ? results : []);
+        setSearchResults(reposList);
+      } catch (err) {
+        console.error("Search query failed:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const handleOwnerClick = () => {
     onClose();
     navigate(`/${username}`);
   };
 
-  const handleRepoClick = (repoName) => {
+  const handleRepoClick = (repoName, ownerName) => {
     onClose();
-    navigate(`/${username}/${repoName}`);
+    navigate(`/${ownerName || username}/${repoName}`);
   };
 
   const handleCodeClick = (_path) => {
@@ -75,14 +116,32 @@ export default function GitHubSearch({ isOpen, onClose }) {
   const isOwnerSearch = searchQuery.toLowerCase().startsWith('owner:');
   const isRepoSearch = searchQuery.toLowerCase().startsWith('repo:');
 
-  // parsedRepoName available for future repo-specific search scoping
-  const _parsedRepoName = isRepoSearch ? searchQuery.split(':')[1]?.split(' ')[0]?.split('/')[1] : null;
+  // get current suggestions matching last typed word
+  const getSuggestions = () => {
+    if (!searchQuery) return [];
+    const words = searchQuery.split(/\s+/);
+    const lastWord = words[words.length - 1];
+    if (!lastWord) return [];
 
-  const filteredRepos = repos.filter(r =>
-    !isOwnerSearch && !isRepoSearch && searchQuery
-      ? r.name.toLowerCase().includes(searchQuery.toLowerCase())
-      : true
-  ).slice(0, 5); // limit output
+    return OPERATOR_SUGGESTIONS.filter(item =>
+      item.label.toLowerCase().startsWith(lastWord.toLowerCase()) &&
+      !searchQuery.includes(item.label.split(':')[0] + ':')
+    );
+  };
+
+  const selectSuggestion = (val) => {
+    const words = searchQuery.split(/\s+/);
+    words[words.length - 1] = val;
+    setSearchQuery(words.join(' '));
+    if (inputRef.current) inputRef.current.focus();
+  };
+
+  const suggestions = getSuggestions();
+
+  // Show searchResults if query is present, otherwise fallback to local user repositories
+  const filteredRepos = searchQuery.trim()
+    ? searchResults
+    : repos;
 
   if (!isOpen) return null;
 
@@ -100,7 +159,7 @@ export default function GitHubSearch({ isOpen, onClose }) {
           className="relative w-full max-w-[850px] bg-white rounded-xl shadow-2xl flex flex-col border border-[#d0d7de] overflow-hidden"
         >
           {/* Search Input */}
-          <div className="flex items-center px-4 py-3 border-b border-[#d0d7de] bg-white">
+          <div className="relative flex items-center px-4 py-3 border-b border-[#d0d7de] bg-white">
             <Search className="h-[18px] w-[18px] text-[#59636e]" />
             <input
               ref={inputRef}
@@ -110,6 +169,9 @@ export default function GitHubSearch({ isOpen, onClose }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 ml-3 bg-transparent text-[#1F2328] placeholder-[#636c76] focus:outline-none text-[15px]"
             />
+            {isLoading && (
+              <Loader2 className="h-4 w-4 text-[#0969da] animate-spin mr-2" />
+            )}
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
@@ -123,6 +185,24 @@ export default function GitHubSearch({ isOpen, onClose }) {
                 <X className="w-5 h-5 block border border-[#d0d7de] rounded shadow-sm bg-[#f6f8fa] p-0.5" />
               </button>
             </div>
+
+            {/* Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <div className="absolute left-10 top-full mt-1 z-10 w-64 bg-white border border-[#d0d7de] rounded-md shadow-lg py-1">
+                <div className="px-3 py-1.5 text-xs font-semibold text-[#59636e] bg-[#f6f8fa] border-b border-[#d0d7de]">
+                  Filter suggestions
+                </div>
+                {suggestions.map(s => (
+                  <div
+                    key={s.label}
+                    onClick={() => selectSuggestion(s.value)}
+                    className="px-3 py-1.5 hover:bg-[#f3f4f6] text-sm text-[#1f2328] cursor-pointer font-mono hover:text-[#0969da]"
+                  >
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="max-h-[60vh] overflow-y-auto bg-white">
@@ -158,12 +238,12 @@ export default function GitHubSearch({ isOpen, onClose }) {
                     {repos.slice(0, 4).map((repo) => (
                       <div
                         key={repo.name}
-                        onClick={() => handleRepoClick(repo.name)}
+                        onClick={() => handleRepoClick(repo.name, repo.owner?.login)}
                         className="flex justify-between items-center group cursor-pointer hover:bg-[#f3f4f6] -mx-2 px-2 py-2 rounded-md transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <ReposotoryIcon className="w-4 h-4 text-[#59636e]" />
-                          <span className="text-sm text-[#1F2328] group-hover:text-[#0969da]">{username}/{repo.name}</span>
+                          <span className="text-sm text-[#1F2328] group-hover:text-[#0969da]">{repo.owner?.login || username}/{repo.name}</span>
                         </div>
                         <span className="text-xs text-[#59636E] opacity-0 group-hover:opacity-100 transition-opacity">Jump to</span>
                       </div>
@@ -176,6 +256,36 @@ export default function GitHubSearch({ isOpen, onClose }) {
             {/* 2. STATE: empty or general search */}
             {!isRepoSearch && !isOwnerSearch && (
               <>
+                <div className="px-4 py-3 bg-[#f6f8fa] border-b border-[#d0d7de] text-left select-none">
+                  <h4 className="text-xs font-bold text-[#59636e] uppercase tracking-wider mb-2">Filter operators</h4>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <button
+                      onClick={() => setSearchQuery(q => q + 'stars:>5 ')}
+                      className="px-2 py-1 bg-white border border-[#d0d7de] rounded hover:bg-[#eaeef2] transition-colors cursor-pointer font-mono text-[#57606a]"
+                    >
+                      stars:&gt;5
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery(q => q + 'forks:>2 ')}
+                      className="px-2 py-1 bg-white border border-[#d0d7de] rounded hover:bg-[#eaeef2] transition-colors cursor-pointer font-mono text-[#57606a]"
+                    >
+                      forks:&gt;2
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery(q => q + 'language:TypeScript ')}
+                      className="px-2 py-1 bg-white border border-[#d0d7de] rounded hover:bg-[#eaeef2] transition-colors cursor-pointer font-mono text-[#57606a]"
+                    >
+                      language:TypeScript
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery(q => q + 'visibility:public ')}
+                      className="px-2 py-1 bg-white border border-[#d0d7de] rounded hover:bg-[#eaeef2] transition-colors cursor-pointer font-mono text-[#57606a]"
+                    >
+                      visibility:public
+                    </button>
+                  </div>
+                </div>
+
                 <div className="px-4 py-2 mt-1">
                   <h3 className="text-xs font-semibold text-[#59636E] mb-1">Owners</h3>
                   <div
@@ -196,12 +306,12 @@ export default function GitHubSearch({ isOpen, onClose }) {
                     {filteredRepos.map((repo) => (
                       <div
                         key={repo.name}
-                        onClick={() => handleRepoClick(repo.name)}
+                        onClick={() => handleRepoClick(repo.name, repo.owner?.login)}
                         className="flex justify-between items-center group cursor-pointer hover:bg-[#f3f4f6] -mx-2 px-2 py-2 rounded-md transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <ReposotoryIcon className="w-4 h-4 text-[#59636e]" />
-                          <span className="text-sm text-[#1F2328] group-hover:text-[#0969da]">{username}/{repo.name}</span>
+                          <span className="text-sm text-[#1F2328] group-hover:text-[#0969da]">{repo.owner?.login || username}/{repo.name}</span>
                         </div>
                         <span className="text-xs text-[#59636E] opacity-0 group-hover:opacity-100 transition-opacity">Jump to</span>
                       </div>
@@ -220,12 +330,12 @@ export default function GitHubSearch({ isOpen, onClose }) {
                     {repos.slice(0, 4).map((repo) => (
                       <div
                         key={repo.name}
-                        onClick={() => handleRepoClick(repo.name)}
+                        onClick={() => handleRepoClick(repo.name, repo.owner?.login)}
                         className="flex justify-between items-center group cursor-pointer hover:bg-[#f3f4f6] -mx-2 px-2 py-2 rounded-md transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <ReposotoryIcon className="w-4 h-4 text-[#59636e]" />
-                          <span className="text-sm text-[#1F2328] group-hover:text-[#0969da]">{username}/{repo.name}</span>
+                          <span className="text-sm text-[#1F2328] group-hover:text-[#0969da]">{repo.owner?.login || username}/{repo.name}</span>
                         </div>
                         <span className="text-xs text-[#59636E] opacity-0 group-hover:opacity-100 transition-opacity">Jump to</span>
                       </div>

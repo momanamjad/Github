@@ -122,6 +122,7 @@ const NewRepoPage = () => {
         visibility: formData.visibility,
         language: "JavaScript",
         addReadme: formData.addReadme,
+        license: formData.license !== "none" ? formData.license : "",
       });
       refreshRepos(); // Trigger global update
     } catch (error) {

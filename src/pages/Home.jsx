@@ -9,7 +9,17 @@ import { Skeleton } from 'boneyard-js/react';
 import { HomeSidebarSkeleton, HomeFeedSkeleton } from "@features/HomeSkeleton";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import PinnedRepoCard from "@features/PinnedRepoCard";
-
+import { getUserActivityFeed } from "@services/GithubApi.jsx";
+import { resolveAvatarUrl } from "@/services/apiClient";
+import { 
+  Star, 
+  UserPlus, 
+  GitCommit, 
+  GitPullRequest, 
+  AlertCircle, 
+  PlusCircle, 
+  MessageSquare 
+} from 'lucide-react';
 
 const INITIAL_REPO_COUNT = 7;
 
@@ -21,11 +31,21 @@ const Home = React.memo(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [feedItems, setFeedItems] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
+    const fetchFeed = async () => {
+      try {
+        const data = await getUserActivityFeed(1, 20);
+        setFeedItems(data?.feed || []);
+      } catch (err) {
+        console.error("Failed to load activity feed:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFeed();
   }, []);
 
 
@@ -174,24 +194,123 @@ const Home = React.memo(() => {
                 <button className="text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer">All activity</button>
               </div>
 
-              {recentRepos.length > 0 ? (
-                recentRepos.map((repo) => (
-                  <div key={repo.id || repo.name} className="p-4 border border-[#d0d7de] dark:border-[#30363d] rounded-lg bg-white dark:bg-[#161b22] shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-5 h-5 rounded-full overflow-hidden">
-                        <img src="profile.webp" alt="Avatar" className="w-full h-full object-cover" />
+              {feedItems.length > 0 ? (
+                feedItems.map((item) => {
+                  const actorName = item.user?.login || "Someone";
+                  const avatar = resolveAvatarUrl(item.user?.avatar_url);
+                  const dateStr = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                  let icon = <PlusCircle className="w-4 h-4 text-green-500" />;
+                  let titleContent = null;
+                  let detailCard = null;
+
+                  switch (item.type) {
+                    case 'repo_created':
+                      icon = <PlusCircle className="w-4 h-4 text-[#1a7f37]" />;
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          created a repository <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{actorName}/{item.repository?.name}</span>
+                        </span>
+                      );
+                      if (item.repository) {
+                        detailCard = (
+                          <div className="mt-2 pl-6">
+                            <PinnedRepoCard repo={item.repository} author={item.repository.owner?.login || actorName} />
+                          </div>
+                        );
+                      }
+                      break;
+
+                    case 'repo_starred':
+                      icon = <Star className="w-4 h-4 text-[#e3b341] fill-[#e3b341]" />;
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          starred a repository <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                        </span>
+                      );
+                      if (item.repository) {
+                        detailCard = (
+                          <div className="mt-2 pl-6">
+                            <PinnedRepoCard repo={item.repository} author={item.repository.owner?.login || actorName} />
+                          </div>
+                        );
+                      }
+                      break;
+
+                    case 'user_followed':
+                      icon = <UserPlus className="w-4 h-4 text-[#0969da]" />;
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          started following <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.targetUser?.login}`)}>{item.targetUser?.login}</span>
+                        </span>
+                      );
+                      break;
+
+                    case 'file_created':
+                    case 'file_updated':
+                      icon = <GitCommit className="w-4 h-4 text-[#57606a]" />;
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          pushed a commit to <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                        </span>
+                      );
+                      if (item.commitMessage) {
+                        detailCard = (
+                          <div className="mt-2 ml-6 p-3 bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md font-mono text-xs text-left">
+                            <div className="text-xs text-[#0969da] mb-1 font-semibold">
+                              {item.commitHash ? `commit ${item.commitHash.substring(0, 7)}` : 'commit'}
+                            </div>
+                            <div className="text-[#1f2328] dark:text-[#c9d1d9] break-words">
+                              {item.commitMessage}
+                            </div>
+                          </div>
+                        );
+                      }
+                      break;
+
+                    case 'pr_created':
+                      icon = <GitPullRequest className="w-4 h-4 text-[#1a7f37]" />;
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          opened a pull request in <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                        </span>
+                      );
+                      break;
+
+                    case 'issue_created':
+                      icon = <AlertCircle className="w-4 h-4 text-[#1a7f37]" />;
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          opened an issue in <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                        </span>
+                      );
+                      break;
+
+                    default:
+                      titleContent = (
+                        <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                          performed action {item.type}
+                        </span>
+                      );
+                  }
+
+                  return (
+                    <div key={item._id || item.id} className="p-4 border border-[#d0d7de] dark:border-[#30363d] rounded-lg bg-white dark:bg-[#161b22] shadow-sm text-left">
+                      <div className="flex items-center gap-2 mb-2">
+                        {icon}
+                        <div className="w-5 h-5 rounded-full overflow-hidden">
+                          <img src={avatar} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.src = "profile.webp"; }} />
+                        </div>
+                        <span className="text-xs font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${actorName}`)}>{actorName}</span>
+                        {titleContent}
+                        <span className="text-[11px] text-[#57606a] dark:text-[#8b949e] ml-auto">
+                          {dateStr}
+                        </span>
                       </div>
-                      <span className="text-xs text-[#1f2328] dark:text-[#c9d1d9] font-medium">{repo.owner?.login || activeUsername}</span>
-                      <span className="text-xs text-[#636c76] dark:text-[#8b949e]">created a repository</span>
-                      <span className="text-xs text-[#636c76] dark:text-[#8b949e] ml-auto">
-                        {new Date(repo.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </span>
+                      {detailCard}
                     </div>
-                    <div className="mt-2 text-left">
-                      <PinnedRepoCard repo={repo} author={repo.owner?.login || activeUsername} />
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="p-6 border border-[#d0d7de] dark:border-[#30363d] border-dashed rounded-lg bg-[#f6f8fa] dark:bg-[#161b22] text-center">
                   <p className="text-sm text-[#636c76] dark:text-[#8b949e]">No recent activity to show.</p>

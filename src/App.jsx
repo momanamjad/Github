@@ -173,7 +173,7 @@ const AuthPage = () => {
           <div className="mt-6 text-center text-sm border-t border-[#d0d7de] dark:border-[#30363d] pt-4">
             {activeTab === 'login' ? (
               <p className="text-[#57606a] dark:text-[#8b949e]">
-                New to GitHub Clone?{' '}
+                New to GitHub ?{' '}
                 <button
                   type="button"
                   onClick={() => { setActiveTab('register'); setErrorMsg(""); }}

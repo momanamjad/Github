@@ -125,6 +125,62 @@ const RepoDetails = () => {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newCommentText, setNewCommentText] = useState("");
 
+  // PR branch comparison and inline commenting states
+  const [prSubTab, setPrSubTab] = useState('conversation');
+  const [prDiffs, setPrDiffs] = useState([]);
+  const [prDiffsLoading, setPrDiffsLoading] = useState(false);
+  const [prLineComments, setPrLineComments] = useState([]);
+  const [activeInlineCommentLine, setActiveInlineCommentLine] = useState(null);
+  const [newInlineCommentText, setNewInlineCommentText] = useState("");
+
+  const fetchPRDiffsAndLineComments = async (pr) => {
+    if (!repoData) return;
+    const id = repoData._id || repoData.id;
+    const prId = pr._id || pr.id;
+    try {
+      setPrDiffsLoading(true);
+      const compareRes = await apiClient(`/repos/${id}/compare?base=${encodeURIComponent(pr.targetBranch)}&head=${encodeURIComponent(pr.sourceBranch)}`);
+      setPrDiffs(compareRes?.data || []);
+
+      const commentsRes = await apiClient(`/repos/${id}/pulls/${prId}/line-comments`);
+      setPrLineComments(commentsRes?.data || []);
+    } catch (err) {
+      console.error("Failed to load PR diffs and line comments:", err);
+    } finally {
+      setPrDiffsLoading(false);
+    }
+  };
+
+  const handlePostInlineComment = async (filePath, lineNumber) => {
+    if (!newInlineCommentText.trim() || !selectedPR) return;
+    const id = repoData._id || repoData.id;
+    const prId = selectedPR._id || selectedPR.id;
+    try {
+      const res = await apiClient(`/repos/${id}/pulls/${prId}/line-comments`, {
+        method: "POST",
+        body: JSON.stringify({
+          filePath,
+          lineNumber,
+          body: newInlineCommentText.trim()
+        })
+      });
+      if (res?.data) {
+        setPrLineComments(prev => [...prev, res.data]);
+        setNewInlineCommentText("");
+        setActiveInlineCommentLine(null);
+      }
+    } catch (err) {
+      console.error("Failed to post inline comment:", err);
+    }
+  };
+
+  const handleSelectPR = async (pr) => {
+    setSelectedPR(pr);
+    setPrSubTab('conversation');
+    fetchPRComments(pr._id || pr.id);
+    fetchPRDiffsAndLineComments(pr);
+  };
+
   const fetchIssueComments = async (issueId) => {
     if (!repoData) return;
     try {
@@ -446,7 +502,7 @@ const RepoDetails = () => {
         } else {
           const repoId = repoInfo?._id || repoInfo?.id;
           if (repoId) {
-            const tree = await getTree(repoId);
+            const tree = await getTree(repoId, currentBranch);
             setFileTree(tree);
             // Fetch real commits for this repository
             try {
@@ -518,6 +574,23 @@ const RepoDetails = () => {
     loadRepo();
   }, [username, repo]);
 
+  // Re-fetch tree when branch changes
+  useEffect(() => {
+    const fetchTreeOnBranchChange = async () => {
+      if (!repoData) return;
+      const repoId = repoData._id || repoData.id;
+      if (repoId && repo.toLowerCase() !== "github") {
+        try {
+          const tree = await getTree(repoId, currentBranch);
+          setFileTree(tree);
+        } catch (err) {
+          console.error("Failed to load file tree for branch " + currentBranch, err);
+        }
+      }
+    };
+    fetchTreeOnBranchChange();
+  }, [currentBranch, repoData, repo]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 bg-white dark:bg-[#0d1117]">
@@ -549,7 +622,7 @@ const RepoDetails = () => {
       if (id) {
         try {
           // Sync files tree
-          const tree = await getTree(id);
+          const tree = await getTree(id, currentBranch);
           setFileTree(tree);
           
           // Refresh commits list
@@ -587,6 +660,36 @@ const RepoDetails = () => {
       }
     }
     return currentChildren;
+  };
+
+  const getFileIcon = (name, type) => {
+    if (type === 'dir') {
+      return <FileDirectoryFillIcon size={16} className="text-[#54a3ff] shrink-0" />;
+    }
+    const ext = name.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'js':
+      case 'jsx':
+        return <span className="w-4 h-4 bg-[#f7df1e] text-black font-extrabold text-[9px] flex items-center justify-center rounded-sm select-none shrink-0 font-sans">JS</span>;
+      case 'ts':
+      case 'tsx':
+        return <span className="w-4 h-4 bg-[#3178c6] text-white font-extrabold text-[9px] flex items-center justify-center rounded-sm select-none shrink-0 font-sans">TS</span>;
+      case 'py':
+        return <span className="w-4 h-4 bg-[#3776ab] text-white font-bold text-[9px] flex items-center justify-center rounded-sm select-none shrink-0 font-sans">PY</span>;
+      case 'html':
+        return <span className="w-4 h-4 bg-[#e34c26] text-white font-bold text-[8px] flex items-center justify-center rounded-sm select-none shrink-0 font-sans">HTML</span>;
+      case 'css':
+        return <span className="w-4 h-4 bg-[#563d7c] text-white font-bold text-[8px] flex items-center justify-center rounded-sm select-none shrink-0 font-sans">CSS</span>;
+      case 'json':
+        return <span className="w-4 h-4 bg-[#0969da] text-white font-bold text-[8px] flex items-center justify-center rounded-sm select-none font-mono">{}</span>;
+      case 'md':
+        return <BookIcon size={16} className="text-[#0969da] shrink-0" />;
+      case 'yml':
+      case 'yaml':
+        return <GearIcon size={16} className="text-[#a371f7] shrink-0" />;
+      default:
+        return <FileIcon size={16} className="text-[#57606a] dark:text-[#8b949e] shrink-0" />;
+    }
   };
 
   const getFileCommitInfo = (name) => {
@@ -913,6 +1016,7 @@ const RepoDetails = () => {
                 repoId={repoData?._id || repoData?.id}
                 file={selectedFile}
                 onSave={handleSaveFile}
+                branch={currentBranch}
               />
             </div>
           </div>
@@ -1213,6 +1317,8 @@ const RepoDetails = () => {
                         
                         {getFilesAtCurrentPath().map((item) => {
                           const commitInfo = getFileCommitInfo(item.name);
+                          const commitMsg = item.lastCommitMessage || commitInfo.message;
+                          const commitDate = item.lastCommitDate ? formatGitHubDate(item.lastCommitDate) : commitInfo.date;
                           return (
                             <tr 
                               key={item.path}
@@ -1226,20 +1332,16 @@ const RepoDetails = () => {
                               className="border-b border-[#d0d7de] dark:border-[#30363d] hover:bg-[#f6f8fa] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
                             >
                               <td className="px-4 py-2.5 font-medium text-[#24292f] dark:text-white flex items-center gap-2 max-w-[200px] truncate">
-                                {item.type === 'dir' ? (
-                                  <FileDirectoryFillIcon size={16} className="text-[#54a3ff] shrink-0" />
-                                ) : (
-                                  <FileIcon size={16} className="text-[#57606a] dark:text-[#8b949e] shrink-0" />
-                                )}
+                                {getFileIcon(item.name, item.type)}
                                 <span className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline truncate">
                                   {item.name}
                                 </span>
                               </td>
                               <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] truncate max-w-[300px]">
-                                {commitInfo.message}
+                                {commitMsg}
                               </td>
                               <td className="px-4 py-2.5 text-[#57606a] dark:text-[#8b949e] text-right whitespace-nowrap w-[120px]">
-                                {commitInfo.date}
+                                {commitDate}
                               </td>
                             </tr>
                           );
@@ -1441,73 +1543,235 @@ const RepoDetails = () => {
                 </button>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-xl sm:text-2xl font-semibold text-[#1f2328] dark:text-white">
-                    {selectedIssue.title} <span className="text-[#57606a] dark:text-[#8b949e] font-light">#{selectedIssue.number}</span>
+                    {selectedIssue.title} <span className="text-[#57606a] dark:text-[#8b949e] font-light">#{selectedIssue.number || selectedIssue.id?.substring(0,6)}</span>
                   </h2>
-                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full text-white ${selectedIssue.status === 'open' ? 'bg-[#2da44e]' : 'bg-[#8250df]'}`}>
-                    {selectedIssue.status === 'open' ? 'Open' : 'Closed'}
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full text-white ${selectedIssue.state === 'open' ? 'bg-[#2da44e]' : 'bg-[#8250df]'}`}>
+                    {selectedIssue.state === 'open' ? 'Open' : 'Closed'}
                   </span>
                 </div>
                 <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2">
-                  <span className="font-semibold text-[#24292f] dark:text-white">{selectedIssue.author}</span> opened this issue on {selectedIssue.updated}
+                  <span className="font-semibold text-[#24292f] dark:text-white">{selectedIssue.creator?.login || selectedIssue.author || 'unknown'}</span> opened this issue on {new Date(selectedIssue.created_at || selectedIssue.updated).toLocaleDateString()}
                 </p>
               </div>
 
-              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9]">
-                {selectedIssue.description ? <MarkdownRenderer content={selectedIssue.description} /> : <i>No description provided.</i>}
-              </div>
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Left Column: Comments and Markdown */}
+                <div className="flex-1 space-y-4">
+                  <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9] text-left">
+                    {selectedIssue.description ? <MarkdownRenderer content={selectedIssue.description} /> : <i>No description provided.</i>}
+                  </div>
 
-              {/* Comments list */}
-              <div className="space-y-4 pt-2">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments ({comments.length})</h3>
-                {commentsLoading ? (
-                  <div className="text-xs text-gray-500 text-center py-4">Loading comments...</div>
-                ) : (
-                  <div className="space-y-3">
-                    {comments.map(c => (
-                      <div key={c._id || c.id} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] overflow-hidden">
-                        <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={c.author?.avatar_url || "/profile.webp"}
-                              alt="avatar"
-                              className="w-5 h-5 rounded-full border object-cover"
-                            />
-                            <span className="font-semibold text-[#1f2328] dark:text-white">{c.author?.login || 'unknown'}</span>
-                            <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
+                  {/* Comments list */}
+                  <div className="space-y-4 pt-2 text-left">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments ({comments.length})</h3>
+                    {commentsLoading ? (
+                      <div className="text-xs text-gray-500 text-center py-4">Loading comments...</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {comments.map(c => (
+                          <div key={c._id || c.id} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] overflow-hidden">
+                            <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={c.author?.avatar_url || "/profile.webp"}
+                                  alt="avatar"
+                                  className="w-5 h-5 rounded-full border object-cover"
+                                />
+                                <span className="font-semibold text-[#1f2328] dark:text-white">{c.author?.login || 'unknown'}</span>
+                                <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117]">
+                              <MarkdownRenderer content={c.body} />
+                            </div>
                           </div>
-                        </div>
-                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117]">
-                          <MarkdownRenderer content={c.body} />
-                        </div>
+                        ))}
+                        {comments.length === 0 && (
+                          <p className="text-xs text-gray-500 italic py-2">No comments yet. Be the first to comment!</p>
+                        )}
                       </div>
-                    ))}
-                    {comments.length === 0 && (
-                      <p className="text-xs text-gray-500 italic py-2">No comments yet. Be the first to comment!</p>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Comment submission form */}
-              <form onSubmit={handlePostIssueComment} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3 pt-3">
-                <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Leave a comment</h4>
-                <textarea
-                  required
-                  placeholder="Type your comment here..."
-                  rows={3}
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
-                />
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
-                  >
-                    Comment
-                  </button>
+                  {/* Comment submission form */}
+                  <form onSubmit={handlePostIssueComment} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3 pt-3 text-left">
+                    <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Leave a comment</h4>
+                    <textarea
+                      required
+                      placeholder="Type your comment here..."
+                      rows={3}
+                      value={newCommentText}
+                      onChange={(e) => setNewCommentText(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                      >
+                        Comment
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+
+                {/* Right Column: Sidebar (Assignee, Labels, Milestones) */}
+                <div className="w-full md:w-60 shrink-0 space-y-6 text-xs text-[#24292f] dark:text-[#c9d1d9] text-left">
+                  {/* Assignees */}
+                  <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
+                    <div className="flex items-center justify-between font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                      <span>Assignees</span>
+                      {isOwner && (
+                        <select
+                          value={selectedIssue.assignee?.login || ""}
+                          onChange={async (e) => {
+                            const newAssignee = e.target.value;
+                            try {
+                              const issueId = selectedIssue._id || selectedIssue.id;
+                              const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues/${issueId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ assignee: newAssignee || null })
+                              });
+                              if (res?.data) {
+                                setSelectedIssue(res.data);
+                              }
+                            } catch (err) {
+                              console.error("Failed to update assignee:", err);
+                            }
+                          }}
+                          className="bg-transparent border border-[#d0d7de] dark:border-[#30363d] rounded text-[11px] p-0.5 max-w-[120px] outline-none cursor-pointer text-[#1f2328] dark:text-white"
+                        >
+                          <option value="">No assignee</option>
+                          <option value={repoData.owner?.login}>{repoData.owner?.login} (Owner)</option>
+                        </select>
+                      )}
+                    </div>
+                    {selectedIssue.assignee ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <img
+                          src={selectedIssue.assignee.avatar_url || "https://api.dicebear.com/7.x/avataaars/svg?seed=assignee"}
+                          alt="avatar"
+                          className="w-5 h-5 rounded-full object-cover border"
+                        />
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">{selectedIssue.assignee.login}</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 italic">No one assigned</span>
+                    )}
+                  </div>
+
+                  {/* Labels */}
+                  <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
+                    <div className="flex items-center justify-between font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                      <span>Labels</span>
+                      {isOwner && (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const label = prompt("Enter new label text:");
+                              if (!label || !label.trim()) return;
+                              const currentLabels = selectedIssue.labels || [];
+                              if (currentLabels.includes(label.trim())) return;
+                              const nextLabels = [...currentLabels, label.trim()];
+                              try {
+                                const issueId = selectedIssue._id || selectedIssue.id;
+                                const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues/${issueId}`, {
+                                  method: 'PUT',
+                                  body: JSON.stringify({ labels: nextLabels })
+                                });
+                                if (res?.data) {
+                                  setSelectedIssue(res.data);
+                                }
+                              } catch (err) {
+                                console.error("Failed to update labels:", err);
+                              }
+                            }}
+                            className="bg-transparent hover:underline text-[10px] text-[#0969da] border-0 cursor-pointer p-0"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {selectedIssue.labels && selectedIssue.labels.length > 0 ? (
+                        selectedIssue.labels.map(lbl => (
+                          <span 
+                            key={lbl} 
+                            className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ddf4ff] dark:bg-[#30363d] text-[#0969da] dark:text-[#58a6ff] border border-transparent flex items-center gap-1"
+                          >
+                            {lbl}
+                            {isOwner && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const nextLabels = (selectedIssue.labels || []).filter(l => l !== lbl);
+                                  try {
+                                    const issueId = selectedIssue._id || selectedIssue.id;
+                                    const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues/${issueId}`, {
+                                      method: 'PUT',
+                                      body: JSON.stringify({ labels: nextLabels })
+                                    });
+                                    if (res?.data) {
+                                      setSelectedIssue(res.data);
+                                    }
+                                  } catch (err) {
+                                    console.error("Failed to remove label:", err);
+                                  }
+                                }}
+                                className="font-bold text-red-500 hover:text-red-700 bg-transparent border-0 p-0 text-[10px] leading-none cursor-pointer"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 italic">None yet</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Milestones */}
+                  <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
+                    <div className="flex items-center justify-between font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                      <span>Milestone</span>
+                      {isOwner && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const milestone = prompt("Set milestone name (e.g. v1.0, Sprint 1):", selectedIssue.milestone || "");
+                            if (milestone === null) return;
+                            try {
+                              const issueId = selectedIssue._id || selectedIssue.id;
+                              const res = await apiClient(`/repos/${repoData._id || repoData.id}/issues/${issueId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ milestone: milestone.trim() })
+                              });
+                              if (res?.data) {
+                                setSelectedIssue(res.data);
+                              }
+                            } catch (err) {
+                              console.error("Failed to update milestone:", err);
+                            }
+                          }}
+                          className="bg-transparent hover:underline text-[10px] text-[#0969da] border-0 cursor-pointer p-0"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                    {selectedIssue.milestone ? (
+                      <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-md bg-[#fafbfc] dark:bg-[#161b22]">
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedIssue.milestone}</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 italic">No milestone</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             /* Issues list */
@@ -1668,9 +1932,9 @@ const RepoDetails = () => {
           {selectedPR ? (
             /* Pull Request Detail View */
             <div className="space-y-4">
-              <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
+              <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-2">
                 <button
-                  onClick={() => { setSelectedPR(null); setComments([]); }}
+                  onClick={() => { setSelectedPR(null); setComments([]); setPrDiffs([]); setPrLineComments([]); }}
                   className="text-xs font-semibold text-[#0969da] hover:underline bg-transparent border-0 cursor-pointer p-0 mb-3"
                 >
                   ← Back to pull requests
@@ -1686,81 +1950,216 @@ const RepoDetails = () => {
                 <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-2">
                   from <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{selectedPR.sourceBranch}</span> into <span className="font-mono bg-[#ebedf0] dark:bg-[#30363d] px-1 py-0.5 rounded text-[10px]">{selectedPR.targetBranch}</span> by <span className="font-semibold text-[#24292f] dark:text-white">{selectedPR.author?.login || 'unknown'}</span>
                 </p>
-              </div>
-
-              <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9]">
-                {selectedPR.description ? <MarkdownRenderer content={selectedPR.description} /> : <i>No description provided.</i>}
-              </div>
-
-              {selectedPR.status === 'open' && isOwner && (
-                <div className="bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 flex items-center justify-between">
-                  <div className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                    This pull request has no conflicts and can be merged automatically.
-                  </div>
+                
+                {/* PR Sub-Tabs */}
+                <div className="flex border-b border-[#d0d7de] dark:border-[#30363d] mt-4 gap-4">
                   <button
-                    onClick={async () => {
-                      await handleMergePR(selectedPR._id || selectedPR.id);
-                      setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
-                    }}
-                    className="px-3.5 py-1.5 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                    onClick={() => setPrSubTab('conversation')}
+                    className={`pb-2 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 ${prSubTab === 'conversation' ? 'border-[#f78166] text-[#1f2328] dark:text-white font-bold' : 'border-transparent text-[#57606a] dark:text-[#8b949e]'}`}
                   >
-                    Merge Pull Request
+                    Conversation
+                  </button>
+                  <button
+                    onClick={() => setPrSubTab('files')}
+                    className={`pb-2 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 flex items-center gap-1.5 ${prSubTab === 'files' ? 'border-[#f78166] text-[#1f2328] dark:text-white font-bold' : 'border-transparent text-[#57606a] dark:text-[#8b949e]'}`}
+                  >
+                    Files changed
+                    <span className="px-1.5 py-0.2 bg-[#f6f8fa] dark:bg-[#30363d] rounded-full text-[10px] text-gray-600 dark:text-gray-300">
+                      {prDiffs.length}
+                    </span>
                   </button>
                 </div>
-              )}
+              </div>
 
-              {/* Comments list */}
-              <div className="space-y-4 pt-2">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments ({comments.length})</h3>
-                {commentsLoading ? (
-                  <div className="text-xs text-gray-500 text-center py-4">Loading comments...</div>
-                ) : (
-                  <div className="space-y-3">
-                    {comments.map(c => (
-                      <div key={c._id || c.id} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] overflow-hidden">
-                        <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={c.author?.avatar_url || "/profile.webp"}
-                              alt="avatar"
-                              className="w-5 h-5 rounded-full border object-cover"
-                            />
-                            <span className="font-semibold text-[#1f2328] dark:text-white">{c.author?.login || 'unknown'}</span>
-                            <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117]">
-                          <MarkdownRenderer content={c.body} />
-                        </div>
+              {prSubTab === 'conversation' ? (
+                <>
+                  <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#161b22] p-4 text-sm text-[#1f2328] dark:text-[#c9d1d9]">
+                    {selectedPR.description ? <MarkdownRenderer content={selectedPR.description} /> : <i>No description provided.</i>}
+                  </div>
+
+                  {selectedPR.status === 'open' && isOwner && (
+                    <div className="bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 flex items-center justify-between">
+                      <div className="text-xs text-[#57606a] dark:text-[#8b949e]">
+                        This pull request has no conflicts and can be merged automatically.
                       </div>
-                    ))}
-                    {comments.length === 0 && (
-                      <p className="text-xs text-gray-500 italic py-2">No comments yet. Be the first to comment!</p>
+                      <button
+                        onClick={async () => {
+                          await handleMergePR(selectedPR._id || selectedPR.id);
+                          setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
+                        }}
+                        className="px-3.5 py-1.5 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                      >
+                        Merge Pull Request
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Comments list */}
+                  <div className="space-y-4 pt-2">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments ({comments.length})</h3>
+                    {commentsLoading ? (
+                      <div className="text-xs text-gray-500 text-center py-4">Loading comments...</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {comments.map(c => (
+                          <div key={c._id || c.id} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] overflow-hidden">
+                            <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={c.author?.avatar_url || "/profile.webp"}
+                                  alt="avatar"
+                                  className="w-5 h-5 rounded-full border object-cover"
+                                />
+                                <span className="font-semibold text-[#1f2328] dark:text-white">{c.author?.login || 'unknown'}</span>
+                                <span className="text-[#57606a] dark:text-[#8b949e]">commented on {new Date(c.created_at).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="p-3.5 text-xs sm:text-sm text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117]">
+                              <MarkdownRenderer content={c.body} />
+                            </div>
+                          </div>
+                        ))}
+                        {comments.length === 0 && (
+                          <p className="text-xs text-gray-500 italic py-2">No comments yet. Be the first to comment!</p>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Comment submission form */}
-              <form onSubmit={handlePostPRComment} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3 pt-3">
-                <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Leave a comment</h4>
-                <textarea
-                  required
-                  placeholder="Type your comment here..."
-                  rows={3}
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
-                />
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
-                  >
-                    Comment
-                  </button>
+                  {/* Comment submission form */}
+                  <form onSubmit={handlePostPRComment} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 bg-[#f6f8fa] dark:bg-[#161b22] space-y-3 pt-3">
+                    <h4 className="text-xs font-semibold text-[#1f2328] dark:text-white">Leave a comment</h4>
+                    <textarea
+                      required
+                      placeholder="Type your comment here..."
+                      rows={3}
+                      value={newCommentText}
+                      onChange={(e) => setNewCommentText(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                      >
+                        Comment
+                      </button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                /* Visual Diff / Files changed sub-tab */
+                <div className="space-y-4">
+                  {prDiffsLoading ? (
+                    <div className="text-xs text-gray-500 text-center py-8">Computing branch diffs...</div>
+                  ) : prDiffs.length === 0 ? (
+                    <div className="text-xs text-gray-500 text-center py-8 italic">No file changes detected between these branches.</div>
+                  ) : (
+                    prDiffs.map(file => (
+                      <div key={file.path} className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] overflow-hidden">
+                        <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-4 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs font-semibold">
+                          <span className="font-mono text-[#1f2328] dark:text-white">{file.path}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold text-white ${file.status === 'added' ? 'bg-[#2ea44f]' : file.status === 'deleted' ? 'bg-[#cf222e]' : 'bg-[#0969da]'}`}>
+                              {file.status}
+                            </span>
+                            <span className="text-green-600 font-bold">+{file.additions}</span>
+                            <span className="text-red-600 font-bold">-{file.deletions}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="font-mono text-xs overflow-x-auto divide-y divide-[#d0d7de]/40 dark:divide-[#30363d]/40">
+                          {file.diffLines.map((line, lineIdx) => {
+                            const isAddition = line.type === 'addition';
+                            const isDeletion = line.type === 'deletion';
+                            const bgClass = isAddition 
+                              ? 'bg-[#e6ffec] dark:bg-[#1f2d23] text-[#24292f] dark:text-[#c9d1d9]' 
+                              : isDeletion 
+                                ? 'bg-[#ffebe9] dark:bg-[#341d1f] text-[#24292f] dark:text-[#c9d1d9]' 
+                                : 'bg-white dark:bg-[#0d1117] text-[#24292f] dark:text-[#c9d1d9]';
+                            
+                            const symbol = isAddition ? '+' : isDeletion ? '-' : ' ';
+                            const lineKey = `${file.path}:${line.number}:${line.type}`;
+                            
+                            // Find line-specific comments
+                            const lineComments = prLineComments.filter(lc => lc.filePath === file.path && lc.lineNumber === line.number);
+
+                            return (
+                              <div key={lineIdx} className="group flex flex-col w-full text-left">
+                                <div className={`flex w-full ${bgClass} hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}>
+                                  {/* Line Number gutter */}
+                                  <div className="w-12 text-right pr-3 select-none text-[#57606a] dark:text-[#8b949e] border-r border-[#d0d7de]/40 dark:border-[#30363d]/40 py-0.5 bg-[#f6f8fa] dark:bg-[#161b22] shrink-0 text-[10px]">
+                                    {line.number}
+                                  </div>
+                                  {/* Symbol gutter */}
+                                  <div className="w-6 text-center select-none py-0.5 font-bold border-r border-[#d0d7de]/40 dark:border-[#30363d]/40 shrink-0 text-gray-400">
+                                    {symbol}
+                                  </div>
+                                  {/* Code Line content */}
+                                  <div 
+                                    onClick={() => setActiveInlineCommentLine(activeInlineCommentLine === lineKey ? null : lineKey)}
+                                    className="flex-1 px-4 py-0.5 whitespace-pre cursor-pointer select-text font-mono break-all hover:underline decoration-dashed decoration-gray-400"
+                                  >
+                                    {line.content || ' '}
+                                  </div>
+                                </div>
+
+                                {/* Render inline comments list */}
+                                {lineComments.map(lc => (
+                                  <div key={lc._id || lc.id} className="flex bg-[#f6f8fa] dark:bg-[#161b22] py-2 border-t border-[#d0d7de]/30 dark:border-[#30363d]/30 text-[11px] pl-18 pr-4 gap-2.5">
+                                    <img
+                                      src={lc.author?.avatar_url || "/profile.webp"}
+                                      alt="avatar"
+                                      className="w-4 h-4 rounded-full object-cover shrink-0 border"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-[#1f2328] dark:text-white">{lc.author?.login || 'unknown'}</span>
+                                        <span className="text-[#57606a] dark:text-[#8b949e] text-[10px]">{new Date(lc.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                      <div className="text-gray-700 dark:text-gray-300 mt-0.5">{lc.body}</div>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* Inline comment textarea box */}
+                                {activeInlineCommentLine === lineKey && (
+                                  <div className="bg-[#f6f8fa] dark:bg-[#161b22] p-3 border-t border-[#d0d7de]/30 dark:border-[#30363d]/30 flex flex-col pl-18 pr-4 gap-2">
+                                    <textarea
+                                      required
+                                      placeholder="Write a single-line review comment..."
+                                      rows={2}
+                                      value={newInlineCommentText}
+                                      onChange={(e) => setNewInlineCommentText(e.target.value)}
+                                      className="w-full px-2.5 py-1.5 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveInlineCommentLine(null)}
+                                        className="px-2.5 py-1 text-[11px] font-semibold border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#21262d] hover:bg-gray-50 cursor-pointer"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePostInlineComment(file.path, line.number)}
+                                        className="px-2.5 py-1 text-[11px] font-semibold bg-[#238636] hover:bg-[#2ea043] text-white rounded border-0 cursor-pointer"
+                                      >
+                                        Add comment
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              </form>
+              )}
             </div>
           ) : (
             /* PRs list */
@@ -1781,23 +2180,31 @@ const RepoDetails = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Source Branch</label>
-                      <input
-                        type="text"
+                      <select
                         required
                         value={newPrSource}
                         onChange={(e) => setNewPrSource(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
-                      />
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white cursor-pointer"
+                      >
+                        <option value="">Select source</option>
+                        {branches.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-[#57606a] dark:text-[#8b949e] mb-1">Target Branch</label>
-                      <input
-                        type="text"
+                      <select
                         required
                         value={newPrTarget}
                         onChange={(e) => setNewPrTarget(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none"
-                      />
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#1f2328] dark:text-white cursor-pointer"
+                      >
+                        <option value="">Select target</option>
+                        {branches.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div>
@@ -1838,7 +2245,7 @@ const RepoDetails = () => {
                     {repoPRs.map(pr => (
                       <div
                         key={pr._id || pr.id}
-                        onClick={() => { setSelectedPR(pr); fetchPRComments(pr._id || pr.id); }}
+                        onClick={() => handleSelectPR(pr)}
                         className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 text-left transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-2.5 min-w-0">

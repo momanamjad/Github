@@ -1,33 +1,48 @@
 import React, { useState, useEffect } from "react";
 import { updateNode, addNode } from "@services/fileSystemService.js";
 import { CheckIcon, CodeIcon } from "@primer/octicons-react";
+import MarkdownRenderer from "./common/MarkdownRenderer.jsx";
 
-const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
+const FileEditor = ({ repoId, file, onSave, isOwner = true, branch = 'main' }) => {
   const [content, setContent] = useState(file?.content || "");
   const [saved, setSaved] = useState(false);
+  const [editorTab, setEditorTab] = useState("edit"); // "edit" | "preview"
+
+  const [showCommitModal, setShowCommitModal] = useState(false);
+  const [commitMsg, setCommitMsg] = useState("");
 
   useEffect(() => {
     setContent(file?.content || "");
     setSaved(false);
+    setCommitMsg("");
+    setEditorTab("edit");
   }, [file]);
 
   if (!file) return null;
 
+  const isNew = !file._id && !file.id;
+
   const handleSave = async () => {
     try {
-      const isNew = !file._id && !file.id;
+      const finalMsg = commitMsg.trim() || (isNew ? `Create ${file.name}` : `Update ${file.name}`);
       if (isNew) {
         await addNode(repoId, file.parentPath, {
           name: file.name,
           path: file.path,
           type: 'file',
-          content
-        });
+          content,
+          commitMessage: finalMsg
+        }, branch);
       } else {
-        await updateNode(repoId, file.path, { content });
+        await updateNode(repoId, file.path, { 
+          content,
+          commitMessage: finalMsg
+        }, branch);
       }
       if (onSave) onSave(file.path, content, isNew);
       setSaved(true);
+      setShowCommitModal(false);
+      setCommitMsg("");
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error(e.message);
@@ -64,7 +79,7 @@ const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
         </div>
         {isOwner && (
           <button
-            onClick={handleSave}
+            onClick={() => setShowCommitModal(true)}
             disabled={isUnchanged && !saved}
             className={`flex items-center gap-1.5 px-3 py-[5px] text-[13px] font-semibold rounded-md border transition-all shrink-0
               ${saved
@@ -87,19 +102,45 @@ const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
         )}
       </div>
 
+      {/* Edit/Preview Tabs */}
+      <div className="flex border-b border-[#d0d7de] dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#161b22] px-3 sm:px-4 gap-2 select-none">
+        <button
+          onClick={() => setEditorTab("edit")}
+          className={`px-3 py-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 -mb-[1px] ${editorTab === "edit" ? "border-[#f78166] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => setEditorTab("preview")}
+          className={`px-3 py-1.5 text-xs font-semibold border-b-2 cursor-pointer bg-transparent border-0 -mb-[1px] ${editorTab === "preview" ? "border-[#f78166] text-[#1f2328] dark:text-white font-bold" : "border-transparent text-[#57606a] dark:text-[#8b949e]"}`}
+        >
+          Preview
+        </button>
+      </div>
+
       {/* Editor area */}
-      <div className="relative">
-        <textarea
-          className="w-full min-h-[300px] sm:min-h-[400px] p-3 sm:p-4 font-mono text-[13px] leading-relaxed text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117] border-none outline-none resize-y"
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value);
-            setSaved(false);
-          }}
-          readOnly={!isOwner}
-          spellCheck={false}
-          placeholder="Start typing..."
-        />
+      <div className="relative min-h-[300px] sm:min-h-[400px]">
+        {editorTab === "edit" ? (
+          <textarea
+            className="w-full min-h-[300px] sm:min-h-[400px] p-3 sm:p-4 font-mono text-[13px] leading-relaxed text-[#1f2328] dark:text-[#c9d1d9] bg-white dark:bg-[#0d1117] border-none outline-none resize-y text-left"
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              setSaved(false);
+            }}
+            readOnly={!isOwner}
+            spellCheck={false}
+            placeholder="Start typing..."
+          />
+        ) : (
+          <div className="p-4 bg-white dark:bg-[#0d1117] min-h-[300px] sm:min-h-[400px] text-left overflow-y-auto">
+            {ext === "md" ? (
+              <MarkdownRenderer content={content} />
+            ) : (
+              <pre className="font-mono text-[13px] leading-relaxed text-[#1f2328] dark:text-[#c9d1d9] whitespace-pre-wrap">{content || <i className="text-gray-400">Empty file</i>}</pre>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom status bar */}
@@ -107,6 +148,52 @@ const FileEditor = ({ repoId, file, onSave, isOwner = true }) => {
         <span>{content.split("\n").length} lines</span>
         <span>{content.length} characters</span>
       </div>
+
+      {/* Commit Modal Overlay */}
+      {showCommitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-lg shadow-lg overflow-hidden text-left">
+            <div className="px-4 py-3 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] flex justify-between items-center">
+              <h3 className="text-sm font-semibold text-[#24292f] dark:text-white font-sans">Commit changes</h3>
+              <button 
+                onClick={() => setShowCommitModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white bg-transparent border-0 cursor-pointer font-bold text-base"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#57606a] dark:text-[#8b949e] mb-1.5">
+                  Commit message
+                </label>
+                <input
+                  type="text"
+                  value={commitMsg}
+                  onChange={(e) => setCommitMsg(e.target.value)}
+                  placeholder={isNew ? `Create ${file.name}` : `Update ${file.name}`}
+                  className="w-full px-3 py-2 text-xs border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] focus:outline-none focus:border-[#0969da] dark:focus:border-[#58a6ff] focus:ring-1 focus:ring-[#0969da] dark:focus:ring-[#58a6ff]"
+                  autoFocus
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-3 justify-end border-t border-[#d0d7de] dark:border-[#30363d]">
+                <button
+                  onClick={() => setShowCommitModal(false)}
+                  className="px-3 py-1.5 text-xs font-semibold text-[#24292f] dark:text-white border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#21262d] hover:bg-[#ebedf0] dark:hover:bg-[#30363d] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2ea043] border border-transparent rounded-md hover:bg-[#2c974b] cursor-pointer"
+                >
+                  Commit changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

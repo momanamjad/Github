@@ -1,20 +1,43 @@
 import React from "react";
-import { Star, GitFork } from "lucide-react";
+import { Star, GitFork, Scale } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { getStoredStarredRepos, starRepository, unstarRepository, getStoredPinnedRepos, pinRepository, unpinRepository } from "@services/storageService.js";
 import { toggleStarRepo, togglePinRepo } from "@services/GithubApi.jsx";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import { Link } from "react-router-dom";
 
+const getRelativeTimeString = (dateString) => {
+  if (!dateString) return "recently";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours === 0) {
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      if (diffMins === 0) return "just now";
+      return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    }
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  }
+  if (diffDays < 30) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  }
+  // Otherwise, return "on MMM DD, YYYY"
+  return "on " + date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric'
+  });
+};
+
 /**
  * Individual Repository Item to improve render efficiency
  */
 const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onTogglePin }) => {
-  const formattedDate = new Date(repo.updated_at).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: repo.updated_at.includes(new Date().getFullYear()) ? undefined : 'numeric'
-  });
+  const relativeDate = getRelativeTimeString(repo.updated_at);
 
   const ownerLogin = repo.owner?.login || "moman";
   const visibility = repo.visibility || (repo.private ? "private" : "public");
@@ -57,6 +80,13 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
             </span>
           )}
 
+          {repo.license && (
+            <span className="flex items-center gap-1">
+              <Scale size={14} className="text-[#57606a]" />
+              {repo.license}
+            </span>
+          )}
+
           {((repo.stars_count || 0) + (isStarred ? 1 : 0) > 0) && (
             <span className="flex items-center gap-1">
               <Star size={14} className="text-[#57606a]" />
@@ -71,7 +101,7 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
             </span>
           )}
 
-          <span>Updated on {formattedDate}</span>
+          <span>Updated {relativeDate}</span>
         </div>
       </div>
 

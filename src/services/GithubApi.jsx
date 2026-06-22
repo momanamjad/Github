@@ -149,3 +149,15 @@ export const getExploreRepos = async () => {
   const res = await apiClient("/repos/public/explore");
   return res?.data || [];
 };
+
+// Search repositories using query matching (including stars, forks, language, visibility)
+export const searchReposApi = async (queryStr) => {
+  const res = await apiClient(`/repos/search/query?q=${encodeURIComponent(queryStr)}`);
+  return res?.data || [];
+};
+
+// Fetch user activity feed
+export const getUserActivityFeed = async (page = 1, limit = 20) => {
+  const res = await apiClient(`/users/activity/feed?page=${page}&limit=${limit}`);
+  return res?.data || { feed: [], total: 0 };
+};

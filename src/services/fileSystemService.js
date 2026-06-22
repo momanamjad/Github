@@ -9,10 +9,10 @@ const isBackendRepo = (repoId) => {
 /**
  * Read the file tree for a repository.
  */
-export const getTree = async (repoId) => {
+export const getTree = async (repoId, branch = 'main') => {
   if (isBackendRepo(repoId)) {
     try {
-      const res = await apiClient(`/repos/${repoId}/contents`);
+      const res = await apiClient(`/repos/${repoId}/contents?branch=${encodeURIComponent(branch)}`);
       return res.data || [];
     } catch (err) {
       console.error('Error fetching tree from backend, falling back to local storage:', err);
@@ -81,7 +81,7 @@ function deleteNodeFromTree(tree, targetPath) {
 /**
  * Add a file or directory node under a given parent path.
  */
-export const addNode = async (repoId, parentPath, newNode) => {
+export const addNode = async (repoId, parentPath, newNode, branch = 'main') => {
   if (isBackendRepo(repoId)) {
     const res = await apiClient(`/repos/${repoId}/contents`, {
       method: 'POST',
@@ -90,7 +90,9 @@ export const addNode = async (repoId, parentPath, newNode) => {
         path: newNode.path,
         type: newNode.type,
         content: newNode.content || '',
-        parentPath: parentPath || ''
+        parentPath: parentPath || '',
+        commitMessage: newNode.commitMessage || '',
+        branch
       })
     });
     return res.data;
@@ -108,7 +110,7 @@ export const addNode = async (repoId, parentPath, newNode) => {
 /**
  * Update a node's properties (rename or edit content)
  */
-export const updateNode = async (repoId, path, newValues) => {
+export const updateNode = async (repoId, path, newValues, branch = 'main') => {
   if (isBackendRepo(repoId)) {
     const res = await apiClient(`/repos/${repoId}/contents`, {
       method: 'PUT',
@@ -116,7 +118,9 @@ export const updateNode = async (repoId, path, newValues) => {
         oldPath: path,
         name: newValues.name,
         path: newValues.path,
-        content: newValues.content
+        content: newValues.content,
+        commitMessage: newValues.commitMessage,
+        branch
       })
     });
     return res.data;
@@ -133,11 +137,11 @@ export const updateNode = async (repoId, path, newValues) => {
 /**
  * Delete a node (file or folder).
  */
-export const deleteNode = async (repoId, path) => {
+export const deleteNode = async (repoId, path, branch = 'main') => {
   if (isBackendRepo(repoId)) {
     const res = await apiClient(`/repos/${repoId}/contents`, {
       method: 'DELETE',
-      body: JSON.stringify({ path })
+      body: JSON.stringify({ path, branch })
     });
     return res.data;
   }
