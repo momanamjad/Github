@@ -73,7 +73,7 @@ const ResetPasswordPage = () => {
           </h2>
 
           {message && (
-            <div className="mb-4 p-3 text-sm text-[#2da44e] bg-[#2da44e]/10 border border-[#2da44e]/30 rounded-md">
+            <div className="mb-4 p-3 text-sm text-[#0969da] dark:text-[#58a6ff] bg-[#ddf4ff] dark:bg-[#388bfd]/15 border border-[#54aeff]/30 rounded-md">
               {message} Redirecting to login...
             </div>
           )}
