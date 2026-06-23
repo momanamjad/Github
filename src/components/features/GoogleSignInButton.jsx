@@ -35,11 +35,15 @@ const GoogleSignInButton = ({ onSuccess, onFailure }) => {
         });
 
         if (buttonRef.current) {
+          const parentWidth = buttonRef.current.parentElement?.getBoundingClientRect().width;
+          const targetWidth = parentWidth ? Math.min(Math.max(Math.round(parentWidth), 200), 400) : 320;
+
           window.google.accounts.id.renderButton(buttonRef.current, {
             theme: "outline",
             size: "large",
             text: "signin_with",
             shape: "rectangular",
+            width: targetWidth,
           });
         }
       }
