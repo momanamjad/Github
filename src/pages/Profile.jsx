@@ -6,7 +6,7 @@ import ContributionGraph from "@common/ContributionGraph";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Loader from "@common/Loader";
-import Error from "@common/Error";
+import ErrorComponent from "@common/Error";
 import { getUser, getRepos } from "@services/GithubApi.jsx";
 import { GitHubCalendar } from "react-github-calendar";
 import RepoList from "@features/RepoList";
@@ -44,7 +44,7 @@ const Profile = () => {
   }, [username]);
 
   if (loading) return <Loader />;
-  if (error) return <Error message={error} />;
+  if (error) return <ErrorComponent message={error} />;
 
   return (
     <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">

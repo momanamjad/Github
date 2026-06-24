@@ -224,18 +224,20 @@ export default function Projects() {
                                 <span>
                                   Column: <span className="capitalize px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#30363d] text-gray-700 dark:text-[#c9d1d9] text-[10px] font-medium">{project.column?.replace('_', ' ')}</span>
                                 </span>
-                                {project.creator && (
+                                {project.creator && typeof project.creator === 'object' && project.creator.login && (
                                   <>
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
-                                      by <img src={project.creator.avatar_url} alt={project.creator.login} className="w-4 h-4 rounded-full" />
+                                      {project.creator.avatar_url && (
+                                        <img src={project.creator.avatar_url} alt={project.creator.login} className="w-4 h-4 rounded-full" />
+                                      )}
                                       <span className="font-semibold">{project.creator.login}</span>
                                     </span>
                                   </>
                                 )}
                                 <span>•</span>
                                 <span>
-                                  updated {new Date(project.updated_at || project.updatedAt).toLocaleDateString()}
+                                  updated {new Date(project.updated_at || project.updatedAt || project.created_at || project.createdAt || Date.now()).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>
@@ -347,18 +349,20 @@ export default function Projects() {
                                 <span>
                                   Column: <span className="capitalize px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#30363d] text-gray-700 dark:text-[#c9d1d9] text-[10px] font-medium">{project.column?.replace('_', ' ')}</span>
                                 </span>
-                                {project.creator && (
+                                {project.creator && typeof project.creator === 'object' && project.creator.login && (
                                   <>
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
-                                      by <img src={project.creator.avatar_url} alt={project.creator.login} className="w-4 h-4 rounded-full" />
+                                      {project.creator.avatar_url && (
+                                        <img src={project.creator.avatar_url} alt={project.creator.login} className="w-4 h-4 rounded-full" />
+                                      )}
                                       <span className="font-semibold">{project.creator.login}</span>
                                     </span>
                                   </>
                                 )}
                                 <span>•</span>
                                 <span>
-                                  updated {new Date(project.updated_at || project.updatedAt).toLocaleDateString()}
+                                  updated {new Date(project.updated_at || project.updatedAt || project.created_at || project.createdAt || Date.now()).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>
