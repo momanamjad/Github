@@ -39,28 +39,49 @@ export const registerUser = async (login, email, password) => {
   return res.data;
 };
 
+// Pending requests cache for deduplication of concurrent requests
+const pendingRequests = new Map();
+
+// Get full user with repos and other associated data (deduplicated)
+export const getUserWithRepos = async (username) => {
+  if (pendingRequests.has(username)) {
+    return pendingRequests.get(username);
+  }
+  const promise = apiClient(`/auth/user/${username}`)
+    .then((res) => {
+      pendingRequests.delete(username);
+      return res;
+    })
+    .catch((err) => {
+      pendingRequests.delete(username);
+      throw err;
+    });
+  pendingRequests.set(username, promise);
+  return promise;
+};
+
 // Get user profile
 export const getUser = async (username) => {
-  const res = await apiClient(`/auth/user/${username}`);
-  return res.data.user;
+  const res = await getUserWithRepos(username);
+  return res?.data?.user ?? null;
 };
 
 // Get repositories
 export const getRepos = async (username) => {
-  const res = await apiClient(`/auth/user/${username}`);
+  const res = await getUserWithRepos(username);
   return res?.data?.repos || [];
 };
 
 // Get starred repositories
 export const getStarredRepos = async (username) => {
-  const res = await apiClient(`/auth/user/${username}`);
-  return res.data.starredRepos || [];
+  const res = await getUserWithRepos(username);
+  return res?.data?.starredRepos || [];
 };
 
 // Get single repository details
 export const getRepo = async (username, repoName) => {
-  const res = await apiClient(`/auth/user/${username}`);
-  const foundRepo = res.data.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
+  const res = await getUserWithRepos(username);
+  const foundRepo = res?.data?.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
   if (foundRepo) {
     try {
       const detailRes = await apiClient(`/repos/${foundRepo._id || foundRepo.id}`);
@@ -109,8 +130,8 @@ export const getRepoContents = async (user, repo, path = "") => {
 
 // Get pinned repos
 export const getPinnedRepos = async (username) => {
-  const res = await apiClient(`/auth/user/${username}`);
-  const pins = res.data.pins || [];
+  const res = await getUserWithRepos(username);
+  const pins = res?.data?.pins || [];
   return pins.map(pin => pin.repository).filter(Boolean);
 };
 
@@ -157,8 +178,8 @@ export const searchReposApi = async (queryStr) => {
 };
 
 // Fetch user activity feed
-export const getUserActivityFeed = async (page = 1, limit = 20) => {
-  const res = await apiClient(`/users/activity/feed?page=${page}&limit=${limit}`);
+export const getUserActivityFeed = async (page = 1, limit = 20, options = {}) => {
+  const res = await apiClient(`/users/activity/feed?page=${page}&limit=${limit}`, options);
   return res?.data || { feed: [], total: 0 };
 };
 

@@ -65,6 +65,9 @@ export default function Following() {
   const fetchFollowing = async () => {
     try {
       const targetUser = await getUser(username);
+      if (!targetUser) {
+        throw new Error("User not found");
+      }
       const targetId = targetUser._id || targetUser.id;
 
       const res = await apiClient(`/users/${targetId}/following`);

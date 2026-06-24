@@ -43,7 +43,12 @@ const subscribeTokenRefresh = (cb) => {
 };
 
 const onRefreshed = (token) => {
-  refreshSubscribers.map((cb) => cb(token));
+  refreshSubscribers.forEach((cb) => cb(null, token));
+  refreshSubscribers = [];
+};
+
+const onRefreshFailed = (error) => {
+  refreshSubscribers.forEach((cb) => cb(error, null));
   refreshSubscribers = [];
 };
 
@@ -79,20 +84,26 @@ export const apiClient = async (endpoint, options = {}) => {
           isRefreshing = false;
           onRefreshed(newToken);
         } else {
-          isRefreshing = false;
           localStorage.removeItem('github_token');
           localStorage.removeItem('github_user');
-          window.location.reload(); // Refresh to send guest to login page
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 0);
           throw new Error('Session expired');
         }
       } catch (err) {
         isRefreshing = false;
+        onRefreshFailed(err);
         throw err;
       }
     }
 
-    const retryOriginalRequest = new Promise((resolve) => {
-      subscribeTokenRefresh((newToken) => {
+    const retryOriginalRequest = new Promise((resolve, reject) => {
+      subscribeTokenRefresh((err, newToken) => {
+        if (err) {
+          reject(err);
+          return;
+        }
         headers['Authorization'] = `Bearer ${newToken}`;
         resolve(
           fetch(`${API_URL}${endpoint}`, {
@@ -107,7 +118,10 @@ export const apiClient = async (endpoint, options = {}) => {
     response = await retryOriginalRequest;
   }
 
-  let data = await response.json();
+  const contentType = response.headers.get('content-type');
+  let data = contentType?.includes('application/json')
+    ? await response.json()
+    : { message: await response.text() };
 
   if (!response.ok) {
     throw new Error(data.message || 'Something went wrong');

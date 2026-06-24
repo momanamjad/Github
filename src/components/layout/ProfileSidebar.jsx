@@ -52,6 +52,9 @@ const ProfileSidebar = ({
     const fetchProfile = async () => {
       try {
         const u = await getUser(username);
+        if (!u) {
+          throw new Error("User not found");
+        }
         setUserProfile({
           id: u._id || u.id,
           name: u.name || u.login,

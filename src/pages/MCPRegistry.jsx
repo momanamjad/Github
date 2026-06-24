@@ -50,7 +50,10 @@ const MCPRegistry = () => {
   };
 
   useEffect(() => {
-    fetchServers();
+    const timer = setTimeout(() => {
+      fetchServers();
+    }, 300); // 300ms debounce
+    return () => clearTimeout(timer);
   }, [selectedCategory, searchQuery]);
 
   const handleRegister = async (e) => {

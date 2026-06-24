@@ -25,9 +25,9 @@ const INITIAL_REPO_COUNT = 7;
 
 const Home = React.memo(() => {
   const { repositories: allRepos, user } = useGitHub();
-  const activeUsername = user?.login || "moman";
+  const activeUsername = user?.login;
   const [filterOpen, setFilterOpen] = useState(false);
-  const [, setFilterValue] = useState();
+  const [filterValue, setFilterValue] = useState('all');
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,17 +35,21 @@ const Home = React.memo(() => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchFeed = async () => {
       try {
-        const data = await getUserActivityFeed(1, 20);
+        const data = await getUserActivityFeed(1, 20, { signal: controller.signal });
         setFeedItems(data?.feed || []);
       } catch (err) {
-        console.error("Failed to load activity feed:", err);
+        if (err.name !== "AbortError") {
+          console.error("Failed to load activity feed:", err);
+        }
       } finally {
         setIsLoading(false);
       }
     };
     fetchFeed();
+    return () => controller.abort();
   }, []);
 
 
@@ -80,6 +84,12 @@ const Home = React.memo(() => {
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       .slice(0, 3);
   }, [allRepos]);
+
+  const filteredFeed = (filterValue === 'all' || filterValue === 'All')
+    ? feedItems
+    : feedItems.filter(item => item.type === filterValue);
+
+  if (!activeUsername) return null;
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-white dark:bg-[#0d1117] font-sans text-[#1f2328] dark:text-[#c9d1d9] transition-colors">
@@ -194,8 +204,8 @@ const Home = React.memo(() => {
                 <button className="text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer">All activity</button>
               </div>
 
-              {feedItems.length > 0 ? (
-                feedItems.map((item) => {
+              {filteredFeed.length > 0 ? (
+                filteredFeed.map((item) => {
                   const actorName = item.user?.login || "Someone";
                   const avatar = resolveAvatarUrl(item.user?.avatar_url);
                   const dateStr = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });

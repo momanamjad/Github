@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { PlusIcon, SearchIcon, ChevronDownIcon, CheckIcon, TagIcon, PersonIcon } from "@primer/octicons-react";
 import FilterModal from "../components/FilterModal";
 import { useGitHub } from "../contexts/GitHubContext";
@@ -22,7 +22,7 @@ export default function GitHubIssues() {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchBackendIssues = async () => {
+  const fetchBackendIssues = useCallback(async () => {
     if (!repositories || repositories.length === 0) return;
     try {
       const allIssuesPromise = repositories.map(async (repo) => {
@@ -34,10 +34,11 @@ export default function GitHubIssues() {
             title: issue.title,
             repo: repo.name,
             repoId: repoId,
-            number: issue.number || Math.floor(Math.random() * 900) + 100,
+            number: issue.number || parseInt(issue._id ? issue._id.substring(18, 24) : '0', 16) || 1,
             status: issue.state || 'open',
             author: issue.creator?.login || 'unknown',
             updated: new Date(issue.updated_at || issue.created_at).toLocaleDateString(),
+            updatedAt: issue.updated_at || issue.created_at,
             labels: issue.labels || [],
             assignee: issue.assignee?.login || null,
             description: issue.description || '',
@@ -53,12 +54,12 @@ export default function GitHubIssues() {
     } catch (err) {
       console.error("Failed to load issues:", err);
     }
-  };
+  }, [repositories]);
 
   React.useEffect(() => {
     setLoading(true);
     fetchBackendIssues().finally(() => setLoading(false));
-  }, [repositories]);
+  }, [fetchBackendIssues]);
 
   React.useEffect(() => {
     const handleIssuesUpdate = () => {
@@ -66,7 +67,7 @@ export default function GitHubIssues() {
     };
     window.addEventListener("github_clone_issues_updated", handleIssuesUpdate);
     return () => window.removeEventListener("github_clone_issues_updated", handleIssuesUpdate);
-  }, [repositories]);
+  }, [fetchBackendIssues]);
 
   const handleCreateIssue = (newlyCreated) => {
     fetchBackendIssues();
@@ -82,29 +83,27 @@ export default function GitHubIssues() {
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const selectedIssue = issues.find(i => i.id === selectedIssueId);
 
-  const [commentsMap, setCommentsMap] = useState(() => {
-    const saved = localStorage.getItem("github_clone_issue_comments");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    return {
-      1: [
-        { author: "ghost", text: "Please look into this footer link ASAP, it is throwing 404.", date: "1 hour ago" },
-        { author: "moman", text: "Assigned. Will fix in the next deploy.", date: "30 mins ago" }
-      ],
-      2: [
-        { author: "alice", text: "I can contribute to implementing dark mode if needed.", date: "4 hours ago" }
-      ]
-    };
-  });
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   React.useEffect(() => {
-    localStorage.setItem("github_clone_issue_comments", JSON.stringify(commentsMap));
-  }, [commentsMap]);
+    if (!selectedIssue) {
+      setComments([]);
+      return;
+    }
+    const fetchComments = async () => {
+      setCommentsLoading(true);
+      try {
+        const res = await apiClient(`/repos/${selectedIssue.repoId}/issues/${selectedIssue.id}/comments`);
+        setComments(res?.data || []);
+      } catch (err) {
+        console.error("Failed to load comments:", err);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    fetchComments();
+  }, [selectedIssue]);
 
   const [newCommentText, setNewCommentText] = useState("");
 
@@ -115,19 +114,21 @@ export default function GitHubIssues() {
   const allAssignees = [activeUsername, "alice", "bob", "ghost"];
   const allLabels = ["bug", "enhancement", "ui", "documentation", "duplicate"];
 
-  const handleAddComment = (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newCommentText.trim()) return;
-    const comment = {
-      author: activeUsername,
-      text: newCommentText,
-      date: "Just now"
-    };
-    setCommentsMap(prev => ({
-      ...prev,
-      [selectedIssue.id]: [...(prev[selectedIssue.id] || []), comment]
-    }));
-    setNewCommentText("");
+    if (!newCommentText.trim() || !selectedIssue) return;
+    try {
+      const res = await apiClient(`/repos/${selectedIssue.repoId}/issues/${selectedIssue.id}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ body: newCommentText })
+      });
+      if (res?.data) {
+        setComments(prev => [...prev, res.data]);
+      }
+      setNewCommentText("");
+    } catch (err) {
+      console.error("Failed to add comment:", err);
+    }
   };
 
   const handleToggleIssueStatus = async () => {
@@ -196,7 +197,33 @@ export default function GitHubIssues() {
     }
   };
 
-  const filteredIssues = issues.filter(issue => 
+  let tabFilteredIssues = issues;
+  const userLogin = user?.login || "moman";
+
+  if (activeTab === "created") {
+    tabFilteredIssues = issues.filter(issue => issue.author === userLogin);
+  } else if (activeTab === "assigned") {
+    tabFilteredIssues = issues.filter(issue => {
+      if (issue.assignees && Array.isArray(issue.assignees)) {
+        return issue.assignees.some(a => (typeof a === 'string' ? a : a?.login) === userLogin);
+      }
+      return issue.assignee === userLogin;
+    });
+  } else if (activeTab === "mentioned") {
+    tabFilteredIssues = issues.filter(issue => {
+      const mentionStr = `@${userLogin}`;
+      const inBody = (issue.description || "").includes(mentionStr);
+      return inBody;
+    });
+  } else if (activeTab === "recent") {
+    tabFilteredIssues = [...issues].sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.updated || 0);
+      const dateB = new Date(b.updatedAt || b.updated || 0);
+      return dateB - dateA;
+    });
+  }
+
+  const filteredIssues = tabFilteredIssues.filter(issue => 
     issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     issue.repo.toLowerCase().includes(searchQuery.toLowerCase()) ||
     issue.author.toLowerCase().includes(searchQuery.toLowerCase())
@@ -299,16 +326,20 @@ export default function GitHubIssues() {
                     </div>
 
                     {/* Render Comments */}
-                    {(commentsMap[selectedIssue.id] || []).map((comment, index) => (
-                      <div key={index} className="border border-[#d0d7de] dark:border-[#30363d] rounded-lg overflow-hidden bg-white dark:bg-[#161b22]">
-                        <div className="px-4 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] text-xs text-[#57606a] dark:text-[#8b949e] flex justify-between">
-                          <span><span className="font-semibold text-[#1f2328] dark:text-white">{comment.author}</span> commented {comment.date}</span>
+                    {comments.map((comment, index) => {
+                      const commentAuthor = comment.author?.login || comment.author || "Someone";
+                      const commentDate = new Date(comment.created_at || comment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <div key={comment._id || index} className="border border-[#d0d7de] dark:border-[#30363d] rounded-lg overflow-hidden bg-white dark:bg-[#161b22]">
+                          <div className="px-4 py-2 bg-[#f6f8fa] dark:bg-[#161b22] border-b border-[#d0d7de] dark:border-[#30363d] text-xs text-[#57606a] dark:text-[#8b949e] flex justify-between">
+                            <span><span className="font-semibold text-[#1f2328] dark:text-white">{commentAuthor}</span> commented {commentDate}</span>
+                          </div>
+                          <div className="p-4 text-[14px] leading-relaxed text-[#1f2328] dark:text-[#c9d1d9]">
+                            {comment.body}
+                          </div>
                         </div>
-                        <div className="p-4 text-[14px] leading-relaxed text-[#1f2328] dark:text-[#c9d1d9]">
-                          {comment.text}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Add comment box */}
                     <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-lg overflow-hidden bg-white dark:bg-[#161b22] mt-6">
