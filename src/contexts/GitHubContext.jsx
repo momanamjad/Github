@@ -144,6 +144,7 @@ export const GitHubProvider = ({ children }) => {
                 location: newData.location,
                 blog: newData.blog,
                 pronouns: newData.pronouns,
+                socialLinks: newData.socialLinks,
             };
             const res = await apiClient('/auth/profile', {
                 method: 'PUT',

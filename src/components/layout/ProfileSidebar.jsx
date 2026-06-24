@@ -27,7 +27,7 @@ const ProfileSidebar = ({
   const { user, updateUser } = useGitHub();
 
   const username = routeUsername || user?.login || "moman";
-  const isOwner = user && user.login === username;
+  const isOwner = user && user.login?.toLowerCase() === username?.toLowerCase();
 
   const [userProfile, setUserProfile] = useState({
     id: "",
@@ -65,7 +65,7 @@ const ProfileSidebar = ({
           timezone: "(GMT-12:00) International Date Line West",
           email: u.email || "",
           website: u.blog || "",
-          socialLinks: ["", "", "", ""],
+          socialLinks: (u.socialLinks && u.socialLinks.length) ? [...u.socialLinks, ...Array(Math.max(0, 4 - u.socialLinks.length)).fill("")] : ["", "", "", ""],
           followers: u.followers_count || 0,
           following: u.following_count || 0,
           isFollowing: u.isFollowing || false,
@@ -111,6 +111,8 @@ const ProfileSidebar = ({
         location: newProfile.location,
         email: newProfile.email,
         blog: newProfile.website,
+        pronouns: newProfile.pronouns,
+        socialLinks: newProfile.socialLinks,
       });
     }
     console.log("Profile updated:", updatedProfile);
