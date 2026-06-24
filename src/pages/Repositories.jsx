@@ -18,13 +18,6 @@ import { RepoSkeleton } from "@features/RepoSkeleton";
 export default function Repositories() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "my-repositories";
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate loading delay for skeleton demonstration
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, [activeTab]);
 
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -35,7 +28,7 @@ export default function Repositories() {
   const [filterLanguage, setFilterLanguage] = useState("all");
   const [sortOrder, setSortOrder] = useState("updated");
 
-  const { repositories, user } = useGitHub();
+  const { repositories, user, isLoading } = useGitHub();
 
   // Calculate unique languages for the filter dropdown
   const languages = useMemo(() => {
@@ -53,9 +46,11 @@ export default function Repositories() {
     // Helper to check if logged-in user owns the repo
     const isOwner = (repo) => {
       if (!user) return false;
-      const ownerId = repo.owner?._id || repo.owner?.id || repo.owner;
+      const userId = user?._id?.toString() || user?.id?.toString();
+      const ownerId = (repo.owner?._id || repo.owner?.id || repo.owner)?.toString();
+      const isOwnerCheck = userId && ownerId && userId === ownerId;
       const ownerLogin = repo.owner?.login;
-      return ownerId === user.id || ownerLogin === user.login;
+      return isOwnerCheck || ownerLogin === user.login;
     };
 
     // 1. Filter by Tab (Sidebar)

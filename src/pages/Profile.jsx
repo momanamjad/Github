@@ -26,6 +26,9 @@ const Profile = () => {
         setError(null);
 
         const userData = await getUser(username);
+        if (!userData) {
+          throw new Error("User not found");
+        }
         const repoData = await getRepos(username);
 
         setUser(userData);
@@ -44,18 +47,13 @@ const Profile = () => {
   if (error) return <Error message={error} />;
 
   return (
-    <>
-      <Navbar />
-      <Tabs />
-
-      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
-        <ProfileSidebar user={user} />
-        <div className="flex-1">
-          <RepoList repos={repos} />
-          <ContributionGraph username={user.login} contributions={user.contributions} />
-        </div>
+    <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
+      <ProfileSidebar user={user} />
+      <div className="flex-1">
+        <RepoList repos={repos} />
+        <ContributionGraph username={user.login} contributions={user.contributions} />
       </div>
-    </>
+    </div>
   );
 };
 

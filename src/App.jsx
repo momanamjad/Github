@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import * as Pages from "./pages";
 import OpenMenuLayout from "./layout/OpenMenuLayout";
@@ -268,6 +268,43 @@ const AppContent = () => {
   );
 };
 
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+const ErrorPage = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-[#0d1117] text-[#24292f] dark:text-[#c9d1d9] p-4 text-center">
+    <h1 className="text-2xl font-semibold mb-2">Something went wrong</h1>
+    <p className="text-sm text-muted-foreground mb-4">
+      An error occurred while trying to load this page.
+    </p>
+    <button
+      onClick={() => window.location.reload()}
+      className="px-4 py-2 bg-[#2da44e] hover:bg-[#2c974b] text-white font-semibold text-sm rounded-md shadow-sm cursor-pointer"
+    >
+      Reload page
+    </button>
+  </div>
+);
+
 const App = () => {
   useDocumentTitle();
 
@@ -290,7 +327,9 @@ const App = () => {
 
   return (
     <GitHubProvider>
-      <AppContent />
+      <ErrorBoundary fallback={<ErrorPage />}>
+        <AppContent />
+      </ErrorBoundary>
     </GitHubProvider>
   );
 };

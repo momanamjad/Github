@@ -168,7 +168,7 @@ export const addRepository = (newRepo) => {
     return repos;
   } catch (error) {
     console.error('Error adding repository to storage:', error);
-    return getStoredRepositories();
+    throw error;
   }
 };
 

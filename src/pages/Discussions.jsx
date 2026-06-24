@@ -10,7 +10,8 @@ export default function GitHubClone() {
   const [mainSection, setMainSection] = useState('projects');  
   const [projectTab, setProjectTab] = useState('recently-viewed');  
   const [discussionTab, setDiscussionTab] = useState('created'); 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [projectsSearchQuery, setProjectsSearchQuery] = useState('');
+  const [discussionsSearchQuery, setDiscussionsSearchQuery] = useState('');
   const { user, repositories } = useGitHub();
   const activeUsername = user?.login || "moman";
 
@@ -43,8 +44,12 @@ export default function GitHubClone() {
     fetchGlobalDiscussions();
   }, [repositories]);
 
-  const clearSearch = () => {
-    setSearchQuery('');
+  const clearProjectsSearch = () => {
+    setProjectsSearchQuery('');
+  };
+
+  const clearDiscussionsSearch = () => {
+    setDiscussionsSearchQuery('');
   };
 
   return (
@@ -132,14 +137,14 @@ export default function GitHubClone() {
                       </div>
                       <input
                         type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={projectsSearchQuery}
+                        onChange={(e) => setProjectsSearchQuery(e.target.value)}
                         placeholder="is:open"
                         className="block w-full pl-10 pr-10 py-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md leading-5 bg-white dark:bg-[#161b22] text-[#1f2328] dark:text-[#c9d1d9] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       />
-                      {searchQuery && (
+                      {projectsSearchQuery && (
                         <button
-                          onClick={clearSearch}
+                          onClick={clearProjectsSearch}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center bg-transparent border-0 cursor-pointer"
                         >
                           <XIcon size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-white" />
@@ -175,14 +180,14 @@ export default function GitHubClone() {
                       </div>
                       <input
                         type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={projectsSearchQuery}
+                        onChange={(e) => setProjectsSearchQuery(e.target.value)}
                         placeholder="is:open creator:@me"
                         className="block w-full pl-10 pr-10 py-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md leading-5 bg-white dark:bg-[#161b22] text-[#1f2328] dark:text-[#c9d1d9] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       />
-                      {searchQuery && (
+                      {projectsSearchQuery && (
                         <button
-                          onClick={clearSearch}
+                          onClick={clearProjectsSearch}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center bg-transparent border-0 cursor-pointer"
                         >
                           <XIcon size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-white" />
@@ -248,14 +253,14 @@ export default function GitHubClone() {
                     </div>
                     <input
                       type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={discussionsSearchQuery}
+                      onChange={(e) => setDiscussionsSearchQuery(e.target.value)}
                       placeholder={discussionTab === 'created' ? `author:${activeUsername}` : `commenter:${activeUsername}`}
                       className="block w-full pl-10 pr-10 py-2 border border-[#d0d7de] dark:border-[#30363d] rounded-md leading-5 bg-white dark:bg-[#161b22] text-[#1f2328] dark:text-[#c9d1d9] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     />
-                    {searchQuery && (
+                    {discussionsSearchQuery && (
                       <button
-                        onClick={clearSearch}
+                        onClick={clearDiscussionsSearch}
                         className="absolute inset-y-0 right-0 pr-3 flex items-center bg-transparent border-0 cursor-pointer"
                       >
                         <XIcon size={16} className="text-[#57606a] dark:text-[#8b949e] hover:text-black dark:hover:text-white" />
@@ -263,14 +268,14 @@ export default function GitHubClone() {
                     )}
                   </div>
                 </div>
-
+ 
                 {loading ? (
                   <div className="text-center py-12 text-sm text-[#57606a] dark:text-[#8b949e]">Loading discussions...</div>
                 ) : discussionsList.length > 0 ? (
                   <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md divide-y divide-[#d0d7de] dark:divide-[#30363d] bg-white dark:bg-[#161b22]">
                     {discussionsList
                       .filter(d => {
-                        const q = searchQuery.toLowerCase();
+                        const q = discussionsSearchQuery.toLowerCase();
                         if (discussionTab === 'created') {
                           return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
                         } else {
@@ -298,7 +303,7 @@ export default function GitHubClone() {
                         </div>
                       ))}
                     {discussionsList.filter(d => {
-                      const q = searchQuery.toLowerCase();
+                      const q = discussionsSearchQuery.toLowerCase();
                       if (discussionTab === 'created') {
                         return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
                       } else {

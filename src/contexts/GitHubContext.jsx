@@ -17,6 +17,7 @@ export const GitHubProvider = ({ children }) => {
         return u?.status || { emoji: '', text: '', isBusy: false };
     });
     const [repositories, setRepositories] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
     const login = useCallback(async (email, password) => {
@@ -24,11 +25,12 @@ export const GitHubProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      if (res?.data?.accessToken) {
-        localStorage.setItem('github_token', res.data.accessToken);
-        localStorage.setItem('github_user', JSON.stringify(res.data.user));
-        setUser(res.data.user);
+      if (!res?.data?.accessToken) {
+        throw new Error(res?.data?.message || 'Login failed: no token received');
       }
+      localStorage.setItem('github_token', res.data.accessToken);
+      localStorage.setItem('github_user', JSON.stringify(res.data.user));
+      setUser(res.data.user);
       return res;
     }, []);
 
@@ -59,6 +61,7 @@ export const GitHubProvider = ({ children }) => {
     }, []);
 
     const refreshRepos = useCallback(async () => {
+        setIsLoading(true);
         if (user?.login) {
             try {
                 const { getRepos } = await import('../services/GithubApi');
@@ -70,9 +73,12 @@ export const GitHubProvider = ({ children }) => {
             } catch (err) {
                 console.warn("Error refreshing repos from backend, falling back to local storage:", err);
                 setRepositories(getStoredRepositories());
+            } finally {
+                setIsLoading(false);
             }
         } else {
             setRepositories(getStoredRepositories());
+            setIsLoading(false);
         }
     }, [user?.login]);
 
@@ -157,6 +163,7 @@ export const GitHubProvider = ({ children }) => {
         user,
         status,
         repositories,
+        isLoading,
         refreshRepos,
         updateStatus,
         updateUser,
@@ -166,7 +173,7 @@ export const GitHubProvider = ({ children }) => {
         loginWithGoogle,
         register,
         logout
-    }), [user, status, repositories, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login, loginWithGoogle, register, logout]);
+    }), [user, status, repositories, isLoading, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login, loginWithGoogle, register, logout]);
 
     return (
         <GitHubContext.Provider value={value}>

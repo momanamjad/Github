@@ -3,6 +3,23 @@ import { Sparkles, Send, Bot, User, CornerDownLeft, RefreshCw, Terminal, Check, 
 import ReactMarkdown from 'react-markdown';
 import { apiClient } from "../services/apiClient";
 
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded border-0 cursor-pointer transition-colors"
+    >
+      {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+    </button>
+  );
+};
+
 export default function CopilotChat() {
   const [messages, setMessages] = useState([
     {
@@ -14,6 +31,7 @@ export default function CopilotChat() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
+  const abortRef = useRef(null);
 
   const suggestedPrompts = [
     { text: "Write a React hook for API polling", label: "React Hook" },
@@ -25,6 +43,9 @@ export default function CopilotChat() {
   const handleSend = async (text) => {
     if (!text.trim() || isTyping) return;
     
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
     const userMsg = { id: Date.now().toString(), role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
@@ -33,7 +54,8 @@ export default function CopilotChat() {
     try {
       const res = await apiClient("/copilot/chat", {
         method: "POST",
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({ message: text }),
+        signal: abortRef.current.signal
       });
       
       const aiContent = res.data?.response || "I couldn't process that request at this moment.";
@@ -43,6 +65,7 @@ export default function CopilotChat() {
         content: aiContent
       }]);
     } catch (err) {
+      if (err.name === 'AbortError' || err.message === 'The user aborted a request.') return;
       console.error(err);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -58,22 +81,9 @@ export default function CopilotChat() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const CopyButton = ({ text }) => {
-    const [copied, setCopied] = useState(false);
-    const handleCopy = () => {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    };
-    return (
-      <button
-        onClick={handleCopy}
-        className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded border-0 cursor-pointer transition-colors"
-      >
-        {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
-      </button>
-    );
-  };
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] max-w-7xl mx-auto bg-white dark:bg-[#0d1117] transition-colors border border-[#d0d7de] dark:border-[#30363d] rounded-lg overflow-hidden my-4">

@@ -1,15 +1,115 @@
-import React, { useState } from 'react';
-import { SearchIcon, XIcon, ClockIcon, PersonIcon, ChevronDownIcon } from '@primer/octicons-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { SearchIcon, XIcon, ClockIcon, PersonIcon, ChevronDownIcon, ProjectIcon } from '@primer/octicons-react';
+import { Link } from 'react-router-dom';
 import EmptyStateClockIcon from "../components/ui/icons/EmptyStateClockIcon";
 import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
+import { apiClient } from '../services/apiClient';
+import { useGitHub } from '../contexts/GitHubContext';
 
 export default function Projects() {
+  const { user } = useGitHub();
   const [activeTab, setActiveTab] = useState('recently-viewed');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [createdFilter, setCreatedFilter] = useState('open'); // 'open' | 'closed'
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const res = await apiClient('/projects');
+        if (res && res.data) {
+          setProjects(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+        setError(err.message || "Failed to fetch projects");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
 
   const clearSearch = () => {
     setSearchQuery('');
   };
+
+  const getFilteredProjects = (projectList, query) => {
+    let result = [...projectList];
+    const q = query.toLowerCase().trim();
+    if (!q) return result;
+
+    const terms = q.split(/\s+/);
+    terms.forEach(term => {
+      if (term === 'is:open') {
+        result = result.filter(p => p.column !== 'done');
+      } else if (term === 'is:closed') {
+        result = result.filter(p => p.column === 'done');
+      } else if (term === 'creator:@me') {
+        const loggedInUserId = user?._id || user?.id;
+        result = result.filter(p => {
+          const creatorId = p.creator?._id || p.creator?.id || p.creator;
+          return creatorId && loggedInUserId && creatorId.toString() === loggedInUserId.toString();
+        });
+      } else if (!term.includes(':')) {
+        result = result.filter(p => 
+          p.title?.toLowerCase().includes(term) || 
+          p.name?.toLowerCase().includes(term) ||
+          p.description?.toLowerCase().includes(term)
+        );
+      }
+    });
+    return result;
+  };
+
+  // Recently viewed list - shows all projects by default, filtered by search query
+  const recentlyViewedProjects = useMemo(() => {
+    return getFilteredProjects(projects, searchQuery);
+  }, [projects, searchQuery, user]);
+
+  // Projects created by me
+  const myProjects = useMemo(() => {
+    return projects.filter(p => {
+      const creatorId = p.creator?._id || p.creator?.id || p.creator;
+      const loggedInUserId = user?._id || user?.id;
+      return creatorId && loggedInUserId && creatorId.toString() === loggedInUserId.toString();
+    });
+  }, [projects, user]);
+
+  // Metric counts for created by me (unfiltered by search query for static count feel)
+  const openCount = useMemo(() => myProjects.filter(p => p.column !== 'done').length, [myProjects]);
+  const closedCount = useMemo(() => myProjects.filter(p => p.column === 'done').length, [myProjects]);
+
+  // Filtered created-by-me projects
+  const filteredCreatedByMe = useMemo(() => {
+    const base = myProjects.filter(p => createdFilter === 'open' ? p.column !== 'done' : p.column === 'done');
+    return getFilteredProjects(base, searchQuery);
+  }, [myProjects, createdFilter, searchQuery, user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0d1117] flex items-center justify-center text-gray-600 dark:text-[#8b949e]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-sm">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0d1117] flex items-center justify-center text-red-500">
+        <div className="text-center">
+          <p className="font-semibold">Error loading projects</p>
+          <p className="text-sm text-gray-500 mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] transition-colors">
@@ -21,7 +121,10 @@ export default function Projects() {
             <nav className="space-y-1">
               <div className={`relative transition-all ${activeTab === 'recently-viewed' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
                 <button
-                  onClick={() => setActiveTab("recently-viewed")}
+                  onClick={() => {
+                    setActiveTab("recently-viewed");
+                    setSearchQuery('');
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md border-0 bg-transparent text-left cursor-pointer transition-colors ${
                     activeTab === 'recently-viewed'
                       ? 'bg-gray-100 dark:bg-[#30363d] text-gray-900 dark:text-white font-semibold'
@@ -35,7 +138,10 @@ export default function Projects() {
               
               <div className={`relative transition-all ${activeTab === 'created-by-me' ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md" : ""}`}>
                 <button
-                  onClick={() => setActiveTab('created-by-me')}
+                  onClick={() => {
+                    setActiveTab('created-by-me');
+                    setSearchQuery('');
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md border-0 bg-transparent text-left cursor-pointer transition-colors ${
                     activeTab === 'created-by-me'
                       ? 'bg-gray-100 dark:bg-[#30363d] text-gray-900 dark:text-white font-semibold'
@@ -82,18 +188,72 @@ export default function Projects() {
 
                 {/* Results Count */}
                 <div className="mb-4">
-                  <p className="text-sm text-gray-600 dark:text-[#8b949e]">0 recently viewed</p>
+                  <p className="text-sm text-gray-600 dark:text-[#8b949e]">
+                    {recentlyViewedProjects.length} recently viewed
+                  </p>
                 </div>
 
-                {/* Empty State */}
-                <div className="border border-gray-200 dark:border-[#30363d] rounded-md p-16 bg-white dark:bg-[#161b22] flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 mb-4 flex items-center justify-center">
-                    <EmptyStateClockIcon className="w-12 h-12 text-gray-400 dark:text-[#8b949e]" />
+                {/* Projects List or Empty State */}
+                {recentlyViewedProjects.length > 0 ? (
+                  <div className="border border-gray-200 dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+                    <div className="divide-y divide-gray-200 dark:divide-[#30363d]">
+                      {recentlyViewedProjects.map(project => (
+                        <div key={project._id} className="p-4 flex items-start justify-between hover:bg-gray-50 dark:hover:bg-[#161b22]/50 transition-colors">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1 text-gray-500">
+                              <ProjectIcon size={18} />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-base text-gray-900 dark:text-white">
+                                <Link to={`/repos/${project.repository?._id || project.repository?.id}?tab=projects`} className="hover:underline hover:text-blue-600 dark:hover:text-blue-400 text-inherit font-semibold">
+                                  {project.title}
+                                </Link>
+                              </h4>
+                              {project.description && (
+                                <p className="text-sm text-gray-600 dark:text-[#8b949e] mt-1">
+                                  {project.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-[#8b949e]">
+                                {project.repository && (
+                                  <span className="font-medium text-gray-700 dark:text-[#c9d1d9]">
+                                    {project.repository.name}
+                                  </span>
+                                )}
+                                <span>•</span>
+                                <span>
+                                  Column: <span className="capitalize px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#30363d] text-gray-700 dark:text-[#c9d1d9] text-[10px] font-medium">{project.column?.replace('_', ' ')}</span>
+                                </span>
+                                {project.creator && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      by <img src={project.creator.avatar_url} alt={project.creator.login} className="w-4 h-4 rounded-full" />
+                                      <span className="font-semibold">{project.creator.login}</span>
+                                    </span>
+                                  </>
+                                )}
+                                <span>•</span>
+                                <span>
+                                  updated {new Date(project.updated_at || project.updatedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    No open projects
-                  </h3>
-                </div>
+                ) : (
+                  <div className="border border-gray-200 dark:border-[#30363d] rounded-md p-16 bg-white dark:bg-[#161b22] flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                      <EmptyStateClockIcon className="w-12 h-12 text-gray-400 dark:text-[#8b949e]" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      No projects found
+                    </h3>
+                  </div>
+                )}
               </div>
             )}
 
@@ -129,11 +289,25 @@ export default function Projects() {
                 {/* Tabs and Sort */}
                 <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-[#30363d]">
                   <div className="flex gap-6">
-                    <button className="pb-3 px-1 border-b-2 border-gray-900 dark:border-white font-medium text-sm text-gray-900 dark:text-white bg-transparent border-0 cursor-pointer">
-                      Open <span className="ml-1 text-gray-600 dark:text-[#8b949e]">0</span>
+                    <button
+                      onClick={() => setCreatedFilter('open')}
+                      className={`pb-3 px-1 border-b-2 font-medium text-sm bg-transparent border-0 cursor-pointer transition-colors ${
+                        createdFilter === 'open'
+                          ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white font-semibold'
+                          : 'border-transparent text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
+                      }`}
+                    >
+                      Open <span className="ml-1 text-gray-600 dark:text-[#8b949e]">{openCount}</span>
                     </button>
-                    <button className="pb-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white hover:border-gray-300 bg-transparent border-0 cursor-pointer">
-                      Closed <span className="ml-1">1</span>
+                    <button
+                      onClick={() => setCreatedFilter('closed')}
+                      className={`pb-3 px-1 border-b-2 font-medium text-sm bg-transparent border-0 cursor-pointer transition-colors ${
+                        createdFilter === 'closed'
+                          ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white font-semibold'
+                          : 'border-transparent text-gray-600 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
+                      }`}
+                    >
+                      Closed <span className="ml-1">{closedCount}</span>
                     </button>
                   </div>
                   <button className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white bg-transparent border-0 cursor-pointer">
@@ -142,15 +316,67 @@ export default function Projects() {
                   </button>
                 </div>
 
-                {/* Empty State */}
-                <div className="border border-gray-200 dark:border-[#30363d] rounded-md p-16 bg-white dark:bg-[#161b22] flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 mb-4 flex items-center justify-center">
-                    <EmptyStateClockIcon className="w-12 h-12 text-gray-400 dark:text-[#8b949e]" />
+                {/* Projects List or Empty State */}
+                {filteredCreatedByMe.length > 0 ? (
+                  <div className="border border-gray-200 dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
+                    <div className="divide-y divide-gray-200 dark:divide-[#30363d]">
+                      {filteredCreatedByMe.map(project => (
+                        <div key={project._id} className="p-4 flex items-start justify-between hover:bg-gray-50 dark:hover:bg-[#161b22]/50 transition-colors">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1 text-gray-500">
+                              <ProjectIcon size={18} />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-base text-gray-900 dark:text-white">
+                                <Link to={`/repos/${project.repository?._id || project.repository?.id}?tab=projects`} className="hover:underline hover:text-blue-600 dark:hover:text-blue-400 text-inherit font-semibold">
+                                  {project.title}
+                                </Link>
+                              </h4>
+                              {project.description && (
+                                <p className="text-sm text-gray-600 dark:text-[#8b949e] mt-1">
+                                  {project.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-[#8b949e]">
+                                {project.repository && (
+                                  <span className="font-medium text-gray-700 dark:text-[#c9d1d9]">
+                                    {project.repository.name}
+                                  </span>
+                                )}
+                                <span>•</span>
+                                <span>
+                                  Column: <span className="capitalize px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#30363d] text-gray-700 dark:text-[#c9d1d9] text-[10px] font-medium">{project.column?.replace('_', ' ')}</span>
+                                </span>
+                                {project.creator && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      by <img src={project.creator.avatar_url} alt={project.creator.login} className="w-4 h-4 rounded-full" />
+                                      <span className="font-semibold">{project.creator.login}</span>
+                                    </span>
+                                  </>
+                                )}
+                                <span>•</span>
+                                <span>
+                                  updated {new Date(project.updated_at || project.updatedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    No open projects
-                  </h3>
-                </div>
+                ) : (
+                  <div className="border border-gray-200 dark:border-[#30363d] rounded-md p-16 bg-white dark:bg-[#161b22] flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 mb-4 flex items-center justify-center">
+                      <EmptyStateClockIcon className="w-12 h-12 text-gray-400 dark:text-[#8b949e]" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      No projects found
+                    </h3>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -195,3 +421,4 @@ export default function Projects() {
     </div>
   );
 }
+

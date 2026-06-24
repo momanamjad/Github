@@ -21,6 +21,9 @@ const ContributionGraph = ({ username, contributions: initialContributions }) =>
       try {
         setLoading(true);
         const userData = await getUser(username);
+        if (!userData) {
+          throw new Error("User not found");
+        }
         setContributions(userData.contributions || []);
         if (userData.created_at) {
           setRegistrationYear(new Date(userData.created_at).getFullYear());

@@ -72,10 +72,10 @@ const PullRequests = () => {
   const isFetchingRef = useRef(false);
   const lastRepoIdsRef = useRef("");
 
-  const fetchAllPRs = async () => {
+  const fetchAllPRs = async (forceRefresh = false) => {
     if (!user || !repositories || repositories.length === 0) return;
     const repoIdsStr = repositories.map(r => r._id || r.id).join(",");
-    if (isFetchingRef.current || lastRepoIdsRef.current === repoIdsStr) return;
+    if (isFetchingRef.current || (!forceRefresh && lastRepoIdsRef.current === repoIdsStr)) return;
 
     isFetchingRef.current = true;
     lastRepoIdsRef.current = repoIdsStr;
@@ -88,7 +88,7 @@ const PullRequests = () => {
           title: pr.title,
           repo: pr.repository?.name || "Unknown",
           repoId: pr.repository?._id || pr.repository,
-          number: Math.floor(Math.random() * 800) + 100,
+          number: pr.number || parseInt(pr._id ? pr._id.substring(18, 24) : '0', 16) || 1,
           status: pr.status,
           author: pr.author?.login || user.login,
           comments: 0,
@@ -118,7 +118,7 @@ const PullRequests = () => {
     return () => window.removeEventListener("github_clone_pulls_updated", handlePRUpdate);
   }, [repositories, user]);
 
-  const activePRs = pullRequests.length > 0 ? pullRequests : defaultPullRequests;
+  const activePRs = pullRequests;
 
   const handleCreatePR = async (e) => {
     e.preventDefault();
@@ -134,8 +134,8 @@ const PullRequests = () => {
       setIsCreateModalOpen(false);
       setNewPrTitle("");
       setNewPrDesc("");
-      lastRepoIdsRef.current = ""; // Reset ref to force re-fetch
-      await fetchAllPRs();
+      lastRepoIdsRef.current = null; // Reset ref to force re-fetch
+      await fetchAllPRs(true);
     } catch (err) {
       console.error("Failed to create PR:", err);
     }
@@ -325,8 +325,8 @@ const PullRequests = () => {
                         try {
                           await apiClient(`/repos/${pr.repoId}/pulls/${pr.id}/merge`, { method: "POST" });
                           alert("Pull Request merged successfully!");
-                          lastRepoIdsRef.current = "";
-                          await fetchAllPRs();
+                          lastRepoIdsRef.current = null;
+                          await fetchAllPRs(true);
                         } catch (err) {
                           alert("Merge failed: " + err.message);
                         }
