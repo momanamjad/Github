@@ -41,11 +41,24 @@ const Tabs = ({ username }) => {
     };
   }, [location]);
 
-  // Fetch repo count for the tab badge
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  // Fetch repo count and follower counts for badges
   useEffect(() => {
     getRepos(username)
       .then((repos) => setRepoCount(repos?.length || 0))
       .catch(() => setRepoCount(0));
+
+    apiClient(`/auth/user/${username}`)
+      .then((res) => {
+        setFollowersCount(res.data?.user?.followers_count || 0);
+        setFollowingCount(res.data?.user?.following_count || 0);
+      })
+      .catch(() => {
+        setFollowersCount(0);
+        setFollowingCount(0);
+      });
   }, [username]);
 
   // Close "More" dropdown on outside click
@@ -66,6 +79,8 @@ const Tabs = ({ username }) => {
     { to: `/${username}/projects`, icon: ProjectsIcon, label: "Projects" },
     { to: `/${username}/packages`, icon: PackageIcon, label: "Packages" },
     { to: `/${username}/stars`, icon: StarsIcon, label: "Stars" },
+    { to: `/${username}/followers`, icon: Users, label: "Followers", count: followersCount },
+    { to: `/${username}/following`, icon: Users, label: "Following", count: followingCount },
   ];
 
   const activeTabIndex = allTabs.findIndex(

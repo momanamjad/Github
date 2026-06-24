@@ -161,3 +161,61 @@ export const getUserActivityFeed = async (page = 1, limit = 20) => {
   const res = await apiClient(`/users/activity/feed?page=${page}&limit=${limit}`);
   return res?.data || { feed: [], total: 0 };
 };
+
+// Repository Wiki API wrapper functions
+export const getWikiPages = async (repoId) => {
+  const res = await apiClient(`/repos/${repoId}/wiki`);
+  return res?.data || [];
+};
+
+export const getWikiPage = async (repoId, slug) => {
+  const res = await apiClient(`/repos/${repoId}/wiki/${slug}`);
+  return res?.data || null;
+};
+
+export const saveWikiPage = async (repoId, title, content) => {
+  const res = await apiClient(`/repos/${repoId}/wiki`, {
+    method: 'POST',
+    body: JSON.stringify({ title, content })
+  });
+  return res?.data;
+};
+
+export const deleteWikiPage = async (repoId, slug) => {
+  const res = await apiClient(`/repos/${repoId}/wiki/${slug}`, {
+    method: 'DELETE'
+  });
+  return res?.data;
+};
+
+// Followers and Following API wrapper functions
+export const getUserFollowers = async (userId, page = 1, limit = 10) => {
+  const res = await apiClient(`/users/${userId}/followers?page=${page}&limit=${limit}`);
+  return res || { data: [], pagination: { total: 0 } };
+};
+
+export const getUserFollowing = async (userId, page = 1, limit = 10) => {
+  const res = await apiClient(`/users/${userId}/following?page=${page}&limit=${limit}`);
+  return res || { data: [], pagination: { total: 0 } };
+};
+
+export const toggleFollowUser = async (userId) => {
+  const res = await apiClient(`/users/${userId}/follow`, {
+    method: 'POST'
+  });
+  return res?.data;
+};
+
+// PR Reviews API wrapper functions
+export const submitPRReview = async (repoId, prId, state, body) => {
+  const res = await apiClient(`/repos/${repoId}/pulls/${prId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify({ state, body })
+  });
+  return res?.data || [];
+};
+
+export const getPRReviews = async (repoId, prId) => {
+  const res = await apiClient(`/repos/${repoId}/pulls/${prId}/reviews`);
+  return res?.data || [];
+};

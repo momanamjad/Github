@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getRepo } from "@services/GithubApi.jsx";
+import { getRepo, getPRReviews, submitPRReview } from "@services/GithubApi.jsx";
 import RepoHeader from "@features/RepoHeader";
 import { getTree } from "@services/fileSystemService.js";
 import { getStoredRepositories } from "@services/storageService.js";
@@ -9,6 +9,7 @@ import { useGitHub } from "@contexts/GitHubContext";
 import DiscussionsTab from "./tabs/DiscussionsTab";
 import ProjectsTab from "./tabs/ProjectsTab";
 import ActionsTab from "./tabs/ActionsTab";
+import WikiTab from "./tabs/WikiTab";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import {
   FileDirectoryFillIcon,
@@ -174,11 +175,55 @@ const RepoDetails = () => {
     }
   };
 
+  // PR Reviews state
+  const [prReviews, setPrReviews] = useState([]);
+  const [reviewState, setReviewState] = useState('APPROVED');
+  const [reviewBody, setReviewBody] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   const handleSelectPR = async (pr) => {
     setSelectedPR(pr);
     setPrSubTab('conversation');
     fetchPRComments(pr._id || pr.id);
     fetchPRDiffsAndLineComments(pr);
+    
+    // Load reviews
+    try {
+      const reviewsData = await getPRReviews(repoData?._id || repoData?.id, pr._id || pr.id);
+      setPrReviews(reviewsData);
+    } catch (err) {
+      console.error("Failed to load PR reviews:", err);
+      setPrReviews([]);
+    }
+  };
+
+  const handleSubmitPRReview = async (e) => {
+    e.preventDefault();
+    if (!selectedPR) return;
+    setSubmittingReview(true);
+    try {
+      const updatedReviews = await submitPRReview(
+        repoData?._id || repoData?.id,
+        selectedPR._id || selectedPR.id,
+        reviewState,
+        reviewBody
+      );
+      setPrReviews(updatedReviews);
+      setReviewBody('');
+      
+      // Reload PR to update merge guard status (in case of changes requested)
+      const prRes = await apiClient(`/repos/${repoData?._id || repoData?.id}/pulls`);
+      if (prRes?.data) {
+        const matching = prRes.data.find(p => p._id === selectedPR._id);
+        if (matching) setSelectedPR(matching);
+      }
+      alert("Review submitted successfully!");
+    } catch (err) {
+      console.error("Failed to submit review:", err);
+      alert("Review submission failed: " + err.message);
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const fetchIssueComments = async (issueId) => {
@@ -1977,20 +2022,107 @@ const RepoDetails = () => {
                     {selectedPR.description ? <MarkdownRenderer content={selectedPR.description} /> : <i>No description provided.</i>}
                   </div>
 
-                  {selectedPR.status === 'open' && isOwner && (
-                    <div className="bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-md p-4 flex items-center justify-between">
-                      <div className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                        This pull request has no conflicts and can be merged automatically.
+                  {selectedPR.status === 'open' && (
+                    <div className={`border rounded-md p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'bg-red-50/50 dark:bg-red-950/10 border-red-200 dark:border-red-900/50' : 'bg-[#f6f8fa] dark:bg-[#161b22] border-[#d0d7de] dark:border-[#30363d]'}`}>
+                      <div className="space-y-1">
+                        <div className="text-xs font-semibold flex items-center gap-1.5">
+                          {prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? (
+                            <>
+                              <span className="text-[#cf222e] font-bold">⚠️ Merge blocked</span>
+                              <span className="text-[#57606a] dark:text-[#8b949e] font-normal">Changes have been requested by a reviewer.</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-[#1a7f37] font-bold">✓ Ready to merge</span>
+                              <span className="text-[#57606a] dark:text-[#8b949e] font-normal">This branch has no conflicts and reviews are clear.</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-[#57606a] dark:text-[#8b949e]">
+                          {prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'Resolve all requested changes before merging.' : 'You can merge this pull request automatically.'}
+                        </div>
                       </div>
-                      <button
-                        onClick={async () => {
-                          await handleMergePR(selectedPR._id || selectedPR.id);
-                          setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
-                        }}
-                        className="px-3.5 py-1.5 bg-[#8a63e5] hover:bg-[#986ff3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
-                      >
-                        Merge Pull Request
-                      </button>
+                      
+                      {isOwner && (
+                        <button
+                          disabled={prReviews.some(r => r.state === 'CHANGES_REQUESTED')}
+                          onClick={async () => {
+                            try {
+                              await handleMergePR(selectedPR._id || selectedPR.id);
+                              setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
+                            } catch (err) {
+                              alert("Merge failed: " + err.message);
+                            }
+                          }}
+                          className={`px-3.5 py-1.5 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0 ${prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed' : 'bg-[#238636] hover:bg-[#2ea043]'}`}
+                        >
+                          Merge Pull Request
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Reviews List */}
+                  {prReviews.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Reviews ({prReviews.length})</h3>
+                      <div className="space-y-2">
+                        {prReviews.map((rev, index) => (
+                          <div key={index} className={`flex items-start gap-3 p-3 border rounded-md text-xs ${rev.state === 'APPROVED' ? 'bg-green-50/20 dark:bg-green-950/5 border-green-200 dark:border-green-900/30' : rev.state === 'CHANGES_REQUESTED' ? 'bg-red-50/20 dark:bg-red-950/5 border-red-200 dark:border-red-900/30' : 'bg-gray-50/50 dark:bg-gray-900/50 border-[#d0d7de] dark:border-[#30363d]'}`}>
+                            <img
+                              src={rev.reviewer?.avatar_url || "/profile.webp"}
+                              alt="avatar"
+                              className="w-5 h-5 rounded-full object-cover border"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold">{rev.reviewer?.login || 'unknown'}</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${rev.state === 'APPROVED' ? 'bg-[#dafbe1] text-[#1a7f37] dark:bg-[#1f4a2d]' : rev.state === 'CHANGES_REQUESTED' ? 'bg-[#ffebe9] text-[#cf222e] dark:bg-[#52252a]' : 'bg-[#eaeef2] text-gray-700 dark:bg-[#30363d] dark:text-gray-300'}`}>
+                                  {rev.state.replace('_', ' ')}
+                                </span>
+                                <span className="text-[#57606a] dark:text-[#8b949e]">on {new Date(rev.submitted_at).toLocaleDateString()}</span>
+                              </div>
+                              {rev.body && <div className="mt-1.5 text-gray-700 dark:text-[#c9d1d9] prose max-w-none">{rev.body}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit Review Card */}
+                  {selectedPR.status === 'open' && (
+                    <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] dark:bg-[#161b22] p-4 text-xs">
+                      <h3 className="font-bold text-[#1f2328] dark:text-white mb-2">Submit your review</h3>
+                      <form onSubmit={handleSubmitPRReview} className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-600 dark:text-gray-400">Action:</span>
+                          <select
+                            value={reviewState}
+                            onChange={(e) => setReviewState(e.target.value)}
+                            className="bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded p-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#0969da] text-[#1f2328] dark:text-[#c9d1d9] font-medium"
+                          >
+                            <option value="APPROVED">Approve (Request merge)</option>
+                            <option value="CHANGES_REQUESTED">Request changes (Block merge)</option>
+                            <option value="COMMENTED">Comment</option>
+                          </select>
+                        </div>
+                        <div>
+                          <textarea
+                            placeholder="Leave a review message (optional)..."
+                            value={reviewBody}
+                            onChange={(e) => setReviewBody(e.target.value)}
+                            className="w-full bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded p-2 text-xs h-20 resize-none focus:outline-none focus:ring-1 focus:ring-[#0969da] text-[#1f2328] dark:text-[#c9d1d9]"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={submittingReview}
+                          className="px-3.5 py-1.5 bg-[#0969da] hover:bg-[#0855b3] text-white font-semibold rounded-md transition-colors cursor-pointer border-0 disabled:opacity-50"
+                        >
+                          {submittingReview ? 'Submitting...' : 'Submit review'}
+                        </button>
+                      </form>
                     </div>
                   )}
 
@@ -2468,6 +2600,8 @@ const RepoDetails = () => {
         <ProjectsTab repoId={repoData?._id || repoData?.id} />
       ) : activeRepoTab === 'actions' ? (
         <ActionsTab repoId={repoData?._id || repoData?.id} />
+      ) : activeRepoTab === 'wiki' ? (
+        <WikiTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
       ) : (
         /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
         <div className="py-12 max-w-2xl mx-auto text-center space-y-4">
