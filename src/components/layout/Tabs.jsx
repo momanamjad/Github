@@ -4,7 +4,7 @@ import ChevronDownIcon from "../../../public/customIcons/ChevronDownIcon";
 import LoadingBar from 'react-top-loading-bar';
 import { useEffect, useState, useRef } from "react";
 import { useTabsContext } from "@/contexts/TabsContext";
-import { getRepos } from "@services/GithubApi.jsx";
+import { getRepos, getUser } from "@services/GithubApi.jsx";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { Users } from "lucide-react";
 
@@ -50,10 +50,10 @@ const Tabs = ({ username }) => {
       .then((repos) => setRepoCount(repos?.length || 0))
       .catch(() => setRepoCount(0));
 
-    apiClient(`/auth/user/${username}`)
-      .then((res) => {
-        setFollowersCount(res.data?.user?.followers_count || 0);
-        setFollowingCount(res.data?.user?.following_count || 0);
+    getUser(username)
+      .then((user) => {
+        setFollowersCount(user?.followers_count || 0);
+        setFollowingCount(user?.following_count || 0);
       })
       .catch(() => {
         setFollowersCount(0);
