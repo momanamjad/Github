@@ -33,9 +33,23 @@ function readCached(key) {
 }
 
 function writeCached(key, value) {
-  const raw = JSON.stringify(value);
-  localStorage.setItem(key, raw);
-  _cache[key] = { raw, parsed: value };
+  let finalValue = value;
+  if (key === STORAGE_KEYS.REPOSITORIES && Array.isArray(value)) {
+    // Strip fileTree, branches, tags etc from lists to optimize storage space
+    finalValue = value.map(repo => {
+      const { fileTree, branches, tags, ...rest } = repo;
+      return rest;
+    });
+  }
+  try {
+    const raw = JSON.stringify(finalValue);
+    localStorage.setItem(key, raw);
+    _cache[key] = { raw, parsed: finalValue };
+  } catch (error) {
+    console.warn(`[storageService] Failed to write cache for key "${key}":`, error);
+    // Keep in memory anyway so UI continues working correctly
+    _cache[key] = { raw: JSON.stringify(finalValue), parsed: finalValue };
+  }
 }
 
 // ─── Initialization ───────────────────────────────────────────────

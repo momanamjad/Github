@@ -65,7 +65,16 @@ export const GitHubProvider = ({ children }) => {
                 const repos = await getRepos(user.login);
                 setRepositories(repos || []);
                 if (repos) {
-                    localStorage.setItem('github_repositories', JSON.stringify(repos));
+                    try {
+                        // Strip fileTree and other potentially heavy properties before storing in localStorage
+                        const cleanRepos = repos.map(repo => {
+                            const { fileTree, branches, tags, ...rest } = repo;
+                            return rest;
+                        });
+                        localStorage.setItem('github_repositories', JSON.stringify(cleanRepos));
+                    } catch (storageErr) {
+                        console.warn("Failed to save repositories to local storage: ", storageErr);
+                    }
                 }
             } catch (err) {
                 console.warn("Error refreshing repos from backend, falling back to local storage:", err);

@@ -18,13 +18,17 @@ import { RepoSkeleton } from "@features/RepoSkeleton";
 export default function Repositories() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "my-repositories";
-  const [isLoading, setIsLoading] = useState(true);
+  const { repositories, user } = useGitHub();
+  const [isLoading, setIsLoading] = useState(repositories.length === 0);
 
-  // Simulate loading delay for skeleton demonstration
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, [activeTab]);
+    if (repositories.length > 0) {
+      setIsLoading(false);
+    } else {
+      const timer = setTimeout(() => setIsLoading(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [repositories]);
 
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -35,7 +39,6 @@ export default function Repositories() {
   const [filterLanguage, setFilterLanguage] = useState("all");
   const [sortOrder, setSortOrder] = useState("updated");
 
-  const { repositories, user } = useGitHub();
 
   // Calculate unique languages for the filter dropdown
   const languages = useMemo(() => {
