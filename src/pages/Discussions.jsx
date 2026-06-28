@@ -20,32 +20,7 @@ export default function Discussions() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  const fetchGlobalDiscussions = async () => {
-    if (!repositories || repositories.length === 0) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const allPromises = repositories.map(async (repo) => {
-        try {
-          const res = await apiClient(`/repos/${repo._id || repo.id}/discussions`);
-          return (res?.data || []).map(d => ({ ...d, repoName: repo.name, repoOwner: repo.owner?.login || user?.login }));
-        } catch (e) {
-          console.warn(e);
-          throw e;
-        }
-      });
-      const resolved = await Promise.all(allPromises);
-      setDiscussionsList(resolved.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-    } catch (err) {
-      console.error(err);
-      setFetchError('Failed to load discussions. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   useEffect(() => {
     fetchGlobalDiscussions();
