@@ -18,12 +18,14 @@ export const getLanguageColors = async () => {
 // For backward compatibility, export a sync fallback
 export const LANGUAGE_COLORS = {};
 
+let _idCounter = 1000000;
+
 /**
  * Helper to generate user data for any username
  */
 export const createUserData = (username) => ({
   login: username,
-  id: Math.floor(Math.random() * 1000000),
+  id: _idCounter++,
   avatar_url: `https://avatars.githubusercontent.com/u/${Math.floor(Math.random() * 100000000)}?v=4`,
   type: "User",
   name: username.charAt(0).toUpperCase() + username.slice(1),

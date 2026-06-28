@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage } from '../services/storageService';
+import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage, writeCached, STORAGE_KEYS } from '../services/storageService';
 import { apiClient, resolveAvatarUrl } from '../services/apiClient';
 
 const GitHubContext = createContext();
@@ -68,16 +68,7 @@ export const GitHubProvider = ({ children }) => {
                 const repos = await getRepos(user.login);
                 setRepositories(repos || []);
                 if (repos) {
-                    try {
-                        // Strip fileTree and other potentially heavy properties before storing in localStorage
-                        const cleanRepos = repos.map(repo => {
-                            const { fileTree, branches, tags, ...rest } = repo;
-                            return rest;
-                        });
-                        localStorage.setItem('github_repositories', JSON.stringify(cleanRepos));
-                    } catch (storageErr) {
-                        console.warn("Failed to save repositories to local storage: ", storageErr);
-                    }
+                    writeCached(STORAGE_KEYS.REPOSITORIES, repos);
                 }
             } catch (err) {
                 console.warn("Error refreshing repos from backend, falling back to local storage:", err);

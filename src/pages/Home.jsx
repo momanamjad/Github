@@ -32,6 +32,7 @@ const Home = React.memo(() => {
   const [showAll, setShowAll] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [feedItems, setFeedItems] = useState([]);
+  const [feedError, setFeedError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,6 +44,7 @@ const Home = React.memo(() => {
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Failed to load activity feed:", err);
+          setFeedError("Failed to load activity feed.");
         }
       } finally {
         setIsLoading(false);
@@ -79,11 +81,7 @@ const Home = React.memo(() => {
     navigate(`/${owner}/${repo.name}`);
   };
 
-  const recentRepos = useMemo(() => {
-    return [...allRepos]
-      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-      .slice(0, 3);
-  }, [allRepos]);
+
 
   const filteredFeed = (filterValue === 'all' || filterValue === 'All')
     ? feedItems
@@ -135,7 +133,7 @@ const Home = React.memo(() => {
             ) : (
               displayedRepos.map((repo) => (
                 <li
-                  key={repo.id || repo.name}
+                  key={repo._id || repo.id || `${repo.owner?.login || repo.owner}-${repo.name}`}
                   onClick={() => handleRepoClick(repo)}
                   className="flex items-center gap-2 text-[14px] py-[6px] hover:underline cursor-pointer text-[#1f2328] dark:text-[#c9d1d9] group font-medium"
                 >
@@ -193,6 +191,11 @@ const Home = React.memo(() => {
           </div>
 
           {/* Dynamic Feed Content */}
+          {feedError && (
+            <div className="mb-4 p-3 text-sm text-[#ff7b72] bg-[#f85149]/10 border border-[#f85149]/30 rounded-md">
+              {feedError}
+            </div>
+          )}
           <Skeleton 
             name="home-feed" 
             loading={isLoading} 
@@ -201,7 +204,7 @@ const Home = React.memo(() => {
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-[#1f2328] dark:text-[#c9d1d9]">Recent activity</h3>
-                <button className="text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer">All activity</button>
+                <button onClick={() => setFilterValue('all')} className="text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-transparent border-0 cursor-pointer">All activity</button>
               </div>
 
               {filteredFeed.length > 0 ? (
@@ -219,7 +222,7 @@ const Home = React.memo(() => {
                       icon = <PlusCircle className="w-4 h-4 text-[#1a7f37]" />;
                       titleContent = (
                         <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                          created a repository <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{actorName}/{item.repository?.name}</span>
+                          created a repository <button className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)} role="link" tabIndex={0}>{actorName}/{item.repository?.name}</button>
                         </span>
                       );
                       if (item.repository) {
@@ -235,7 +238,7 @@ const Home = React.memo(() => {
                       icon = <Star className="w-4 h-4 text-[#e3b341] fill-[#e3b341]" />;
                       titleContent = (
                         <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                          starred a repository <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                          starred a repository <button className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)} role="link" tabIndex={0}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</button>
                         </span>
                       );
                       if (item.repository) {
@@ -251,7 +254,7 @@ const Home = React.memo(() => {
                       icon = <UserPlus className="w-4 h-4 text-[#0969da]" />;
                       titleContent = (
                         <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                          started following <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.targetUser?.login}`)}>{item.targetUser?.login}</span>
+                          started following <button className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${item.targetUser?.login}`)} role="link" tabIndex={0}>{item.targetUser?.login}</button>
                         </span>
                       );
                       break;
@@ -261,7 +264,7 @@ const Home = React.memo(() => {
                       icon = <GitCommit className="w-4 h-4 text-[#57606a]" />;
                       titleContent = (
                         <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                          pushed a commit to <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                          pushed a commit to <button className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)} role="link" tabIndex={0}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</button>
                         </span>
                       );
                       if (item.commitMessage) {
@@ -282,7 +285,7 @@ const Home = React.memo(() => {
                       icon = <GitPullRequest className="w-4 h-4 text-[#1a7f37]" />;
                       titleContent = (
                         <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                          opened a pull request in <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                          opened a pull request in <button className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)} role="link" tabIndex={0}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</button>
                         </span>
                       );
                       break;
@@ -291,7 +294,7 @@ const Home = React.memo(() => {
                       icon = <AlertCircle className="w-4 h-4 text-[#1a7f37]" />;
                       titleContent = (
                         <span className="text-xs text-[#57606a] dark:text-[#8b949e]">
-                          opened an issue in <span className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</span>
+                          opened an issue in <button className="font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${item.repository?.owner?.login || actorName}/${item.repository?.name}`)} role="link" tabIndex={0}>{item.repository?.owner?.login || actorName}/{item.repository?.name}</button>
                         </span>
                       );
                       break;
@@ -311,7 +314,7 @@ const Home = React.memo(() => {
                         <div className="w-5 h-5 rounded-full overflow-hidden">
                           <img src={avatar} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.src = "profile.webp"; }} />
                         </div>
-                        <span className="text-xs font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer" onClick={() => navigate(`/${actorName}`)}>{actorName}</span>
+                        <button className="text-xs font-semibold text-[#1f2328] dark:text-[#c9d1d9] hover:underline cursor-pointer bg-transparent border-0 p-0 text-left align-baseline inline" onClick={() => navigate(`/${actorName}`)} role="link" tabIndex={0}>{actorName}</button>
                         {titleContent}
                         <span className="text-[11px] text-[#57606a] dark:text-[#8b949e] ml-auto">
                           {dateStr}
@@ -338,22 +341,7 @@ const Home = React.memo(() => {
       </main>
 
       {/* ── Right Sidebar: Changelog ── */}
-      <aside
-        className="hidden w-72 xl:w-80 border-l border-[#d0d7de] dark:border-[#30363d] p-4 xl:p-6 xl:block bg-white dark:bg-[#0d1117] shrink-0"
-        aria-label="Changelog"
-      >
-        <h2 className="text-[14px] font-semibold mb-6 text-[#1f2328] dark:text-[#c9d1d9]">
-          Latest from our changelog
-        </h2>
-
-        <div className="relative">
-          <div className="absolute left-[5px] top-2 bottom-8 w-[1px] bg-[#d0d7de] dark:bg-[#30363d]"></div>
-        </div>
-
-        <button className="mt-4 ml-6 text-[12px] text-[#636c76] dark:text-[#8b949e] hover:text-[#0969da] dark:hover:text-[#58a6ff] transition-colors bg-transparent border-0 cursor-pointer">
-          View changelog →
-        </button>
-      </aside>
+      {/* Hidden because this feature is not implemented */}
     </div>
   );
 });

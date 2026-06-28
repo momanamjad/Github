@@ -35,7 +35,7 @@ export const useDocumentTitle = () => {
         } else if (pathname.match(/^\/[^/]+\/[^/]+$/)) {
             // /:username/:repo → show repo name in title
             const parts = pathname.split('/');
-            document.title = `${decodeURIComponent(parts[2])} / ${parts[1]} - GitHub Clone`;
+            document.title = `${parts[1]} / ${decodeURIComponent(parts[2])} - GitHub Clone`;
         } else if (pathname.match(/^\/[^/]+$/)) {
             // /:username → profile page
             const username = pathname.slice(1);

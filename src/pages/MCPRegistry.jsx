@@ -10,6 +10,15 @@ const MCPRegistry = () => {
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
 
   // Form states
   const [name, setName] = useState('');
@@ -34,9 +43,17 @@ const MCPRegistry = () => {
   const fetchServers = async () => {
     try {
       setLoading(true);
-      let queryUrl = `/mcp?category=${selectedCategory}`;
+      setFetchError(null);
+      let queryUrl = '/mcp';
+      const params = [];
+      if (selectedCategory !== 'all') {
+        params.push(`category=${encodeURIComponent(selectedCategory)}`);
+      }
       if (searchQuery.trim()) {
-        queryUrl += `&q=${encodeURIComponent(searchQuery.trim())}`;
+        params.push(`q=${encodeURIComponent(searchQuery.trim())}`);
+      }
+      if (params.length > 0) {
+        queryUrl += `?${params.join('&')}`;
       }
       const res = await apiClient(queryUrl);
       if (res && res.data) {
@@ -44,6 +61,7 @@ const MCPRegistry = () => {
       }
     } catch (err) {
       console.error('Failed to load MCP servers:', err);
+      setFetchError('Failed to load servers. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -59,6 +77,20 @@ const MCPRegistry = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    if (type === 'sse') {
+      try {
+        const parsedUrl = new URL(url);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+          setSubmitError('URL must use http or https protocol');
+          return;
+        }
+      } catch (err) {
+        setSubmitError('URL must be a valid URL using http or https protocol');
+        return;
+      }
+    }
+
     setRegistering(true);
     try {
       const args = argsInput.split(',').map(s => s.trim()).filter(Boolean);
@@ -75,6 +107,7 @@ const MCPRegistry = () => {
         })
       });
       setShowRegisterModal(false);
+      setSubmitError(null);
       // Reset form
       setName('');
       setDescription('');
@@ -86,7 +119,7 @@ const MCPRegistry = () => {
       await fetchServers();
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Failed to register MCP server');
+      setSubmitError(err.message || 'Failed to register MCP server');
     } finally {
       setRegistering(false);
     }
@@ -97,6 +130,26 @@ const MCPRegistry = () => {
       alert('Please log in to star MCP servers.');
       return;
     }
+
+    const targetServer = servers.find(s => s._id === serverId);
+    if (!targetServer) return;
+
+    const wasStarred = targetServer.isStarred;
+    const currentStarsCount = targetServer.starsCount || 0;
+
+    // Optimistic UI update
+    setServers(prev =>
+      prev.map(s =>
+        s._id === serverId
+          ? {
+              ...s,
+              isStarred: !wasStarred,
+              starsCount: wasStarred ? Math.max(0, currentStarsCount - 1) : currentStarsCount + 1
+            }
+          : s
+      )
+    );
+
     try {
       const res = await apiClient(`/mcp/${serverId}/star`, { method: 'POST' });
       if (res && res.data) {
@@ -104,6 +157,15 @@ const MCPRegistry = () => {
       }
     } catch (err) {
       console.error(err);
+      // Rollback optimistic update
+      setServers(prev =>
+        prev.map(s =>
+          s._id === serverId
+            ? { ...s, isStarred: wasStarred, starsCount: currentStarsCount }
+            : s
+        )
+      );
+      setToastMessage({ text: 'Failed to update star. Please try again.', type: 'error' });
     }
   };
 
@@ -207,12 +269,19 @@ const MCPRegistry = () => {
           {/* Main List */}
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-[#30363d] pb-2">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                Showing {servers.length} {servers.length === 1 ? 'server' : 'servers'}
-              </p>
+              {!loading && (
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Showing {servers.length} {servers.length === 1 ? 'server' : 'servers'}
+                </p>
+              )}
             </div>
 
-            {loading ? (
+             {fetchError ? (
+              <div className="mb-4 p-3 text-sm text-[#ff7b72] bg-[#f85149]/10 border border-[#f85149]/30 rounded-md text-left flex justify-between items-center">
+                <span>{fetchError}</span>
+                <button onClick={() => setFetchError(null)} className="text-xs font-bold text-[#ff7b72] bg-transparent border-0 cursor-pointer p-1">✕</button>
+              </div>
+             ) : loading ? (
               <div className="text-center py-12 text-sm text-[#57606a] dark:text-[#8b949e]">Loading registered MCP servers...</div>
             ) : servers.length === 0 ? (
               <div className="text-center py-12 border border-gray-300 dark:border-[#30363d] border-dashed rounded-lg bg-gray-50 dark:bg-[#161b22] text-sm text-gray-500 dark:text-[#8b949e]">
@@ -286,7 +355,7 @@ const MCPRegistry = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#30363d]">
               <h3 className="font-bold text-gray-900 dark:text-white">Register MCP Server</h3>
               <button
-                onClick={() => setShowRegisterModal(false)}
+                onClick={() => { setShowRegisterModal(false); setSubmitError(null); }}
                 className="bg-transparent border-0 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-white"
               >
                 <XIcon size={16} />
@@ -388,6 +457,10 @@ const MCPRegistry = () => {
                     placeholder="e.g. http://localhost:3001/mcp"
                   />
                 </div>
+              {submitError && (
+                <div className="p-3 text-xs text-[#ff7b72] bg-[#f85149]/10 border border-[#f85149]/30 rounded-md">
+                  {submitError}
+                </div>
               )}
 
               <div className="flex gap-2 pt-2 justify-end">
@@ -408,6 +481,16 @@ const MCPRegistry = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {toastMessage && (
+        <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg text-sm border font-medium flex items-center justify-between gap-3 animate-in slide-in-from-bottom duration-200 ${
+          toastMessage.type === "success" 
+            ? "bg-[#dafbe1] text-[#1a7f37] border-[#2da44e]/30" 
+            : "bg-[#ffebe9] text-[#cf222e] border-[#f85149]/30"
+        }`}>
+          <span>{toastMessage.text}</span>
+          <button onClick={() => setToastMessage(null)} className="text-gray-500 hover:text-black dark:hover:text-white font-bold p-1 bg-transparent border-0 cursor-pointer">✕</button>
         </div>
       )}
     </div>

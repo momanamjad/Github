@@ -45,8 +45,8 @@ const ContributionGraph = ({ username, contributions: initialContributions }) =>
     years.push(y);
   }
 
-  const filteredData = contributions.filter((item) => {
-    if (!item.date) return false;
+  const filteredData = (contributions || []).filter((item) => {
+    if (!item || !item.date) return false;
     const itemYear = parseInt(item.date.split('-')[0], 10);
     return itemYear === selectedYear;
   });
