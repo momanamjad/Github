@@ -15,12 +15,19 @@ const ForgotPasswordPage = () => {
     e.preventDefault();
     setErrorMsg("");
     setMessage("");
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMsg('Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await apiClient("/auth/forgot-password", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
       setMessage(res.message || "Reset link sent to your email!");
     } catch (err) {

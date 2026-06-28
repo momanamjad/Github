@@ -21,13 +21,21 @@ const CopyButton = ({ text }) => {
 };
 
 export default function CopilotChat() {
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "Hello! I am GitHub Copilot, your AI pair programmer. How can I help you write, debug, or document code today?"
-    }
-  ]);
+  const [messages, setMessages] = useState(() => {
+    const saved = sessionStorage.getItem('copilot_messages');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Hello! I am GitHub Copilot, your AI pair programmer. How can I help you write, debug, or document code today?"
+      }
+    ];
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('copilot_messages', JSON.stringify(messages));
+  }, [messages]);
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
@@ -46,7 +54,8 @@ export default function CopilotChat() {
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
 
-    const userMsg = { id: Date.now().toString(), role: 'user', content: text };
+    const getUUID = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+    const userMsg = { id: getUUID(), role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
@@ -60,17 +69,17 @@ export default function CopilotChat() {
       
       const aiContent = res.data?.response || "I couldn't process that request at this moment.";
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+        id: getUUID(),
         role: 'assistant',
         content: aiContent
       }]);
     } catch (err) {
       if (err.name === 'AbortError' || err.message === 'The user aborted a request.') return;
-      console.error(err);
+      if (import.meta.env.DEV) console.error(err);
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+        id: getUUID(),
         role: 'assistant',
-        content: "Error communicating with AI Copilot service: " + err.message
+        content: 'Sorry, I encountered an error. Please try again.'
       }]);
     } finally {
       setIsTyping(false);
@@ -102,7 +111,10 @@ export default function CopilotChat() {
               <button
                 key={idx}
                 onClick={() => handleSend(p.text)}
-                className="w-full text-left p-2.5 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] hover:border-purple-500 dark:hover:border-purple-500 rounded-md text-xs font-semibold cursor-pointer text-[#1f2328] dark:text-[#c9d1d9] transition-all hover:shadow-sm"
+                disabled={isTyping}
+                className={`w-full text-left p-2.5 bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] hover:border-purple-500 dark:hover:border-purple-500 rounded-md text-xs font-semibold text-[#1f2328] dark:text-[#c9d1d9] transition-all hover:shadow-sm ${
+                  isTyping ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
               >
                 <div className="text-purple-600 dark:text-purple-400 font-bold mb-0.5">{p.label}</div>
                 <div className="truncate text-gray-500">{p.text}</div>
@@ -140,7 +152,14 @@ export default function CopilotChat() {
                         pre: ({ node, ...props }) => (
                           <div className="relative my-2">
                             <pre className="p-3 bg-[#ebedf0] dark:bg-[#0d1117] rounded-md overflow-x-auto text-xs font-mono leading-relaxed" {...props} />
-                            <CopyButton text={node?.children?.[0]?.children?.[0]?.value || props.children?.props?.children || ""} />
+                            <CopyButton text={(() => {
+                              const valueFromNode = node?.children?.[0]?.children?.[0]?.value;
+                              if (valueFromNode) return valueFromNode;
+                              const valueFromPropsChild = props.children?.props?.children;
+                              if (typeof valueFromPropsChild === 'string') return valueFromPropsChild;
+                              if (typeof props.children === 'string') return props.children;
+                              return String(props.children || '');
+                            })()} />
                           </div>
                         ),
                         code: ({ ...props }) => <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded font-mono text-purple-600 dark:text-purple-400" {...props} />

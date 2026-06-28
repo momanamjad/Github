@@ -33,6 +33,7 @@ export const saveTree = (repoId, tree) => {
 
 // recursive helpers for local storage ---------------------------------------------------------
 function findNode(tree, targetPath) {
+  if (!tree || !Array.isArray(tree)) return null;
   for (const node of tree) {
     if (node.path === targetPath) return node;
     if (node.type === 'dir') {
@@ -44,6 +45,7 @@ function findNode(tree, targetPath) {
 }
 
 function addNodeToTree(tree, parentPath, newNode) {
+  if (!tree || !Array.isArray(tree)) return false;
   if (!parentPath || parentPath === '') {
     tree.push(newNode);
     return true;
@@ -62,6 +64,7 @@ function addNodeToTree(tree, parentPath, newNode) {
 }
 
 function deleteNodeFromTree(tree, targetPath) {
+  if (!tree || !Array.isArray(tree)) return false;
   for (let i = 0; i < tree.length; i++) {
     const node = tree[i];
     if (node.path === targetPath) {
@@ -83,19 +86,24 @@ function deleteNodeFromTree(tree, targetPath) {
  */
 export const addNode = async (repoId, parentPath, newNode, branch = 'main') => {
   if (isBackendRepo(repoId)) {
-    const res = await apiClient(`/repos/${repoId}/contents`, {
-      method: 'POST',
-      body: JSON.stringify({
-        name: newNode.name,
-        path: newNode.path,
-        type: newNode.type,
-        content: newNode.content || '',
-        parentPath: parentPath || '',
-        commitMessage: newNode.commitMessage || '',
-        branch
-      })
-    });
-    return res.data;
+    try {
+      const res = await apiClient(`/repos/${repoId}/contents`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newNode.name,
+          path: newNode.path,
+          type: newNode.type,
+          content: newNode.content || '',
+          parentPath: parentPath || '',
+          commitMessage: newNode.commitMessage || '',
+          branch
+        })
+      });
+      return res.data;
+    } catch (err) {
+      console.error("Failed to add node:", err);
+      throw new Error(err.message || 'Failed to add node');
+    }
   }
 
   const tree = await getTree(repoId);
@@ -176,7 +184,7 @@ export const moveNode = async (repoId, fromPath, toPath) => {
   deleteNodeFromTree(tree, fromPath);
 
   const updatePaths = (n, base) => {
-    n.path = n.path.replace(fromPath, toPath);
+    n.path = n.path.split(fromPath).join(toPath);
     if (n.type === 'dir') {
       n.children.forEach(child => updatePaths(child, base));
     }

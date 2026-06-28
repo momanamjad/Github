@@ -68,6 +68,33 @@ const PullRequests = () => {
   const [newPrTitle, setNewPrTitle] = useState("");
   const [newPrDesc, setNewPrDesc] = useState("");
   const [expandedPrId, setExpandedPrId] = useState(null);
+  const [confirmMergePr, setConfirmMergePr] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [isMerging, setIsMerging] = useState(false);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleExecuteMerge = async () => {
+    if (!confirmMergePr || isMerging) return;
+    const pr = confirmMergePr;
+    setIsMerging(true);
+    try {
+      await apiClient(`/repos/${pr.repoId}/pulls/${pr.id}/merge`, { method: "POST" });
+      setToastMessage({ text: `Pull Request "${pr.title}" merged successfully!`, type: "success" });
+      lastRepoIdsRef.current = null;
+      setConfirmMergePr(null);
+      await fetchAllPRs(true);
+    } catch (err) {
+      setToastMessage({ text: "Merge failed: " + err.message, type: "error" });
+    } finally {
+      setIsMerging(false);
+    }
+  };
 
   const isFetchingRef = useRef(false);
   const lastRepoIdsRef = useRef("");
@@ -142,10 +169,10 @@ const PullRequests = () => {
   };
 
   const tabs = [
-    { id: "Created", label: "Created", count: 12 },
-    { id: "Assigned", label: "Assigned", count: 3 },
-    { id: "Mentioned", label: "Mentioned", count: 1 },
-    { id: "Review requests", label: "Review requests", count: 5 },
+    { id: "Created", label: "Created" },
+    { id: "Assigned", label: "Assigned" },
+    { id: "Mentioned", label: "Mentioned" },
+    { id: "Review requests", label: "Review requests" },
   ];
 
   const StatusIcon = ({ status }) => {
@@ -182,7 +209,8 @@ const PullRequests = () => {
   const filteredPullRequests = activePRs.filter(pr => {
     // Apply tab filters
     if (selectedTab === "Created") {
-      if (pr.author !== user?.login) return false;
+      const authorLogin = pr.author?.login || pr.author;
+      if (authorLogin !== user?.login) return false;
     }
     // Search query parsing helper (ignore syntax helpers)
     const tokens = searchQuery.split(/\s+/).filter(t => !t.startsWith("is:") && !t.startsWith("author:"));
@@ -195,7 +223,7 @@ const PullRequests = () => {
   });
 
   return (
-    <div className="min-h-screen bg-white text-[#1f2328] font-sans">
+    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] font-sans transition-colors">
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
           <div className="border rounded-md border-github-border">
@@ -207,9 +235,9 @@ const PullRequests = () => {
                   className={`
                   py-2 px-4 font-semibold text-[14px] whitespace-nowrap
                   ${
-                    selectedTab === tab.id
-                      ? "bg-[#0969DA] text-white border border-github-border"
-                      : "text-black hover:bg-[#F6F8FA] border border-github-border"
+                      selectedTab === tab.id
+                        ? "bg-[#0969DA] text-white border border-github-border"
+                        : "text-black dark:text-[#c9d1d9] hover:bg-[#F6F8FA] dark:hover:bg-[#161b22] border border-github-border"
                   }
                 `}
                 >
@@ -306,11 +334,27 @@ const PullRequests = () => {
                         <span>This branch has no conflicts with the base branch</span>
                       </div>
                       <div className="border-t border-[#d0d7de]/60 pt-2">
-                        <p className="font-semibold mb-1.5 text-xs text-[#57606a]">Files changed (1)</p>
-                        <div className="flex items-center justify-between py-1.5 px-3 bg-white border border-[#d0d7de] rounded text-xs">
-                          <span className="font-mono text-[#1f2328]">README.md</span>
-                          <span className="text-[#1a7f37] font-semibold">+12 lines</span>
-                        </div>
+                        {pr.files_changed && Array.isArray(pr.files_changed) && pr.files_changed.length > 0 ? (
+                          <>
+                            <p className="font-semibold mb-1.5 text-xs text-[#57606a]">
+                              Files changed ({pr.files_changed.length})
+                            </p>
+                            <div className="space-y-1.5">
+                              {pr.files_changed.map((file, idx) => (
+                                <div key={idx} className="flex items-center justify-between py-1.5 px-3 bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded text-xs text-[#1f2328] dark:text-[#c9d1d9]">
+                                  <span className="font-mono text-[#1f2328]">{file.filename || file.path || file}</span>
+                                  <span className="text-[#1a7f37] font-semibold">
+                                    {file.additions ? `+${file.additions}` : ''} {file.deletions ? `-${file.deletions}` : ''}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-xs text-[#57606a] italic">
+                            No file changes available
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -319,17 +363,9 @@ const PullRequests = () => {
                 <div className="flex-shrink-0 text-xs flex items-center gap-2">
                   {pr.status === "open" && (
                     <button
-                      onClick={async (e) => {
+                      onClick={(e) => {
                         e.preventDefault();
-                        if (!window.confirm(`Are you sure you want to merge PR: "${pr.title}"?`)) return;
-                        try {
-                          await apiClient(`/repos/${pr.repoId}/pulls/${pr.id}/merge`, { method: "POST" });
-                          alert("Pull Request merged successfully!");
-                          lastRepoIdsRef.current = null;
-                          await fetchAllPRs(true);
-                        } catch (err) {
-                          alert("Merge failed: " + err.message);
-                        }
+                        setConfirmMergePr(pr);
                       }}
                       className="px-2.5 py-1 text-xs font-semibold text-white bg-[#238636] hover:bg-[#2ea043] rounded-md transition-colors cursor-pointer"
                     >
@@ -341,11 +377,11 @@ const PullRequests = () => {
               </div>
             ))
           ) : (
-            <div className="py-20 text-center bg-white">
-              <h3 className="text-xl font-normal text-[#24292f] mb-2">
+            <div className="py-20 text-center bg-white dark:bg-[#0d1117]">
+              <h3 className="text-xl font-normal text-[#24292f] dark:text-white mb-2">
                 No pull requests matched your search.
               </h3>
-              <p className="text-sm text-[#57606a]">
+              <p className="text-sm text-[#57606a] dark:text-[#8b949e]">
                 Try a different search query or filter.
               </p>
             </div>
@@ -393,15 +429,15 @@ const PullRequests = () => {
       </div>
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-[#d0d7de] rounded-lg max-w-md w-full p-6 text-[#1f2328] shadow-2xl">
-            <h3 className="text-lg font-bold mb-4 text-[#1f2328]">Open a New Pull Request</h3>
+          <div className="bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-lg max-w-md w-full p-6 text-[#1f2328] dark:text-[#c9d1d9] shadow-2xl">
+            <h3 className="text-lg font-bold mb-4 text-[#1f2328] dark:text-white">Open a New Pull Request</h3>
             <form onSubmit={handleCreatePR} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs text-[#57606a] mb-1 font-semibold">Select Repository</label>
                 <select
                   value={newPrRepoId}
                   onChange={(e) => setNewPrRepoId(e.target.value)}
-                  className="w-full bg-[#f6f8fa] border border-[#d0d7de] rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328]"
+                  className="w-full bg-[#f6f8fa] dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328] dark:text-white"
                 >
                   {repositories.map(repo => (
                     <option key={repo._id || repo.id} value={repo._id || repo.id}>
@@ -418,7 +454,7 @@ const PullRequests = () => {
                   placeholder="e.g. Add dark mode"
                   value={newPrTitle}
                   onChange={(e) => setNewPrTitle(e.target.value)}
-                  className="w-full bg-white border border-[#d0d7de] rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328]"
+                  className="w-full bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328] dark:text-white"
                 />
               </div>
               <div>
@@ -427,7 +463,7 @@ const PullRequests = () => {
                   placeholder="Describe your changes..."
                   value={newPrDesc}
                   onChange={(e) => setNewPrDesc(e.target.value)}
-                  className="w-full bg-white border border-[#d0d7de] rounded p-2 text-sm h-24 resize-none focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328]"
+                  className="w-full bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded p-2 text-sm h-24 resize-none focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] text-[#1f2328] dark:text-white"
                 />
               </div>
               <div className="flex justify-end gap-2 mt-2">
@@ -446,6 +482,46 @@ const PullRequests = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Merge Confirmation Modal */}
+      {confirmMergePr && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#161b22] rounded-lg border border-[#d0d7de] dark:border-[#30363d] max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left text-[#1f2328] dark:text-[#c9d1d9]">
+            <h3 className="text-lg font-semibold text-[#24292f] dark:text-white mb-2">Merge pull request</h3>
+            <p className="text-sm text-[#57606a] dark:text-[#8b949e] mb-4">
+              Are you sure you want to merge pull request <strong>"{confirmMergePr.title}"</strong>? This will merge the changes into the target branch.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmMergePr(null)}
+                className="px-4 py-2 border border-[#d0d7de] bg-[#f6f8fa] text-[#24292f] hover:bg-gray-100 text-sm font-semibold rounded-md transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isMerging}
+                onClick={handleExecuteMerge}
+                className="px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-semibold rounded-md transition-colors cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isMerging ? "Merging..." : "Confirm merge"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styled Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5 fade-in duration-200 text-left">
+          <div className={`p-4 rounded-md shadow-lg flex items-center gap-2 border text-sm font-semibold text-white ${
+            toastMessage.type === 'success' ? 'bg-[#2da44e] border-[#2da44e]' : 'bg-[#cf222e] border-[#cf222e]'
+          }`}>
+            <span>{toastMessage.type === 'success' ? '✓' : '⚠️'}</span>
+            <span>{toastMessage.text}</span>
+            <button onClick={() => setToastMessage(null)} className="ml-2 font-bold text-white bg-transparent border-0 cursor-pointer p-1">✕</button>
           </div>
         </div>
       )}

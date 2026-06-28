@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { apiClient } from "@/services/apiClient";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,16 @@ const ResetPasswordPage = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const redirectTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -26,8 +36,8 @@ const ResetPasswordPage = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters long.");
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setErrorMsg("Password must be at least 8 characters long and contain at least one uppercase letter and one number.");
       return;
     }
 
@@ -45,7 +55,7 @@ const ResetPasswordPage = () => {
       });
       setMessage(res.message || "Password reset successfully!");
       // Automatically redirect to home (login screen) after 3 seconds
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         navigate("/");
       }, 3000);
     } catch (err) {

@@ -8,7 +8,7 @@ import {
 } from "@primer/octicons-react";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { useGitHub } from "@/contexts/GitHubContext";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 import RepoList from "@/components/features/RepoList";
 import RepoFilterBar from "@/components/features/RepoFilterBar";
@@ -16,6 +16,7 @@ import { Skeleton } from 'boneyard-js/react';
 import { RepoSkeleton } from "@features/RepoSkeleton";
 
 export default function Repositories() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "my-repositories";
 
@@ -191,7 +192,21 @@ export default function Repositories() {
                 </div>
               }
             >
-              <RepoList repos={filteredRepositories} />
+              {filteredRepositories.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed border-gray-300 dark:border-[#30363d] rounded-lg text-center bg-transparent">
+                  <BookIcon size={32} className="text-gray-400 dark:text-[#8b949e] mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No repositories found</h3>
+                  <p className="text-sm text-gray-500 dark:text-[#8b949e] mb-4">You don't have any repositories yet or none match your filters.</p>
+                  <button
+                    onClick={() => navigate('/new')}
+                    className="px-4 py-2 bg-[#2da44e] hover:bg-[#2c974b] text-white font-semibold text-sm rounded-md shadow-sm cursor-pointer border-0"
+                  >
+                    Create repository
+                  </button>
+                </div>
+              ) : (
+                <RepoList repos={filteredRepositories} />
+              )}
             </Skeleton>
           </div>
         </div>

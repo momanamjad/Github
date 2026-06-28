@@ -211,3 +211,18 @@
 .animate-slideIn {
   animation: slideIn 0.3s ease-out forwards;
 }
+
+/* Spinner style for PageLoader */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #0969da;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

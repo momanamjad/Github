@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://gtihub-backend.vercel.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://github-backend.vercel.app/api';
 
 export const getBackendBaseUrl = () => {
   return API_URL.replace(/\/api$/, '');
@@ -6,8 +6,8 @@ export const getBackendBaseUrl = () => {
 
 export const resolveAvatarUrl = (url) => {
   if (!url) return "/profile.webp";
-  if (typeof url === 'string' && url.startsWith('http://localhost:5000')) {
-    return url.replace('http://localhost:5000', getBackendBaseUrl());
+  if (typeof url === 'string' && url.startsWith('http://localhost')) {
+    return url.replace(/http:\/\/localhost:\d+/, getBackendBaseUrl());
   }
   return url;
 };

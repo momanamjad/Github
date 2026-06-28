@@ -20,9 +20,9 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getPinnedRepos } from "@services/GithubApi";
 
-const PinnedRepos = ({ username }) => {
-  const [repos, setRepos] = useState([]);
-  const [loading, setLoading] = useState(true);
+const PinnedRepos = ({ username, repos: initialRepos }) => {
+  const [repos, setRepos] = useState(initialRepos || []);
+  const [loading, setLoading] = useState(!initialRepos);
   const [activeId, setActiveId] = useState(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -40,7 +40,12 @@ const PinnedRepos = ({ username }) => {
   );
 
   useEffect(() => {
-    const fetchPinned = async () => {
+    const fetchPinned = async (forceFetch = false) => {
+      if (initialRepos && !forceFetch) {
+        setRepos(initialRepos);
+        setLoading(false);
+        return;
+      }
       if (!username) return;
 
       try {
@@ -59,7 +64,7 @@ const PinnedRepos = ({ username }) => {
 
     // Listen to custom event dispatched by RepoList.jsx
     const handlePinnedUpdate = () => {
-      fetchPinned();
+      fetchPinned(true);
     };
     window.addEventListener('github_pinned_updated', handlePinnedUpdate);
 

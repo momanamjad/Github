@@ -1,5 +1,5 @@
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   USER: 'github_user',
   REPOSITORIES: 'github_repositories',
   PINNED_REPOS: 'github_pinned_repositories',
@@ -32,7 +32,7 @@ function readCached(key) {
   }
 }
 
-function writeCached(key, value) {
+export function writeCached(key, value) {
   const raw = JSON.stringify(value);
   localStorage.setItem(key, raw);
   _cache[key] = { raw, parsed: value };
@@ -140,7 +140,7 @@ export const addRepository = (newRepo) => {
     }
 
     // Use incrementing numeric ID for compatibility, but a UUID for node_id
-    const newId = repos.length > 0 ? Math.max(...repos.map(r => r.id)) + 1 : 1;
+    const newId = repos.length > 0 ? repos.reduce((max, r) => Math.max(max, r.id ?? 0), 0) + 1 : 1;
 
     const repoWithId = {
       ...newRepo,
@@ -191,6 +191,9 @@ export const deleteRepository = (repoId) => {
   }
 };
 
+// Module-level map to store debounce timers per repository ID
+const updateTimers = {};
+
 /**
  * Update a repository in localStorage
  * @param {number} repoId - ID of the repository to update
@@ -206,16 +209,22 @@ export const updateRepository = (repoId, updatedData) => {
 
     writeCached(STORAGE_KEYS.REPOSITORIES, updatedRepos);
 
-    // Sync fileTree updates to the backend DB if logged in
+    // Sync fileTree updates to the backend DB if logged in with debouncing
     const user = localStorage.getItem("github_user");
     if (user) {
       const targetRepo = updatedRepos.find(r => r.id === repoId || r._id === repoId);
       if (targetRepo && targetRepo._id) {
-        import("./GithubApi.jsx").then(({ updateRepoApi }) => {
-          updateRepoApi(targetRepo._id, { fileTree: targetRepo.fileTree }).catch(err => {
-            console.error("Failed to sync fileTree update to backend database:", err);
+        if (updateTimers[repoId]) {
+          clearTimeout(updateTimers[repoId]);
+        }
+        updateTimers[repoId] = setTimeout(() => {
+          import("./GithubApi.jsx").then(({ updateRepoApi }) => {
+            updateRepoApi(targetRepo._id, { fileTree: targetRepo.fileTree }).catch(err => {
+              console.error("Failed to sync fileTree update to backend database:", err);
+            });
           });
-        });
+          delete updateTimers[repoId];
+        }, 500);
       }
     }
 
