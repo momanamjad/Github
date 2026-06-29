@@ -97,10 +97,6 @@ export default defineConfig({
           // Icon sets
           if (id.includes('@primer/octicons-react')) return 'octicons';
           if (id.includes('lucide-react')) return 'lucide';
-          // React core + router
-          if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('/node_modules/react/')) return 'react-core';
-          // Everything else in node_modules
-          if (id.includes('node_modules')) return 'vendor';
         },
       },
     },
