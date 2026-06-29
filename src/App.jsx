@@ -23,7 +23,8 @@ const RepoDetails   = lazy(() => import("@features/RepoDetails"));
 const NewRepoPage   = lazy(() => import("@features/NewRepoPage"));
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div className="spinner" aria-label="Loading..." role="status" />
   </div>
 );
 
@@ -41,11 +42,14 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
+
+
   useEffect(() => {
-    if (pathname !== "/" && pathname !== "/forgot-password" && pathname !== "/reset-password") {
-      navigate("/", { replace: true });
-    }
-  }, [pathname, navigate]);
+    setLoginUsername('');
+    setEmail('');
+    setPassword('');
+    setErrorMsg('');
+  }, [activeTab]);
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -167,13 +171,16 @@ const AuthPage = () => {
                 navigate("/");
               }
             }}
-            onFailure={(err) => setErrorMsg(err.message || "Google Sign-In failed")}
+            onFailure={(err) => {
+              const msg = err.error === 'popup_closed_by_user' ? 'Sign-in was cancelled.' : 'Google Sign-In failed. Please try again.';
+              setErrorMsg(msg);
+            }}
           />
 
           <div className="mt-6 text-center text-sm border-t border-[#d0d7de] dark:border-[#30363d] pt-4">
             {activeTab === 'login' ? (
               <p className="text-[#57606a] dark:text-[#8b949e]">
-                New to GitHub ?{' '}
+                New to GitHub?{' '}
                 <button
                   type="button"
                   onClick={() => { setActiveTab('register'); setErrorMsg(""); }}
@@ -206,53 +213,56 @@ const NavigateToQuery = ({ tab }) => {
   return <Navigate to={`/${username}?tab=${tab}`} replace />;
 };
 
+const RequireAuth = ({ children }) => {
+  const { user } = useGitHub();
+  const location = useLocation();
+  if (!user) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+  return children;
+};
+
 const AppContent = () => {
   const { user } = useGitHub();
-  const { pathname } = useLocation();
-
-  if (!user) {
-    if (pathname === '/forgot-password') {
-      return (
-        <Suspense fallback={<PageLoader />}>
-          <Pages.ForgotPassword />
-        </Suspense>
-      );
-    }
-    if (pathname === '/reset-password') {
-      return (
-        <Suspense fallback={<PageLoader />}>
-          <Pages.ResetPassword />
-        </Suspense>
-      );
-    }
-    return <AuthPage />;
-  }
 
   return (
     <div className="min-h-screen bg-github-bg text-github-text text-[14px] leading-normal">
       <Suspense fallback={<PageLoader />}>
-        <Buddy />
+        {user && <Buddy />}
         <Routes>
-          <Route element={<OpenMenuLayout />}>
-            <Route path="/"              element={<Pages.Home />} />
-            <Route path="/issues"        element={<Pages.Issues />} />
-            <Route path="/pull-requests" element={<Pages.PullRequests />} />
-            <Route path="/repositories"  element={<Pages.Repositories />} />
-            <Route path="/projects"      element={<Pages.Projects />} />
-            <Route path="/discussions"   element={<Pages.Discussions />} />
-            <Route path="/codespaces"    element={<Pages.Codespaces />} />
-            <Route path="/copilot"       element={<Pages.Copilot />} />
-            <Route path="/explore"       element={<Pages.Explore />} />
-            <Route path="/marketplace"   element={<Pages.Marketplace />} />
-            <Route path="/mcp-registry"  element={<Pages.MCPRegistry />} />
-            <Route path="/terminal"      element={<Pages.Terminal />} />
-            <Route path="/new"           element={<NewRepoPage />} />
-            <Route path="/profile/stars" element={<Stars />} />
-            <Route path="/stars"         element={<Navigate to={`/${user.login}/stars`} replace />} />
+          {/* Public Routes */}
+          <Route path="/forgot-password" element={<ErrorBoundary fallback={<ErrorPage />}><Pages.ForgotPassword /></ErrorBoundary>} />
+          <Route path="/reset-password"  element={<ErrorBoundary fallback={<ErrorPage />}><Pages.ResetPassword /></ErrorBoundary>} />
+
+          {/* Home Route */}
+          {user ? (
+            <Route element={<OpenMenuLayout />}>
+              <Route path="/" element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Home /></ErrorBoundary>} />
+            </Route>
+          ) : (
+            <Route path="/" element={<AuthPage />} />
+          )}
+
+          {/* Protected Routes Wrapper */}
+          <Route element={<RequireAuth><OpenMenuLayout /></RequireAuth>}>
+            <Route path="/issues"        element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Issues /></ErrorBoundary>} />
+            <Route path="/pull-requests" element={<ErrorBoundary fallback={<ErrorPage />}><Pages.PullRequests /></ErrorBoundary>} />
+            <Route path="/repositories"  element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Repositories /></ErrorBoundary>} />
+            <Route path="/projects"      element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Projects /></ErrorBoundary>} />
+            <Route path="/discussions"   element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Discussions /></ErrorBoundary>} />
+            <Route path="/codespaces"    element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Codespaces /></ErrorBoundary>} />
+            <Route path="/copilot"       element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Copilot /></ErrorBoundary>} />
+            <Route path="/explore"       element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Explore /></ErrorBoundary>} />
+            <Route path="/marketplace"   element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Marketplace /></ErrorBoundary>} />
+            <Route path="/mcp-registry"  element={<ErrorBoundary fallback={<ErrorPage />}><Pages.MCPRegistry /></ErrorBoundary>} />
+            <Route path="/terminal"      element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Terminal /></ErrorBoundary>} />
+            <Route path="/new"           element={<ErrorBoundary fallback={<ErrorPage />}><NewRepoPage /></ErrorBoundary>} />
+            <Route path="/profile/stars" element={<ErrorBoundary fallback={<ErrorPage />}><Stars /></ErrorBoundary>} />
+            <Route path="/stars"         element={<Navigate to={user?.login ? `/${user.login}/stars` : '/'} replace />} />
           </Route>
 
           {/* Profile routes */}
-          <Route path="/:username" element={<ProfileLayout />}>
+          <Route path="/:username" element={<RequireAuth><ProfileLayout /></RequireAuth>}>
             <Route index               element={<Overview />} />
             <Route path="repositories" element={<Repositories />} />
             <Route path="projects"     element={<ProjectsTab />} />

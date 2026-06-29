@@ -17,7 +17,7 @@ export default function GitHubIssues() {
   const [activeTab, setActiveTab] = useState("assigned");
   const [searchQuery, setSearchQuery] = useState("");
   const { user, repositories } = useGitHub();
-  const activeUsername = user?.login || "moman";
+  const activeUsername = user?.login || "";
   const [isNewIssueOpen, setIsNewIssueOpen] = useState(false);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -85,6 +85,7 @@ export default function GitHubIssues() {
 
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
   React.useEffect(() => {
     if (!selectedIssue) {
@@ -110,6 +111,31 @@ export default function GitHubIssues() {
   // Sidebar selector dropdown toggles
   const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
   const [labelDropdownOpen, setLabelDropdownOpen] = useState(false);
+
+  const assigneeDropdownRef = React.useRef(null);
+  const labelDropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!assigneeDropdownOpen) return;
+    const handler = (e) => {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target)) {
+        setAssigneeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [assigneeDropdownOpen]);
+
+  React.useEffect(() => {
+    if (!labelDropdownOpen) return;
+    const handler = (e) => {
+      if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target)) {
+        setLabelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [labelDropdownOpen]);
 
   const allAssignees = [activeUsername, "alice", "bob", "ghost"];
   const allLabels = ["bug", "enhancement", "ui", "documentation", "duplicate"];
@@ -150,6 +176,7 @@ export default function GitHubIssues() {
       }));
     } catch (err) {
       console.error("Failed to toggle status:", err);
+      setActionError("Failed to update issue status. Please try again.");
     }
   };
 
@@ -172,6 +199,7 @@ export default function GitHubIssues() {
       }));
     } catch (err) {
       console.error("Failed to toggle label:", err);
+      setActionError("Failed to update issue labels. Please try again.");
     }
   };
 
@@ -194,11 +222,12 @@ export default function GitHubIssues() {
       }));
     } catch (err) {
       console.error("Failed to select assignee:", err);
+      setActionError("Failed to update issue assignee. Please try again.");
     }
   };
 
   let tabFilteredIssues = issues;
-  const userLogin = user?.login || "moman";
+  const userLogin = user?.login || "";
 
   if (activeTab === "created") {
     tabFilteredIssues = issues.filter(issue => issue.author === userLogin);
@@ -238,7 +267,7 @@ export default function GitHubIssues() {
               {tabs.map((tab) => (
                 <div
                   key={tab.id}
-                  className={`p-1.1 relative transition-all ${
+                  className={`p-1 relative transition-all ${
                     activeTab === tab.id
                       ? "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-blue-600 before:rounded-r-md"
                       : ""
@@ -294,6 +323,13 @@ export default function GitHubIssues() {
                   >
                     ← Back to issues list
                   </button>
+
+                  {actionError && (
+                    <div className="mb-4 p-3 text-sm text-[#ff7b72] bg-[#f85149]/10 border border-[#f85149]/30 rounded-md flex justify-between items-center">
+                      <span>{actionError}</span>
+                      <button onClick={() => setActionError(null)} className="text-xs font-bold text-[#ff7b72] bg-transparent border-0 cursor-pointer p-1">✕</button>
+                    </div>
+                  )}
                   <h1 className="text-2xl font-normal text-[#1f2328] dark:text-white mb-2 flex items-center gap-3">
                     <span className="font-semibold">{selectedIssue.title}</span>
                     <span className="text-[#57606a] dark:text-[#8b949e] font-light">#{selectedIssue.number}</span>
@@ -376,7 +412,7 @@ export default function GitHubIssues() {
                   {/* Right Column: Metadata Sidebar */}
                   <div className="space-y-6 lg:border-l lg:border-[#d0d7de] lg:dark:border-[#30363d] lg:pl-6">
                     {/* Assignees section */}
-                    <div className="relative border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
+                    <div ref={assigneeDropdownRef} className="relative border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
                       <div className="flex items-center justify-between text-xs font-semibold text-[#57606a] dark:text-[#8b949e] mb-2">
                         <span>Assignees</span>
                         <button
@@ -422,7 +458,7 @@ export default function GitHubIssues() {
                     </div>
 
                     {/* Labels section */}
-                    <div className="relative border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
+                    <div ref={labelDropdownRef} className="relative border-b border-[#d0d7de] dark:border-[#30363d] pb-4">
                       <div className="flex items-center justify-between text-xs font-semibold text-[#57606a] dark:text-[#8b949e] mb-2">
                         <span>Labels</span>
                         <button
@@ -570,31 +606,31 @@ export default function GitHubIssues() {
               <span>© 2026 GitHub, Inc.</span>
             </div>
             <div className="flex flex-wrap gap-4">
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Terms
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Privacy
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Security
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Status
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Community
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Docs
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Contact
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Manage cookies
               </a>
-              <a href="#" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+              <a href="about:blank" className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                 Do not share my personal information
               </a>
             </div>

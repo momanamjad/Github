@@ -12,8 +12,40 @@ export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [recentSearchQuery, setRecentSearchQuery] = useState('');
+  const [createdSearchQuery, setCreatedSearchQuery] = useState('');
   const [createdFilter, setCreatedFilter] = useState('open'); // 'open' | 'closed'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'oldest' | 'alphabetical'
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const sortDropdownRef = React.useRef(null);
+
+  useEffect(() => {
+    if (!showSortDropdown) return;
+    const handler = (e) => {
+      if (!sortDropdownRef.current?.contains(e.target)) setShowSortDropdown(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSortDropdown]);
+
+  const sortProjects = React.useCallback((list) => {
+    return [...list].sort((a, b) => {
+      if (sortBy === 'newest') {
+        const dateA = new Date(a.updated_at || a.updatedAt || a.created_at || a.createdAt || Date.now());
+        const dateB = new Date(b.updated_at || b.updatedAt || b.created_at || b.createdAt || Date.now());
+        return dateB - dateA;
+      } else if (sortBy === 'oldest') {
+        const dateA = new Date(a.created_at || a.createdAt || Date.now());
+        const dateB = new Date(b.created_at || b.createdAt || Date.now());
+        return dateA - dateB;
+      } else if (sortBy === 'alphabetical') {
+        const titleA = a.title || a.name || '';
+        const titleB = b.title || b.name || '';
+        return titleA.localeCompare(titleB);
+      }
+      return 0;
+    });
+  }, [sortBy]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -33,8 +65,11 @@ export default function Projects() {
     fetchProjects();
   }, []);
 
-  const clearSearch = () => {
-    setSearchQuery('');
+  const clearRecentSearch = () => {
+    setRecentSearchQuery('');
+  };
+  const clearCreatedSearch = () => {
+    setCreatedSearchQuery('');
   };
 
   const getFilteredProjects = (projectList, query) => {
@@ -67,8 +102,8 @@ export default function Projects() {
 
   // Recently viewed list - shows all projects by default, filtered by search query
   const recentlyViewedProjects = useMemo(() => {
-    return getFilteredProjects(projects, searchQuery);
-  }, [projects, searchQuery, user]);
+    return sortProjects(getFilteredProjects(projects, recentSearchQuery));
+  }, [projects, recentSearchQuery, user, sortProjects]);
 
   // Projects created by me
   const myProjects = useMemo(() => {
@@ -86,8 +121,8 @@ export default function Projects() {
   // Filtered created-by-me projects
   const filteredCreatedByMe = useMemo(() => {
     const base = myProjects.filter(p => createdFilter === 'open' ? p.column !== 'done' : p.column === 'done');
-    return getFilteredProjects(base, searchQuery);
-  }, [myProjects, createdFilter, searchQuery, user]);
+    return sortProjects(getFilteredProjects(base, createdSearchQuery));
+  }, [myProjects, createdFilter, createdSearchQuery, user, sortProjects]);
 
   if (loading) {
     return (
@@ -123,7 +158,8 @@ export default function Projects() {
                 <button
                   onClick={() => {
                     setActiveTab("recently-viewed");
-                    setSearchQuery('');
+                    setRecentSearchQuery('');
+                    setCreatedSearchQuery('');
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md border-0 bg-transparent text-left cursor-pointer transition-colors ${
                     activeTab === 'recently-viewed'
@@ -140,7 +176,8 @@ export default function Projects() {
                 <button
                   onClick={() => {
                     setActiveTab('created-by-me');
-                    setSearchQuery('');
+                    setRecentSearchQuery('');
+                    setCreatedSearchQuery('');
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md border-0 bg-transparent text-left cursor-pointer transition-colors ${
                     activeTab === 'created-by-me'
@@ -171,14 +208,14 @@ export default function Projects() {
                   </div>
                   <input
                     type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={recentSearchQuery}
+                    onChange={(e) => setRecentSearchQuery(e.target.value)}
                     placeholder="is:open"
                     className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-[#30363d] rounded-md leading-5 bg-white dark:bg-[#161b22] text-[#1f2328] dark:text-[#c9d1d9] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
-                  {searchQuery && (
+                  {recentSearchQuery && (
                     <button
-                      onClick={clearSearch}
+                      onClick={clearRecentSearch}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center bg-transparent border-0 cursor-pointer"
                     >
                       <XIcon size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-white" />
@@ -273,14 +310,14 @@ export default function Projects() {
                   </div>
                   <input
                     type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={createdSearchQuery}
+                    onChange={(e) => setCreatedSearchQuery(e.target.value)}
                     placeholder="is:open creator:@me"
                     className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-[#30363d] rounded-md leading-5 bg-white dark:bg-[#161b22] text-[#1f2328] dark:text-[#c9d1d9] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
-                  {searchQuery && (
+                  {createdSearchQuery && (
                     <button
-                      onClick={clearSearch}
+                      onClick={() => setCreatedSearchQuery('')}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center bg-transparent border-0 cursor-pointer"
                     >
                       <XIcon size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-white" />
@@ -312,10 +349,35 @@ export default function Projects() {
                       Closed <span className="ml-1">{closedCount}</span>
                     </button>
                   </div>
-                  <button className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white bg-transparent border-0 cursor-pointer">
-                    Sort
-                    <ChevronDownIcon size={14} />
-                  </button>
+                  <div className="relative" ref={sortDropdownRef}>
+                    <button
+                      onClick={() => setShowSortDropdown(!showSortDropdown)}
+                      className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-[#8b949e] hover:text-gray-900 dark:hover:text-white bg-transparent border-0 cursor-pointer"
+                    >
+                      Sort: <span className="capitalize">{sortBy}</span>
+                      <ChevronDownIcon size={14} />
+                    </button>
+                    {showSortDropdown && (
+                      <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-md shadow-lg py-1 z-10">
+                        {['newest', 'oldest', 'alphabetical'].map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => {
+                              setSortBy(opt);
+                              setShowSortDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-xs capitalize bg-transparent border-0 cursor-pointer ${
+                              sortBy === opt
+                                ? 'text-blue-600 font-bold dark:text-blue-400'
+                                : 'text-gray-700 dark:text-[#8b949e] hover:bg-gray-100 dark:hover:bg-[#30363d]'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Projects List or Empty State */}

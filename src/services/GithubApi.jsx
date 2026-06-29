@@ -99,7 +99,6 @@ export const getRepo = async (username, repoName) => {
 // Get repo contents
 export const getRepoContents = async (user, repo, path = "") => {
   await storageReady;
-  await simulateDelay();
   const contents = getStoredRepoContents(repo);
   if (!contents) {
     return [

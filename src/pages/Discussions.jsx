@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { SearchIcon, XIcon, ClockIcon, PersonIcon, ChevronDownIcon, CommentDiscussionIcon } from '@primer/octicons-react';
 import EmptyStateClockIcon from "../components/ui/icons/EmptyStateClockIcon";
 import EmptyStateDiscussionIcon from "../components/ui/icons/EmptyStateDiscussionIcon";
@@ -6,7 +7,7 @@ import FooterGithubIcon from "../components/ui/icons/FooterGithubIcon";
 import { useGitHub } from "../contexts/GitHubContext";
 import { apiClient } from "../services/apiClient";
 
-export default function GitHubClone() {
+export default function Discussions() {
   const [mainSection, setMainSection] = useState('projects');  
   const [projectTab, setProjectTab] = useState('recently-viewed');  
   const [discussionTab, setDiscussionTab] = useState('created'); 
@@ -16,29 +17,10 @@ export default function GitHubClone() {
   const activeUsername = user?.login || "moman";
 
   const [discussionsList, setDiscussionsList] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
-  const fetchGlobalDiscussions = async () => {
-    if (!repositories || repositories.length === 0) return;
-    setLoading(true);
-    try {
-      const allPromises = repositories.map(async (repo) => {
-        try {
-          const res = await apiClient(`/repos/${repo._id || repo.id}/discussions`);
-          return (res?.data || []).map(d => ({ ...d, repoName: repo.name, repoOwner: repo.owner?.login || user?.login }));
-        } catch (e) {
-          console.warn(e);
-          return [];
-        }
-      });
-      const resolved = await Promise.all(allPromises);
-      setDiscussionsList(resolved.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   useEffect(() => {
     fetchGlobalDiscussions();
@@ -51,6 +33,17 @@ export default function GitHubClone() {
   const clearDiscussionsSearch = () => {
     setDiscussionsSearchQuery('');
   };
+
+  const filteredDiscussions = React.useMemo(() => {
+    const q = discussionsSearchQuery.toLowerCase();
+    return discussionsList.filter(d => {
+      if (discussionTab === 'created') {
+        return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
+      } else {
+        return d.replies?.some(r => r.author?.login === activeUsername) && d.title.toLowerCase().includes(q);
+      }
+    });
+  }, [discussionsList, discussionsSearchQuery, discussionTab, activeUsername]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] transition-colors">
@@ -153,8 +146,16 @@ export default function GitHubClone() {
                     </div>
 
                     <div className="mb-4">
-                      <p className="text-sm text-[#57606a] dark:text-[#8b949e]">0 recently viewed</p>
-                    </div>
+                       <p className="text-sm text-[#57606a] dark:text-[#8b949e]">
+                         {(() => {
+                           try {
+                             return JSON.parse(localStorage.getItem('recentProjects') || '[]').length;
+                           } catch {
+                             return 0;
+                           }
+                         })()} recently viewed
+                       </p>
+                     </div>
 
                     <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md p-16 bg-white dark:bg-[#161b22] flex flex-col items-center justify-center">
                       <div className="w-12 h-12 mb-4 flex items-center justify-center">
@@ -269,20 +270,18 @@ export default function GitHubClone() {
                   </div>
                 </div>
  
+                 {fetchError && (
+                  <div className="mb-4 p-3 text-sm text-[#ff7b72] bg-[#f85149]/10 border border-[#f85149]/30 rounded-md text-left flex justify-between items-center">
+                    <span>{fetchError}</span>
+                    <button onClick={() => setFetchError(null)} className="text-xs font-bold text-[#ff7b72] bg-transparent border-0 cursor-pointer p-1">✕</button>
+                  </div>
+                )}
+
                 {loading ? (
                   <div className="text-center py-12 text-sm text-[#57606a] dark:text-[#8b949e]">Loading discussions...</div>
                 ) : discussionsList.length > 0 ? (
                   <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md divide-y divide-[#d0d7de] dark:divide-[#30363d] bg-white dark:bg-[#161b22]">
-                    {discussionsList
-                      .filter(d => {
-                        const q = discussionsSearchQuery.toLowerCase();
-                        if (discussionTab === 'created') {
-                          return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
-                        } else {
-                          return d.replies?.some(r => r.author?.login === activeUsername) && d.title.toLowerCase().includes(q);
-                        }
-                      })
-                      .map(d => (
+                    {filteredDiscussions.map(d => (
                         <div key={d._id} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#1f242c] flex items-start gap-3 text-left">
                           <CommentDiscussionIcon size={20} className="text-[#238636] mt-0.5" />
                           <div className="min-w-0 flex-1">
@@ -292,9 +291,9 @@ export default function GitHubClone() {
                               <span className="capitalize">Category: {d.category}</span>
                             </div>
                             <h4 className="text-sm font-semibold text-[#1f2328] dark:text-white mt-0.5">
-                              <a href={`/${d.repoOwner}/${d.repoName}`} className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
+                              <Link to={`/${d.repoOwner}/${d.repoName}`} className="hover:text-[#0969da] dark:hover:text-[#58a6ff] hover:underline">
                                 {d.title}
-                              </a>
+                              </Link>
                             </h4>
                             <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
                               started {new Date(d.createdAt).toLocaleDateString()} by <span className="font-semibold">{d.creator?.login}</span> · {d.replies?.length || 0} replies
@@ -302,14 +301,7 @@ export default function GitHubClone() {
                           </div>
                         </div>
                       ))}
-                    {discussionsList.filter(d => {
-                      const q = discussionsSearchQuery.toLowerCase();
-                      if (discussionTab === 'created') {
-                        return d.creator?.login === activeUsername && d.title.toLowerCase().includes(q);
-                      } else {
-                        return d.replies?.some(r => r.author?.login === activeUsername) && d.title.toLowerCase().includes(q);
-                      }
-                    }).length === 0 && (
+                    {filteredDiscussions.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#57606a] dark:text-[#8b949e]">No discussions match your filter criteria.</div>
                     )}
                   </div>
