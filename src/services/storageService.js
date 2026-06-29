@@ -32,7 +32,7 @@ function readCached(key) {
   }
 }
 
-function writeCached(key, value) {
+export function writeCached(key, value) {
   let finalValue = value;
   if (key === STORAGE_KEYS.REPOSITORIES && Array.isArray(value)) {
     // Strip fileTree, branches, tags etc from lists to optimize storage space
