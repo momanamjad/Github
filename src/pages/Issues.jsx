@@ -17,7 +17,7 @@ export default function GitHubIssues() {
   const [activeTab, setActiveTab] = useState("assigned");
   const [searchQuery, setSearchQuery] = useState("");
   const { user, repositories } = useGitHub();
-  const activeUsername = user?.login || "moman";
+  const activeUsername = user?.login || "";
   const [isNewIssueOpen, setIsNewIssueOpen] = useState(false);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -227,7 +227,7 @@ export default function GitHubIssues() {
   };
 
   let tabFilteredIssues = issues;
-  const userLogin = user?.login || "moman";
+  const userLogin = user?.login || "";
 
   if (activeTab === "created") {
     tabFilteredIssues = issues.filter(issue => issue.author === userLogin);

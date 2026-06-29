@@ -457,6 +457,7 @@ const MCPRegistry = () => {
                     placeholder="e.g. http://localhost:3001/mcp"
                   />
                 </div>
+              )}
               {submitError && (
                 <div className="p-3 text-xs text-[#ff7b72] bg-[#f85149]/10 border border-[#f85149]/30 rounded-md">
                   {submitError}

@@ -310,14 +310,14 @@ export default function Projects() {
                   </div>
                   <input
                     type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={createdSearchQuery}
+                    onChange={(e) => setCreatedSearchQuery(e.target.value)}
                     placeholder="is:open creator:@me"
                     className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-[#30363d] rounded-md leading-5 bg-white dark:bg-[#161b22] text-[#1f2328] dark:text-[#c9d1d9] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
-                  {searchQuery && (
+                  {createdSearchQuery && (
                     <button
-                      onClick={clearSearch}
+                      onClick={() => setCreatedSearchQuery('')}
                       className="absolute inset-y-0 right-0 pr-3 flex items-center bg-transparent border-0 cursor-pointer"
                     >
                       <XIcon size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-white" />

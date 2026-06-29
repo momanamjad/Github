@@ -1,6 +1,4 @@
-import Navbar from "@layout/Navbar";
-import ProfileSidebar from "@layout/ProfileSidebar";
-import Tabs from "@layout/Tabs";
+
 import PinnedRepos from "@features/PinnedRepos";
 import ContributionGraph from "@common/ContributionGraph";
 import { useParams } from "react-router-dom";
@@ -8,8 +6,6 @@ import { useEffect, useState } from "react";
 import Loader from "@common/Loader";
 import ErrorComponent from "@common/Error";
 import { getUser, getRepos, getPinnedRepos } from "@services/GithubApi.jsx";
-import { GitHubCalendar } from "react-github-calendar";
-import RepoList from "@features/RepoList";
 
 
 
