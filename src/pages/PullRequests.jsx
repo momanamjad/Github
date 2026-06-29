@@ -10,52 +10,8 @@ import PullRequestSidebarIcon from "../components/ui/icons/PullRequestSidebarIco
 import CommentsIcon from "../components/ui/icons/CommentsIcon";
 import GithubLogoVariantIcon from "../components/ui/icons/GithubLogoVariantIcon";
 
-const defaultPullRequests = [
-  {
-    id: 1,
-    title: "Add user authentication flow",
-    repo: "frontend-app",
-    number: 234,
-    status: "open",
-    author: "johndoe",
-    comments: 8,
-    updated: "2 hours ago",
-    labels: ["enhancement", "auth"],
-  },
-  {
-    id: 2,
-    title: "Fix responsive layout issues on mobile",
-    repo: "website",
-    number: 567,
-    status: "draft",
-    author: "janedoe",
-    comments: 3,
-    updated: "5 hours ago",
-    labels: ["bug", "mobile"],
-  },
-  {
-    id: 3,
-    title: "Update API documentation",
-    repo: "docs",
-    number: 890,
-    status: "merged",
-    author: "bobsmith",
-    comments: 12,
-    updated: "yesterday",
-    labels: ["documentation"],
-  },
-  {
-    id: 4,
-    title: "Implement dark mode toggle",
-    repo: "dashboard",
-    number: 123,
-    status: "closed",
-    author: "alicew",
-    comments: 6,
-    updated: "3 days ago",
-    labels: ["feature", "ui"],
-  },
-];
+
+
 
 const PullRequests = () => {
   const { user, repositories } = useGitHub();
