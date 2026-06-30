@@ -99,6 +99,7 @@ const RepoDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCommitDiff, setActiveCommitDiff] = useState(null);
+  const [treeTrigger, setTreeTrigger] = useState(0);
 
   // Issues states
   const [repoIssues, setRepoIssues] = useState([]);
@@ -619,7 +620,7 @@ const RepoDetails = () => {
     loadRepo();
   }, [username, repo]);
 
-  // Re-fetch tree when branch changes
+  // Re-fetch tree when branch changes or tree trigger is activated
   useEffect(() => {
     const fetchTreeOnBranchChange = async () => {
       if (!repoData) return;
@@ -634,7 +635,7 @@ const RepoDetails = () => {
       }
     };
     fetchTreeOnBranchChange();
-  }, [currentBranch, repoData, repo]);
+  }, [currentBranch, repoData, repo, treeTrigger]);
 
   if (loading) {
     return (
@@ -852,9 +853,13 @@ const RepoDetails = () => {
       });
       if (res && res.data) {
         setRepoPRs(prev => prev.map(pr => pr._id === prId ? { ...pr, status: 'merged' } : pr));
+        // Force refresh the file tree so merged changes show up immediately
+        setTreeTrigger(prev => prev + 1);
       }
+      return res;
     } catch (err) {
       console.error("Failed to merge PR:", err);
+      throw err;
     }
   };
 
