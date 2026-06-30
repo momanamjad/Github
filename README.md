@@ -79,3 +79,5 @@ Downloads files modified in the browser editor and writes/structures them into y
 * `secret-set <key> <val>` — Set or update encrypted repository secrets.
 * `secret-list` — List the names of all registered secrets.
 * `secret-delete <key>` — Delete a secret from the repository vault.
+* `remote-pull-wiki` — Pull remote repository Wiki pages as local Markdown files.
+* `remote-push-wiki` — Push local Markdown files in the wiki/ directory to the remote Wiki.
