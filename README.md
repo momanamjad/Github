@@ -76,3 +76,6 @@ Downloads files modified in the browser editor and writes/structures them into y
 * `stats` — Displays lines of code, file counts, and language breakdown.
 * `deps` — Visualizes local dependencies inside a formatted table.
 * `git-status` / `git-log` — Review local git status and commit streams.
+* `secret-set <key> <val>` — Set or update encrypted repository secrets.
+* `secret-list` — List the names of all registered secrets.
+* `secret-delete <key>` — Delete a secret from the repository vault.
