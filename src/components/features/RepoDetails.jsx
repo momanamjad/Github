@@ -86,6 +86,19 @@ const formatGitHubDate = (dateString) => {
   return new Date(dateString).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 };
 
+const formatCommitItem = (c) => {
+  const hash = c.commitHash || c._id || c.id || '';
+  return {
+    id: c._id || c.id,
+    hash: hash.substring(0, 7),
+    message: c.commitMessage || (c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`),
+    author: c.commitAuthor || c.user?.login || 'unknown',
+    avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
+    date: formatGitHubDate(c.created_at),
+    files: []
+  };
+};
+
 const RepoDetails = () => {
   const { username, repo } = useParams();
   const { user } = useGitHub();
@@ -100,6 +113,32 @@ const RepoDetails = () => {
   const [error, setError] = useState(null);
   const [activeCommitDiff, setActiveCommitDiff] = useState(null);
   const [treeTrigger, setTreeTrigger] = useState(0);
+
+  const handleCommitClick = async (commit) => {
+    if (!commit.id) {
+      setActiveCommitDiff(commit);
+      return;
+    }
+    try {
+      const repoId = repoData?._id || repoData?.id;
+      if (!repoId) {
+        setActiveCommitDiff(commit);
+        return;
+      }
+      const res = await apiClient(`/repos/${repoId}/commits/${commit.id}`);
+      if (res && res.data) {
+        setActiveCommitDiff({
+          ...commit,
+          files: res.data.files || []
+        });
+      } else {
+        setActiveCommitDiff(commit);
+      }
+    } catch (err) {
+      console.error("Failed to load commit details:", err);
+      setActiveCommitDiff(commit);
+    }
+  };
 
   // Issues states
   const [repoIssues, setRepoIssues] = useState([]);
@@ -383,14 +422,7 @@ const RepoDetails = () => {
         const id = repoData._id || repoData.id;
         const res = await apiClient(`/repos/${id}/commits`);
         if (res && res.data) {
-          const formatted = (res.data || []).map(c => ({
-            hash: (c._id || c.id || '').substring(0, 7),
-            message: c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`,
-            author: c.user?.login || 'unknown',
-            avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
-            date: formatGitHubDate(c.created_at),
-            files: []
-          }));
+          const formatted = (res.data || []).map(formatCommitItem);
           if (formatted.length > 0) {
             setCommitsList(formatted);
           }
@@ -554,14 +586,7 @@ const RepoDetails = () => {
             try {
               const commitsRes = await apiClient(`/repos/${repoId}/commits`);
               if (commitsRes && commitsRes.data) {
-                const formatted = (commitsRes.data || []).map(c => ({
-                  hash: (c._id || c.id || '').substring(0, 7),
-                  message: c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`,
-                  author: c.user?.login || 'unknown',
-                  avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
-                  date: formatGitHubDate(c.created_at),
-                  files: []
-                }));
+                const formatted = (commitsRes.data || []).map(formatCommitItem);
                 if (formatted.length > 0) {
                   setCommitsList(formatted);
                 }
@@ -674,14 +699,7 @@ const RepoDetails = () => {
           // Refresh commits list
           const commitsRes = await apiClient(`/repos/${id}/commits`);
           if (commitsRes && commitsRes.data) {
-            const formatted = (commitsRes.data || []).map(c => ({
-              hash: (c._id || c.id || '').substring(0, 7),
-              message: c.type === 'repo_created' ? 'Initial commit' : `${c.type.replace(/_/g, ' ')}`,
-              author: c.user?.login || 'unknown',
-              avatar_url: c.user?.avatar_url || 'https://avatars.githubusercontent.com/u/104862410?v=4',
-              date: formatGitHubDate(c.created_at),
-              files: []
-            }));
+            const formatted = (commitsRes.data || []).map(formatCommitItem);
             if (formatted.length > 0) {
               setCommitsList(formatted);
             }
@@ -2571,31 +2589,53 @@ const RepoDetails = () => {
           <div className="border border-[#d0d7de] dark:border-[#30363d] rounded-md overflow-hidden bg-white dark:bg-[#161b22]">
             <div className="divide-y divide-[#d0d7de] dark:divide-[#30363d]">
               {commitsList.map((commit, idx) => (
-                <div key={idx} className="p-4 hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 transition-colors">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <img
-                      src={commit.avatar_url}
-                      alt="author avatar"
-                      className="w-8 h-8 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
+                <div key={idx} className="hover:bg-[#f6f8fa] dark:hover:bg-[#161b22] flex items-center justify-between gap-4 transition-colors relative">
+                  
+                  {/* Left-side Visual Git Graph Line & Node */}
+                  <div className="flex flex-col items-center justify-center relative w-12 shrink-0 self-stretch min-h-[58px]">
+                    {/* Top half connecting line */}
+                    {idx > 0 && (
+                      <div className="absolute top-0 bottom-1/2 w-[2px] bg-[#d0d7de] dark:bg-[#30363d]" />
+                    )}
+                    {/* Bottom half connecting line */}
+                    {idx < commitsList.length - 1 && (
+                      <div className="absolute top-1/2 bottom-0 w-[2px] bg-[#d0d7de] dark:bg-[#30363d]" />
+                    )}
+                    {/* Interactive timeline circle/node */}
+                    <div 
+                      onClick={() => handleCommitClick(commit)}
+                      className="z-10 w-3.5 h-3.5 rounded-full border-4 border-white dark:border-[#161b22] bg-[#0969da] dark:bg-[#58a6ff] hover:scale-125 transition-transform shadow-sm cursor-pointer"
+                      title="View commit diff"
                     />
-                    <div className="min-w-0">
-                      <span
-                        onClick={() => setActiveCommitDiff(commit)}
-                        className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer block truncate"
-                      >
-                        {commit.message}
-                      </span>
-                      <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
-                        <span className="font-semibold text-[#24292f] dark:text-white">{commit.author}</span> committed {commit.date}
-                      </p>
-                    </div>
                   </div>
-                  <button
-                    onClick={() => setActiveCommitDiff(commit)}
-                    className="font-mono text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-[#f6f8fa] dark:bg-[#21262d] px-2.5 py-1 rounded border border-[#d0d7de] dark:border-[#30363d] cursor-pointer"
-                  >
-                    {commit.hash}
-                  </button>
+
+                  <div className="flex-1 py-4 flex items-center justify-between gap-4 min-w-0 pr-4">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <img
+                        src={commit.avatar_url}
+                        alt="author avatar"
+                        className="w-8 h-8 rounded-full object-cover border border-[#d0d7de] dark:border-[#30363d]"
+                      />
+                      <div className="min-w-0">
+                        <span
+                          onClick={() => handleCommitClick(commit)}
+                          className="font-semibold text-sm text-[#1f2328] dark:text-white hover:text-[#0969da] hover:underline cursor-pointer block truncate"
+                        >
+                          {commit.message}
+                        </span>
+                        <p className="text-xs text-[#57606a] dark:text-[#8b949e] mt-1">
+                          <span className="font-semibold text-[#24292f] dark:text-white">{commit.author}</span> committed {commit.date}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCommitClick(commit)}
+                      className="font-mono text-xs text-[#0969da] dark:text-[#58a6ff] hover:underline bg-[#f6f8fa] dark:bg-[#21262d] px-2.5 py-1 rounded border border-[#d0d7de] dark:border-[#30363d] cursor-pointer"
+                    >
+                      {commit.hash}
+                    </button>
+                  </div>
+
                 </div>
               ))}
             </div>
