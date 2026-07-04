@@ -8,31 +8,44 @@ export const STORAGE_KEYS = {
 };
 
 // ─── In-Memory Cache ──────────────────────────────────────────────
-// JSON.parse on every read is expensive (especially for large repo
-// arrays).  The cache stores the last-parsed value and the raw JSON
-// string that produced it, so we only re-parse when localStorage has
-// actually changed (e.g. from another tab).
+// JSON.parse on every read is expensive. The cache stores the last-parsed value,
+// raw JSON string, and an optional expiry time.
 const _cache = {};
 
 function readCached(key) {
   const raw = localStorage.getItem(key);
   if (raw === null) return null;
 
-  // If the raw string hasn't changed, return the cached object
+  // If the raw string hasn't changed, return the cached object (if not expired)
   if (_cache[key] && _cache[key].raw === raw) {
+    if (_cache[key].expiry && Date.now() > _cache[key].expiry) {
+      localStorage.removeItem(key);
+      delete _cache[key];
+      return null;
+    }
     return _cache[key].parsed;
   }
 
   try {
-    const parsed = JSON.parse(raw);
-    _cache[key] = { raw, parsed };
-    return parsed;
+    const envelope = JSON.parse(raw);
+    // Support TTL envelope format: { data, expiry }
+    if (envelope && typeof envelope === 'object' && 'data' in envelope && 'expiry' in envelope) {
+      if (Date.now() > envelope.expiry) {
+        localStorage.removeItem(key);
+        delete _cache[key];
+        return null;
+      }
+      _cache[key] = { raw, parsed: envelope.data, expiry: envelope.expiry };
+      return envelope.data;
+    }
+    _cache[key] = { raw, parsed: envelope };
+    return envelope;
   } catch {
     return null;
   }
 }
 
-export function writeCached(key, value) {
+export function writeCached(key, value, ttlMs = null) {
   let finalValue = value;
   if (key === STORAGE_KEYS.REPOSITORIES && Array.isArray(value)) {
     // Strip fileTree, branches, tags etc from lists to optimize storage space
@@ -41,14 +54,17 @@ export function writeCached(key, value) {
       return rest;
     });
   }
+  const expiry = ttlMs ? Date.now() + ttlMs : null;
+  const envelope = ttlMs ? { data: finalValue, expiry } : finalValue;
+
   try {
-    const raw = JSON.stringify(finalValue);
+    const raw = JSON.stringify(envelope);
     localStorage.setItem(key, raw);
-    _cache[key] = { raw, parsed: finalValue };
+    _cache[key] = { raw, parsed: finalValue, expiry };
   } catch (error) {
     console.warn(`[storageService] Failed to write cache for key "${key}":`, error);
     // Keep in memory anyway so UI continues working correctly
-    _cache[key] = { raw: JSON.stringify(finalValue), parsed: finalValue };
+    _cache[key] = { raw: JSON.stringify(envelope), parsed: finalValue, expiry };
   }
 }
 

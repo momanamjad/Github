@@ -4,15 +4,13 @@ import { Outlet } from 'react-router-dom'
 
 const OpenMenuLayout = () => {
   return (
-<div>
-    <Navbar/>
-  <main>
+    <div>
+      <Navbar/>
+      <main id="main-content" tabIndex="-1" className="outline-none">
         <Outlet />
       </main>
-  
-</div>
-  
-)
+    </div>
+  );
 }
 
 export default OpenMenuLayout

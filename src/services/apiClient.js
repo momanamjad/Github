@@ -14,6 +14,19 @@ export const resolveAvatarUrl = (url) => {
 
 const normalizeUrls = (obj) => {
   if (obj === null || obj === undefined) return obj;
+  
+  // Fast path: Stringify search first for early bailout on arrays/objects
+  if (typeof obj === 'object') {
+    try {
+      const strRepresentation = JSON.stringify(obj);
+      if (!strRepresentation || !strRepresentation.includes('localhost:5000/uploads/')) {
+        return obj;
+      }
+    } catch {
+      // Fallback to recursive traversal on circular/un-serializable structures
+    }
+  }
+
   if (typeof obj === 'string') {
     if (obj.startsWith('http://localhost:5000/uploads/')) {
       return obj.replace('http://localhost:5000', getBackendBaseUrl());
@@ -52,6 +65,15 @@ const onRefreshFailed = (error) => {
   refreshSubscribers = [];
 };
 
+export class ApiError extends Error {
+  constructor(message, statusCode, code = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+}
+
 export const apiClient = async (endpoint, options = {}) => {
   const token = localStorage.getItem('github_token');
   
@@ -61,11 +83,28 @@ export const apiClient = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  let response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    credentials: 'include',
-    headers,
-  });
+  const maxRetries = 2;
+  let attempt = 0;
+  let response;
+
+  while (attempt <= maxRetries) {
+    try {
+      response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        credentials: 'include',
+        headers,
+      });
+      break; // Request succeeded, break retry loop
+    } catch (err) {
+      attempt++;
+      if (attempt > maxRetries) {
+        throw new ApiError(err.message || 'Network connectivity error', 0, 'NETWORK_ERROR');
+      }
+      // Exponential backoff wait (500ms -> 1000ms)
+      const delay = Math.pow(2, attempt - 1) * 500;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
 
   // If unauthorized (excluding login/register/refresh), try silent token refresh
   if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/register' && endpoint !== '/auth/refresh') {
@@ -89,7 +128,7 @@ export const apiClient = async (endpoint, options = {}) => {
           setTimeout(() => {
             window.location.href = '/login';
           }, 0);
-          throw new Error('Session expired');
+          throw new ApiError('Session expired', 401, 'SESSION_EXPIRED');
         }
       } catch (err) {
         isRefreshing = false;
@@ -124,7 +163,7 @@ export const apiClient = async (endpoint, options = {}) => {
     : { message: await response.text() };
 
   if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    throw new ApiError(data.message || 'Something went wrong', response.status, data.code);
   }
 
   data = normalizeUrls(data);

@@ -23,11 +23,42 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // skip files >3MB from precache
         runtimeCaching: [
           {
-            // Backend API — network-first, short cache
+            // Repositories listing cache - StaleWhileRevalidate
+            urlPattern: /\/api\/repos(?:\?.*)?$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-repos-list-cache',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 }, // 5 minutes
+            },
+          },
+          {
+            // Repository details - CacheFirst (e.g. read-heavy branches/trees)
+            urlPattern: /\/api\/repos\/[^/]+(?:\?.*)?$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'api-repo-details-cache',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 200, maxAgeSeconds: 2 * 60 }, // 2 minutes
+            },
+          },
+          {
+            // Users and auth profile - NetworkFirst
+            urlPattern: /\/api\/users(?:\/.*)?$|\/api\/auth\/me$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-users-cache',
+              networkTimeoutSeconds: 5,
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 50, maxAgeSeconds: 30 }, // 30 seconds
+            },
+          },
+          {
+            // Backend API default fallback
             urlPattern: /^https:\/\/github-backend\.vercel\.app\/api\//,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
+              cacheName: 'api-default-cache',
               networkTimeoutSeconds: 8,
               cacheableResponse: { statuses: [0, 200] },
               expiration: { maxEntries: 100, maxAgeSeconds: 30 },
@@ -78,9 +109,16 @@ export default defineConfig({
     target: 'esnext',
     minify: 'esbuild',
     chunkSizeWarningLimit: 300,
+    cssCodeSplit: true,
+    assetsInlineLimit: 4096,
+    modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Isolate React runtime vendor bundle
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react';
+          }
           // Heavy editor — only loaded on repo file view
           if (id.includes('@monaco-editor') || id.includes('monaco-editor')) return 'monaco';
           // Terminal emulator — only on /terminal

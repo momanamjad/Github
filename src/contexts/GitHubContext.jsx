@@ -2,9 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage, writeCached, STORAGE_KEYS } from '../services/storageService';
 import { apiClient, resolveAvatarUrl } from '../services/apiClient';
 
-const GitHubContext = createContext();
+const AuthContext = createContext();
+const RepoContext = createContext();
+const UIContext   = createContext();
 
 export const GitHubProvider = ({ children }) => {
+    // 1. Auth Context State
     const [user, setUser] = useState(() => {
         const u = getStoredUser();
         if (u && u.avatar_url) {
@@ -12,13 +15,6 @@ export const GitHubProvider = ({ children }) => {
         }
         return u;
     });
-    const [status, setStatus] = useState(() => {
-        const u = getStoredUser();
-        return u?.status || { emoji: '', text: '', isBusy: false };
-    });
-    const [repositories, setRepositories] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
     const login = useCallback(async (email, password) => {
       const res = await apiClient('/auth/login', {
@@ -60,75 +56,10 @@ export const GitHubProvider = ({ children }) => {
       return res;
     }, []);
 
-    const refreshRepos = useCallback(async () => {
-        setIsLoading(true);
-        if (user?.login) {
-            try {
-                const { getRepos } = await import('../services/GithubApi');
-                const repos = await getRepos(user.login);
-                setRepositories(repos || []);
-                if (repos) {
-                    writeCached(STORAGE_KEYS.REPOSITORIES, repos);
-                }
-            } catch (err) {
-                console.warn("Error refreshing repos from backend, falling back to local storage:", err);
-                setRepositories(getStoredRepositories());
-            } finally {
-                setIsLoading(false);
-            }
-        } else {
-            setRepositories(getStoredRepositories());
-            setIsLoading(false);
-        }
-    }, [user?.login]);
-
-    // Initial fetch
-    useEffect(() => {
-        refreshRepos();
-    }, [refreshRepos]);
-
-    // Sync with other components/tabs
-    useEffect(() => {
-        const handleStatusUpdate = (e) => {
-            if (e.detail) setStatus(e.detail);
-        };
-        const handleOpenStatusModal = () => setIsStatusModalOpen(true);
-        const handleReposUpdate = () => refreshRepos();
-
-        window.addEventListener('github_status_updated', handleStatusUpdate);
-        window.addEventListener('github_open_status_modal', handleOpenStatusModal);
-        window.addEventListener('github_repos_updated', handleReposUpdate);
-
-        return () => {
-            window.removeEventListener('github_status_updated', handleStatusUpdate);
-            window.removeEventListener('github_open_status_modal', handleOpenStatusModal);
-            window.removeEventListener('github_repos_updated', handleReposUpdate);
-        };
-    }, [refreshRepos]);
-
     const logout = useCallback(() => {
         clearAllStorage();
         localStorage.removeItem('github_token');
         setUser(null);
-    }, []);
-
-    const updateStatus = useCallback(async (newStatus) => {
-        try {
-            const res = await apiClient('/auth/profile', {
-                method: 'PUT',
-                body: JSON.stringify({ status: newStatus }),
-            });
-            if (res?.data) {
-                localStorage.setItem('github_user', JSON.stringify(res.data));
-                setUser(res.data);
-                setStatus(res.data.status || { emoji: '', text: '', isBusy: false });
-                window.dispatchEvent(new CustomEvent('github_status_updated', { detail: res.data.status }));
-                return true;
-            }
-        } catch (err) {
-            console.error('Failed to update status on backend:', err);
-        }
-        return false;
     }, []);
 
     const updateUser = useCallback(async (newData) => {
@@ -158,36 +89,111 @@ export const GitHubProvider = ({ children }) => {
         return false;
     }, []);
 
-    // Memoize the context value to prevent unnecessary re-renders of
-    // every consumer when unrelated parent state changes.
-    const value = useMemo(() => ({
-        user,
-        status,
-        repositories,
-        isLoading,
-        refreshRepos,
-        updateStatus,
-        updateUser,
-        isStatusModalOpen,
-        setIsStatusModalOpen,
-        login,
-        loginWithGoogle,
-        register,
-        logout
-    }), [user, status, repositories, isLoading, refreshRepos, updateStatus, updateUser, isStatusModalOpen, login, loginWithGoogle, register, logout]);
+    // 2. Repo Context State
+    const [repositories, setRepositories] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const refreshRepos = useCallback(async () => {
+        setIsLoading(true);
+        if (user?.login) {
+            try {
+                const { getRepos } = await import('../services/GithubApi');
+                const repos = await getRepos(user.login);
+                setRepositories(repos || []);
+                if (repos) {
+                    writeCached(STORAGE_KEYS.REPOSITORIES, repos);
+                }
+            } catch (err) {
+                console.warn("Error refreshing repos from backend, falling back to local storage:", err);
+                setRepositories(getStoredRepositories());
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            setRepositories(getStoredRepositories());
+            setIsLoading(false);
+        }
+    }, [user?.login]);
+
+    useEffect(() => {
+        refreshRepos();
+    }, [refreshRepos]);
+
+    // 3. UI/Status Context State
+    const [status, setStatus] = useState(() => {
+        const u = getStoredUser();
+        return u?.status || { emoji: '', text: '', isBusy: false };
+    });
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+
+    const updateStatus = useCallback(async (newStatus) => {
+        try {
+            const res = await apiClient('/auth/profile', {
+                method: 'PUT',
+                body: JSON.stringify({ status: newStatus }),
+            });
+            if (res?.data) {
+                localStorage.setItem('github_user', JSON.stringify(res.data));
+                setUser(res.data);
+                setStatus(res.data.status || { emoji: '', text: '', isBusy: false });
+                window.dispatchEvent(new CustomEvent('github_status_updated', { detail: res.data.status }));
+                return true;
+            }
+        } catch (err) {
+            console.error('Failed to update status on backend:', err);
+        }
+        return false;
+    }, []);
+
+    useEffect(() => {
+        const handleStatusUpdate = (e) => {
+            if (e.detail) setStatus(e.detail);
+        };
+        const handleOpenStatusModal = () => setIsStatusModalOpen(true);
+        const handleReposUpdate = () => refreshRepos();
+
+        window.addEventListener('github_status_updated', handleStatusUpdate);
+        window.addEventListener('github_open_status_modal', handleOpenStatusModal);
+        window.addEventListener('github_repos_updated', handleReposUpdate);
+
+        return () => {
+            window.removeEventListener('github_status_updated', handleStatusUpdate);
+            window.removeEventListener('github_open_status_modal', handleOpenStatusModal);
+            window.removeEventListener('github_repos_updated', handleReposUpdate);
+        };
+    }, [refreshRepos]);
+
+    // Memoize each individual sub-context value
+    const authVal = useMemo(() => ({
+        user, login, loginWithGoogle, register, logout, updateUser
+    }), [user, login, loginWithGoogle, register, logout, updateUser]);
+
+    const repoVal = useMemo(() => ({
+        repositories, isLoading, refreshRepos
+    }), [repositories, isLoading, refreshRepos]);
+
+    const uiVal = useMemo(() => ({
+        status, isStatusModalOpen, setIsStatusModalOpen, updateStatus
+    }), [status, isStatusModalOpen, updateStatus]);
 
     return (
-        <GitHubContext.Provider value={value}>
-            {children}
-        </GitHubContext.Provider>
+        <AuthContext.Provider value={authVal}>
+            <RepoContext.Provider value={repoVal}>
+                <UIContext.Provider value={uiVal}>
+                    {children}
+                </UIContext.Provider>
+            </RepoContext.Provider>
+        </AuthContext.Provider>
     );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
+// Unified hook exposing sub-contexts transparently to consumers
 export const useGitHub = () => {
-    const context = useContext(GitHubContext);
-    if (!context) {
+    const authCtx = useContext(AuthContext);
+    const repoCtx = useContext(RepoContext);
+    const uiCtx   = useContext(UIContext);
+    if (!authCtx || !repoCtx || !uiCtx) {
         throw new Error('useGitHub must be used within a GitHubProvider');
     }
-    return context;
+    return { ...authCtx, ...repoCtx, ...uiCtx };
 };

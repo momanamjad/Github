@@ -227,53 +227,51 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-github-bg text-github-text text-[14px] leading-normal">
-      <Suspense fallback={<PageLoader />}>
-        {user && <Buddy />}
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/forgot-password" element={<ErrorBoundary fallback={<ErrorPage />}><Pages.ForgotPassword /></ErrorBoundary>} />
-          <Route path="/reset-password"  element={<ErrorBoundary fallback={<ErrorPage />}><Pages.ResetPassword /></ErrorBoundary>} />
+      {user && <Buddy />}
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/forgot-password" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.ForgotPassword /></Suspense></ErrorBoundary>} />
+        <Route path="/reset-password"  element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.ResetPassword /></Suspense></ErrorBoundary>} />
 
-          {/* Home Route */}
-          {user ? (
-            <Route element={<OpenMenuLayout />}>
-              <Route path="/" element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Home /></ErrorBoundary>} />
-            </Route>
-          ) : (
-            <Route path="/" element={<AuthPage />} />
-          )}
-
-          {/* Protected Routes Wrapper */}
-          <Route element={<RequireAuth><OpenMenuLayout /></RequireAuth>}>
-            <Route path="/issues"        element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Issues /></ErrorBoundary>} />
-            <Route path="/pull-requests" element={<ErrorBoundary fallback={<ErrorPage />}><Pages.PullRequests /></ErrorBoundary>} />
-            <Route path="/repositories"  element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Repositories /></ErrorBoundary>} />
-            <Route path="/projects"      element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Projects /></ErrorBoundary>} />
-            <Route path="/discussions"   element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Discussions /></ErrorBoundary>} />
-            <Route path="/codespaces"    element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Codespaces /></ErrorBoundary>} />
-            <Route path="/copilot"       element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Copilot /></ErrorBoundary>} />
-            <Route path="/explore"       element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Explore /></ErrorBoundary>} />
-            <Route path="/marketplace"   element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Marketplace /></ErrorBoundary>} />
-            <Route path="/mcp-registry"  element={<ErrorBoundary fallback={<ErrorPage />}><Pages.MCPRegistry /></ErrorBoundary>} />
-            <Route path="/terminal"      element={<ErrorBoundary fallback={<ErrorPage />}><Pages.Terminal /></ErrorBoundary>} />
-            <Route path="/new"           element={<ErrorBoundary fallback={<ErrorPage />}><NewRepoPage /></ErrorBoundary>} />
-            <Route path="/profile/stars" element={<ErrorBoundary fallback={<ErrorPage />}><Stars /></ErrorBoundary>} />
-            <Route path="/stars"         element={<Navigate to={user?.login ? `/${user.login}/stars` : '/'} replace />} />
+        {/* Home Route */}
+        {user ? (
+          <Route element={<OpenMenuLayout />}>
+            <Route path="/" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Home /></Suspense></ErrorBoundary>} />
           </Route>
+        ) : (
+          <Route path="/" element={<AuthPage />} />
+        )}
 
-          {/* Profile routes */}
-          <Route path="/:username" element={<RequireAuth><ProfileLayout /></RequireAuth>}>
-            <Route index               element={<Overview />} />
-            <Route path="repositories" element={<Repositories />} />
-            <Route path="projects"     element={<ProjectsTab />} />
-            <Route path="packages"     element={<PackagesTab />} />
-            <Route path="stars"        element={<Stars />} />
-            <Route path="followers"    element={<NavigateToQuery tab="followers" />} />
-            <Route path="following"    element={<NavigateToQuery tab="following" />} />
-            <Route path=":repo"        element={<RepoDetails />} />
-          </Route>
-        </Routes>
-      </Suspense>
+        {/* Protected Routes Wrapper */}
+        <Route element={<RequireAuth><OpenMenuLayout /></RequireAuth>}>
+          <Route path="/issues"        element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Issues /></Suspense></ErrorBoundary>} />
+          <Route path="/pull-requests" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.PullRequests /></Suspense></ErrorBoundary>} />
+          <Route path="/repositories"  element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Repositories /></Suspense></ErrorBoundary>} />
+          <Route path="/projects"      element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Projects /></Suspense></ErrorBoundary>} />
+          <Route path="/discussions"   element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Discussions /></Suspense></ErrorBoundary>} />
+          <Route path="/codespaces"    element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Codespaces /></Suspense></ErrorBoundary>} />
+          <Route path="/copilot"       element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Copilot /></Suspense></ErrorBoundary>} />
+          <Route path="/explore"       element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Explore /></Suspense></ErrorBoundary>} />
+          <Route path="/marketplace"   element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Marketplace /></Suspense></ErrorBoundary>} />
+          <Route path="/mcp-registry"  element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.MCPRegistry /></Suspense></ErrorBoundary>} />
+          <Route path="/terminal"      element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Terminal /></Suspense></ErrorBoundary>} />
+          <Route path="/new"           element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><NewRepoPage /></Suspense></ErrorBoundary>} />
+          <Route path="/profile/stars" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Stars /></Suspense></ErrorBoundary>} />
+          <Route path="/stars"         element={<Navigate to={user?.login ? `/${user.login}/stars` : '/'} replace />} />
+        </Route>
+
+        {/* Profile routes */}
+        <Route path="/:username" element={<RequireAuth><ProfileLayout /></RequireAuth>}>
+          <Route index               element={<Suspense fallback={<PageLoader />}><Overview /></Suspense>} />
+          <Route path="repositories" element={<Suspense fallback={<PageLoader />}><Repositories /></Suspense>} />
+          <Route path="projects"     element={<Suspense fallback={<PageLoader />}><ProjectsTab /></Suspense>} />
+          <Route path="packages"     element={<Suspense fallback={<PageLoader />}><PackagesTab /></Suspense>} />
+          <Route path="stars"        element={<Suspense fallback={<PageLoader />}><Stars /></Suspense>} />
+          <Route path="followers"    element={<NavigateToQuery tab="followers" />} />
+          <Route path="following"    element={<NavigateToQuery tab="following" />} />
+          <Route path=":repo"        element={<Suspense fallback={<PageLoader />}><RepoDetails /></Suspense>} />
+        </Route>
+      </Routes>
     </div>
   );
 };
@@ -315,29 +313,45 @@ const ErrorPage = () => (
   </div>
 );
 
+import useTheme from "./hooks/useTheme";
+
 const App = () => {
   useDocumentTitle();
+  const [theme] = useTheme();
+  const location = useLocation();
+  const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
     initializeStorage();
-
-    // Automatic dark/light mode system theme listener
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const updateTheme = () => {
-      if (media.matches) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    };
-    updateTheme();
-    media.addEventListener('change', updateTheme);
-    return () => media.removeEventListener('change', updateTheme);
   }, []);
+
+  // ARIA live announcement on route change
+  useEffect(() => {
+    const pageTitle = document.title || 'Page loaded';
+    setAnnouncement(`Navigated to ${pageTitle}`);
+
+    // Focus management: move focus to the first h1 or main container
+    setTimeout(() => {
+      const firstHeading = document.querySelector('h1');
+      if (firstHeading) {
+        firstHeading.setAttribute('tabIndex', '-1');
+        firstHeading.focus();
+      } else {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+          mainContent.focus();
+        }
+      }
+    }, 100);
+  }, [location.pathname]);
 
   return (
     <GitHubProvider>
       <ErrorBoundary fallback={<ErrorPage />}>
+        {/* Screen Reader announcer */}
+        <div className="sr-only" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </div>
         <AppContent />
       </ErrorBoundary>
     </GitHubProvider>

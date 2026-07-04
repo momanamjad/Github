@@ -13,37 +13,32 @@ A production-ready, full-featured clone of `github.com` built with modern React 
 * **Secrets Vault:** Save production tokens securely using encrypted, write-only AES-256-cbc database management.
 * **Issue Templates & Filtering:** Structure bug reports or feature requests using Markdown outlines and query lists via colored badges.
 * **Avatar Uploads & WS Notifications:** Customize user profile icons using local uploads and receive instant notification alerts powered by Socket.io.
-
-### Rust Terminal CLI
-* **Global Auth Session:** Persistent login token configuration mapped to home directories.
-* **Dynamic Dir Scanning:** Safe, workspace-scoped directory inspection mapped to active folder paths.
-* **Push Sync:** Automatically scans local files, respects ignores (`.git`, `node_modules`), and pushes updates to the server.
-* **Pull Sync:** Connects to the database and reconstructs directories/files recursively onto local folders.
+* **Optimized Rendering & Bundles:** Split context hooks (Auth, Repos, UI) preventing redraw cascades, lazy routes wrapping, custom caching with PWA caching, and theme toggling hooks.
 
 ---
 
-## 🚀 Quick Setup Guide
+## 🚀 Quick Setup & Build Guide
 
-### 1. The Web Interface
-1. Visit the hosted web app (or start it locally at `http://localhost:5173`).
-2. Register a user account and sign in.
-3. Click the **+ New** button to create a repository. If you plan to sync a local codebase, **uncheck "Add a README file"** to initialize it empty.
-
-### 2. Setting Up the Rust CLI
-To map files between your computer and the server:
-
-1. **Download the CLI:**
-   Go to the [CLI Releases Page](https://github.com/momanamjad/CLI/releases) and download the optimized `github-cli.exe` executable for Windows.
-2. **Move the Binary:** Place `github-cli.exe` inside your target project directory (or add it to your system's Environment `PATH` to run it globally).
-3. **Login in the terminal:**
-   Open PowerShell/CMD in your folder and run:
+### Frontend Development
+To run the frontend client locally:
+1. Clone the repository and install dependencies:
    ```bash
-   .\github-cli.exe login your-email@example.com yourpassword
+   npm install
    ```
-4. **Link the Directory:**
-   Copy your repository's ID from the Quick Setup screen in the browser and link it:
+2. Run the hot-reloading development server:
    ```bash
-   .\github-cli.exe remote-link <repository_id>
+   npm run dev
+   ```
+
+### Production Build & PWA Testing
+To compile the optimized bundle with split chunk modules, custom assets inlining, and offline PWA service worker configurations:
+1. Compile the production assets:
+   ```bash
+   npm run build
+   ```
+2. Preview the compiled production build locally:
+   ```bash
+   npm run preview
    ```
 
 ---
@@ -64,20 +59,3 @@ Downloads files modified in the browser editor and writes/structures them into y
 .\github-cli.exe remote-pull
 ```
 
----
-
-## 🛠️ CLI Command Catalog
-
-* `login <email> <pwd>` — Save authentication credentials to global configuration.
-* `remote-link <repo_id>` — Link local directory to a server repository.
-* `remote-create <name> [desc]` — Register a new repository on the server and link it locally.
-* `remote-push` — Sync local files up to the web repository.
-* `remote-pull` — Download and pull web repository changes to local disk.
-* `stats` — Displays lines of code, file counts, and language breakdown.
-* `deps` — Visualizes local dependencies inside a formatted table.
-* `git-status` / `git-log` — Review local git status and commit streams.
-* `secret-set <key> <val>` — Set or update encrypted repository secrets.
-* `secret-list` — List the names of all registered secrets.
-* `secret-delete <key>` — Delete a secret from the repository vault.
-* `remote-pull-wiki` — Pull remote repository Wiki pages as local Markdown files.
-* `remote-push-wiki` — Push local Markdown files in the wiki/ directory to the remote Wiki.
