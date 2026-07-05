@@ -15,7 +15,10 @@ export const resolveAvatarUrl = (url) => {
 const normalizeUrls = (obj) => {
   if (obj === null || obj === undefined) return obj;
   
-  // Fast path: Stringify search first for early bailout on arrays/objects
+  // Skip normalization entirely in production environments
+  if (!import.meta.env.DEV) {
+    return obj;
+  }
   if (typeof obj === 'object') {
     try {
       const strRepresentation = JSON.stringify(obj);

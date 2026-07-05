@@ -255,6 +255,7 @@ const AppContent = () => {
           <Route path="/marketplace"   element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Marketplace /></Suspense></ErrorBoundary>} />
           <Route path="/mcp-registry"  element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.MCPRegistry /></Suspense></ErrorBoundary>} />
           <Route path="/terminal"      element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Terminal /></Suspense></ErrorBoundary>} />
+          <Route path="/search"        element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Search /></Suspense></ErrorBoundary>} />
           <Route path="/new"           element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><NewRepoPage /></Suspense></ErrorBoundary>} />
           <Route path="/profile/stars" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Stars /></Suspense></ErrorBoundary>} />
           <Route path="/stars"         element={<Navigate to={user?.login ? `/${user.login}/stars` : '/'} replace />} />

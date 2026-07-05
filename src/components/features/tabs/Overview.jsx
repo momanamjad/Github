@@ -1,5 +1,6 @@
 import ContributionGraph from "@common/ContributionGraph";
 import PinnedRepos from "@features/PinnedRepos";
+import ProfileReadme from "@features/ProfileReadme";
 import { useParams, useSearchParams } from "react-router-dom";
 import Followers from "./Followers";
 import Following from "./Following";
@@ -19,6 +20,7 @@ const Overview = () => {
 
   return (
     <>
+      <ProfileReadme username={username} />
       <PinnedRepos username={username} />
       <ContributionGraph username={username} />
     </>

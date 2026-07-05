@@ -167,6 +167,13 @@ export default function GitHubSearch({ isOpen, onClose }) {
               placeholder="Search or jump to..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  e.preventDefault();
+                  onClose();
+                  navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                }
+              }}
               className="flex-1 ml-3 bg-transparent text-[#1F2328] placeholder-[#636c76] focus:outline-none text-[15px]"
             />
             {isLoading && (

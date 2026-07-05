@@ -8,6 +8,7 @@ export { default as NewRepoPage } from './NewRepoPage';
 export { default as OpenIssueModal } from './OpenIssueModal';
 export { default as PinnedRepoCard } from './PinnedRepoCard';
 export { default as PinnedRepos } from './PinnedRepos';
+export { default as ProfileReadme } from './ProfileReadme';
 export { default as RealTimeComponent } from './RealTimeComponent';
 export { default as RepoDetails } from './RepoDetails';
 export { default as RepoFileList } from './RepoFileList';

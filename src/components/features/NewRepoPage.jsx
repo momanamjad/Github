@@ -87,6 +87,18 @@ const NewRepoPage = () => {
         } else {
           setNameError("");
         }
+
+        // Auto-configure for profile README when name matches the user's login.
+        // This is a UX convenience only — the backend enforces security independently.
+        if (user?.login && cleanedValue.toLowerCase() === user.login.toLowerCase()) {
+          setFormData((prev) => ({
+            ...prev,
+            repoName: cleanedValue,
+            addReadme: true,      // Profile README must have a README.md
+            visibility: "public", // Profile README must be public
+          }));
+          return; // Skip the generic setter below
+        }
       } else {
         setNameError("");
       }
@@ -256,6 +268,21 @@ const NewRepoPage = () => {
                       </svg>
                       {nameError}
                     </p>
+                  )}
+                  {!nameError && formData.repoName.trim() && user?.login && formData.repoName.trim().toLowerCase() === user.login.toLowerCase() && (
+                    <div className="mt-3 p-4 border border-[#b4e3be] dark:border-[#30363d] rounded-md bg-[#dafbe1] dark:bg-[#0d1117] text-sm">
+                      <div className="flex gap-2">
+                        <span className="text-base">✨</span>
+                        <div>
+                          <p className="font-semibold text-[#1a7f37] dark:text-[#2ea043]">
+                            You found a secret!
+                          </p>
+                          <p className="text-[#24292f] dark:text-[#c9d1d9] mt-1">
+                            <strong className="font-semibold">{user.login}/{formData.repoName}</strong> is a special repository that you can use to add a README.md to your GitHub profile. Make sure it’s public and initialized with a README to get started.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

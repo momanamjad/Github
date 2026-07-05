@@ -10,7 +10,9 @@ import DiscussionsTab from "./tabs/DiscussionsTab";
 import ProjectsTab from "./tabs/ProjectsTab";
 import ActionsTab from "./tabs/ActionsTab";
 import WikiTab from "./tabs/WikiTab";
+import ReleasesTab from "./tabs/ReleasesTab";
 import MarkdownRenderer from "../common/MarkdownRenderer";
+import ConflictResolver from "./ConflictResolver";
 import {
   FileDirectoryFillIcon,
   FileIcon,
@@ -173,6 +175,7 @@ const RepoDetails = () => {
   const [prLineComments, setPrLineComments] = useState([]);
   const [activeInlineCommentLine, setActiveInlineCommentLine] = useState(null);
   const [newInlineCommentText, setNewInlineCommentText] = useState("");
+  const [isResolvingConflicts, setIsResolvingConflicts] = useState(false);
 
   const fetchPRDiffsAndLineComments = async (pr) => {
     if (!repoData) return;
@@ -1026,6 +1029,7 @@ const RepoDetails = () => {
     { id: "actions", label: "Actions", icon: <PlayIcon size={16} /> },
     { id: "projects", label: "Projects", icon: <ProjectIcon size={16} /> },
     { id: "wiki", label: "Wiki", icon: <BookIcon size={16} /> },
+    { id: "releases", label: "Releases", icon: <TagIcon size={16} /> },
     { id: "security", label: "Security and quality", icon: <ShieldIcon size={16} />, badge: "1" },
     { id: "insights", label: "Insights", icon: <GraphIcon size={16} /> },
     { id: "discussions", label: "Discussions", icon: <CommentDiscussionIcon size={16} /> },
@@ -1998,8 +2002,21 @@ const RepoDetails = () => {
       ) : activeRepoTab === 'pulls' ? (
         <div className="py-4 space-y-4 max-w-4xl text-left">
           {selectedPR ? (
-            /* Pull Request Detail View */
-            <div className="space-y-4">
+            isResolvingConflicts ? (
+              <ConflictResolver
+                repoId={repoData?._id || repoData?.id}
+                pr={selectedPR}
+                onClose={() => setIsResolvingConflicts(false)}
+                onResolveComplete={() => {
+                  setIsResolvingConflicts(false);
+                  setSelectedPR(prev => prev ? { ...prev, hasConflicts: false, conflictedFiles: [] } : null);
+                  setRepoPRs(prev => prev.map(p => (p._id === selectedPR._id || p.id === selectedPR.id) ? { ...p, hasConflicts: false, conflictedFiles: [] } : p));
+                  setTreeTrigger(prev => prev + 1);
+                }}
+              />
+            ) : (
+              /* Pull Request Detail View */
+              <div className="space-y-4">
               <div className="border-b border-[#d0d7de] dark:border-[#30363d] pb-2">
                 <button
                   onClick={() => { setSelectedPR(null); setComments([]); setPrDiffs([]); setPrLineComments([]); }}
@@ -2046,13 +2063,24 @@ const RepoDetails = () => {
                   </div>
 
                   {selectedPR.status === 'open' && (
-                    <div className={`border rounded-md p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'bg-red-50/50 dark:bg-red-950/10 border-red-200 dark:border-red-900/50' : 'bg-[#f6f8fa] dark:bg-[#161b22] border-[#d0d7de] dark:border-[#30363d]'}`}>
+                    <div className={`border rounded-md p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${
+                      prReviews.some(r => r.state === 'CHANGES_REQUESTED')
+                        ? 'bg-red-50/50 dark:bg-red-950/10 border-red-200 dark:border-red-900/50'
+                        : selectedPR.hasConflicts
+                          ? 'bg-yellow-50/50 dark:bg-yellow-950/10 border-yellow-200 dark:border-yellow-900/50'
+                          : 'bg-[#f6f8fa] dark:bg-[#161b22] border-[#d0d7de] dark:border-[#30363d]'
+                    }`}>
                       <div className="space-y-1">
                         <div className="text-xs font-semibold flex items-center gap-1.5">
                           {prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? (
                             <>
                               <span className="text-[#cf222e] font-bold">⚠️ Merge blocked</span>
                               <span className="text-[#57606a] dark:text-[#8b949e] font-normal">Changes have been requested by a reviewer.</span>
+                            </>
+                          ) : selectedPR.hasConflicts ? (
+                            <>
+                              <span className="text-yellow-600 font-bold">⚠️ This branch has conflicts</span>
+                              <span className="text-[#57606a] dark:text-[#8b949e] font-normal">Must resolve conflicts before merging.</span>
                             </>
                           ) : (
                             <>
@@ -2062,25 +2090,38 @@ const RepoDetails = () => {
                           )}
                         </div>
                         <div className="text-[11px] text-[#57606a] dark:text-[#8b949e]">
-                          {prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'Resolve all requested changes before merging.' : 'You can merge this pull request automatically.'}
+                          {prReviews.some(r => r.state === 'CHANGES_REQUESTED')
+                            ? 'Resolve all requested changes before merging.'
+                            : selectedPR.hasConflicts
+                              ? 'Use the conflict editor to resolve conflicts.'
+                              : 'You can merge this pull request automatically.'}
                         </div>
                       </div>
                       
                       {isOwner && (
-                        <button
-                          disabled={prReviews.some(r => r.state === 'CHANGES_REQUESTED')}
-                          onClick={async () => {
-                            try {
-                              await handleMergePR(selectedPR._id || selectedPR.id);
-                              setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
-                            } catch (err) {
-                              alert("Merge failed: " + err.message);
-                            }
-                          }}
-                          className={`px-3.5 py-1.5 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0 ${prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed' : 'bg-[#238636] hover:bg-[#2ea043]'}`}
-                        >
-                          Merge Pull Request
-                        </button>
+                        selectedPR.hasConflicts ? (
+                          <button
+                            onClick={() => setIsResolvingConflicts(true)}
+                            className="px-3.5 py-1.5 bg-[#0969da] hover:bg-[#0855b3] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0"
+                          >
+                            Resolve conflicts
+                          </button>
+                        ) : (
+                          <button
+                            disabled={prReviews.some(r => r.state === 'CHANGES_REQUESTED')}
+                            onClick={async () => {
+                              try {
+                                await handleMergePR(selectedPR._id || selectedPR.id);
+                                setSelectedPR(prev => prev ? { ...prev, status: 'merged' } : null);
+                              } catch (err) {
+                                alert("Merge failed: " + err.message);
+                              }
+                            }}
+                            className={`px-3.5 py-1.5 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer border-0 ${prReviews.some(r => r.state === 'CHANGES_REQUESTED') ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed' : 'bg-[#238636] hover:bg-[#2ea043]'}`}
+                          >
+                            Merge Pull Request
+                          </button>
+                        )
                       )}
                     </div>
                   )}
@@ -2316,7 +2357,8 @@ const RepoDetails = () => {
                 </div>
               )}
             </div>
-          ) : (
+          )
+        ) : (
             /* PRs list */
             <>
               <div className="flex items-center justify-between">
@@ -2647,6 +2689,8 @@ const RepoDetails = () => {
         <ActionsTab repoId={repoData?._id || repoData?.id} />
       ) : activeRepoTab === 'wiki' ? (
         <WikiTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+      ) : activeRepoTab === 'releases' ? (
+        <ReleasesTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
       ) : (
         /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
         <div className="py-12 max-w-2xl mx-auto text-center space-y-4">

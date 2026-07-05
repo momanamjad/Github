@@ -121,87 +121,101 @@ const StatusButton = ({ hidden = false, username, profileStatus }) => {
       )}
 
       {isStatusModalOpen && (
-        <div onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#e9edf0]/50 backdrop-blur-sm">
-          <div onClick={(e) => e.stopPropagation()} ref={modalRef} className="relative w-full max-w-md bg-white rounded-lg shadow-xl lg:max-w-lg p-4 sm:p-6 max-h-[95vh] flex flex-col">
-            <header className="flex justify-between items-center mb-4 flex-shrink-0">
-              <h2 className="text-xl font-semibold text-[#1F2328]">Edit status</h2>
-              <button onClick={closeModal} className="text-[#59636E] hover:text-[#1F2328]">
-                <XIcon className="w-5 h-5" />
+        <div onClick={closeModal} className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#1b1f23]/50 dark:bg-[#010409]/80 backdrop-blur-sm transition-opacity">
+          <div onClick={(e) => e.stopPropagation()} ref={modalRef} className="relative w-full max-w-md bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-lg shadow-xl p-4 sm:p-6 max-h-[95vh] flex flex-col text-left">
+            <header className="flex justify-between items-center mb-4 flex-shrink-0 border-b border-[#d0d7de] dark:border-[#30363d] pb-3">
+              <h2 className="text-sm font-bold text-[#1f2328] dark:text-white uppercase tracking-wider">Set user status</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-white bg-transparent border-0 cursor-pointer text-sm">
+                ✕
               </button>
             </header>
 
             <div className="space-y-4 overflow-y-auto pr-1 pb-1">
               <div>
-                <label className="block text-sm font-medium text-[#1F2328] mb-2">What's happening</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">What's happening</label>
                 <div className="relative">
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-[#d0d7de] rounded-md hover:bg-[#f6f8fa] transition-colors text-xl"
+                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-[#d0d7de] dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#0d1117] rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xl"
                     >
                       {localEmoji || '🙂'}
                     </button>
                     <input
                       type="text"
                       value={localText}
-                      onChange={(e) => setLocalText(e.target.value)}
+                      onChange={(e) => setLocalText(e.target.value.substring(0, 80))}
                       maxLength={80}
                       placeholder="What's happening?"
-                      className="flex-1 px-3 py-2 border border-[#d0d7de] rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="flex-1 px-3 py-2 bg-[#f6f8fa] dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md text-xs outline-none focus:border-[#58a6ff] text-[#24292f] dark:text-white"
                     />
                   </div>
-                  <p className="text-xs text-[#59636E] mt-1">{80 - localText.length} characters remaining</p>
+                  <p className="text-[10px] text-gray-400 mt-1">{80 - localText.length} characters remaining</p>
 
                   {showEmojiPicker && (
-                    <EmojiPicker
-                      pickerRef={emojiPickerRef}
-                      onSelect={(emoji) => {
-                        setLocalEmoji(emoji);
-                        setShowEmojiPicker(false);
-                      }}
-                      onClear={() => setLocalEmoji('')}
-                      onClose={() => setShowEmojiPicker(false)}
-                    />
+                    <div ref={emojiPickerRef} className="absolute top-12 left-0 z-10 w-full bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-lg shadow-lg p-3 max-h-60 overflow-y-auto">
+                      <div className="grid grid-cols-6 gap-2">
+                        {PRESET_STATUSES.map((preset, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              setLocalEmoji(preset.emoji);
+                              setShowEmojiPicker(false);
+                            }}
+                            className="text-xl hover:bg-gray-100 dark:hover:bg-gray-800 rounded p-1.5 transition-colors border-0 bg-transparent cursor-pointer"
+                            title={preset.text}
+                          >
+                            {preset.emoji}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => { setLocalEmoji(''); setShowEmojiPicker(false); }}
+                        className="w-full mt-3 py-1.5 text-xs text-red-500 border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent cursor-pointer"
+                      >
+                        Clear emoji
+                      </button>
+                    </div>
                   )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {PRESET_STATUSES.map((preset) => (
+                  {PRESET_STATUSES.slice(0, 4).map((preset) => (
                     <button
                       key={preset.text}
                       onClick={() => {
                         setLocalEmoji(preset.emoji);
                         setLocalText(preset.text);
                       }}
-                      className="px-3 py-1.5 text-sm border border-[#d0d7de] rounded-full hover:bg-[#f6f8fa] transition-colors"
+                      className="px-2.5 py-1 text-xs border border-[#d0d7de] dark:border-[#30363d] rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
                     >
-                      {preset.label}
+                      {preset.emoji} {preset.text}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <label className="flex items-start gap-2 cursor-pointer group">
+              <label className="flex items-start gap-2 cursor-pointer group mt-2">
                 <input
                   type="checkbox"
                   checked={localIsBusy}
                   onChange={(e) => setLocalIsBusy(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 border-[#d0d7de] rounded text-blue-600 focus:ring-blue-500"
+                  className="mt-0.5 w-4 h-4 rounded accent-purple-600"
                 />
                 <div>
-                  <span className="text-sm font-medium text-[#1F2328]">Busy</span>
-                  <p className="text-xs text-[#59636E] mt-0.5">
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Busy (shows red status dot on profile)</span>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
                     GitHub will let others know you have limited availability when mentioned.
                   </p>
                 </div>
               </label>
 
               <div>
-                <label className="block text-sm font-medium text-[#1F2328] mb-2">Expiration</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Expiration</label>
                 <select
                   value={expiration}
                   onChange={(e) => setExpiration(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#d0d7de] rounded-md bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-xs text-gray-700 dark:text-gray-300 outline-none"
                 >
                   {EXPIRATION_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -210,19 +224,27 @@ const StatusButton = ({ hidden = false, username, profileStatus }) => {
               </div>
             </div>
 
-            <footer className="flex gap-2 justify-end mt-6 flex-shrink-0">
+            <footer className="flex gap-2 justify-between mt-6 flex-shrink-0 border-t border-[#d0d7de] dark:border-[#30363d] pt-3">
               <button
                 onClick={handleClear}
-                className="px-4 py-2 text-sm font-medium text-[#1F2328] border border-[#d0d7de] rounded-md hover:bg-[#f6f8fa] transition-colors"
+                className="px-3 py-1.5 text-xs font-semibold text-red-500 border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent cursor-pointer"
               >
                 Clear status
               </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#2da44e] rounded-md hover:bg-[#2c974b] transition-colors"
-              >
-                Set status
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={closeModal}
+                  className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 border border-[#d0d7de] dark:border-[#30363d] rounded-md hover:bg-gray-100 dark:hover:bg-gray-850 bg-white dark:bg-[#21262d] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#238636] hover:bg-[#2ea043] rounded-md cursor-pointer border-0"
+                >
+                  Set status
+                </button>
+              </div>
             </footer>
           </div>
         </div>
