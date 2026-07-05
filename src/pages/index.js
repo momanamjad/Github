@@ -15,3 +15,4 @@ export const MCPRegistry = lazy(() => import('./MCPRegistry'));
 export const Terminal = lazy(() => import('./Terminal'));
 export const ForgotPassword = lazy(() => import('./ForgotPasswordPage'));
 export const ResetPassword = lazy(() => import('./ResetPasswordPage'));
+export const Search = lazy(() => import('./SearchPage'));

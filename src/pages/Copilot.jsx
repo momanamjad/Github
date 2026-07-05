@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, Bot, User, CornerDownLeft, RefreshCw, Terminal, Check, Copy } from 'lucide-react';
+import { Sparkles, Send, Bot, User, CornerDownLeft, RefreshCw, Terminal, Check, Copy, Folder } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { apiClient } from "../services/apiClient";
+import { useGitHub } from "../contexts/GitHubContext";
 
 const CopyButton = ({ text }) => {
   const [copied, setCopied] = useState(false);
@@ -21,6 +22,9 @@ const CopyButton = ({ text }) => {
 };
 
 export default function CopilotChat() {
+  const { repositories = [], isLoading: reposLoading } = useGitHub();
+  const [selectedRepoId, setSelectedRepoId] = useState("");
+  
   const [messages, setMessages] = useState(() => {
     const saved = sessionStorage.getItem('copilot_messages');
     return saved ? JSON.parse(saved) : [
@@ -48,6 +52,13 @@ export default function CopilotChat() {
     { text: "Find bug: console errors with undefined values", label: "Debugging" }
   ];
 
+  // Auto-select first repository if available when loaded
+  useEffect(() => {
+    if (repositories.length > 0 && !selectedRepoId) {
+      setSelectedRepoId(repositories[0]._id || repositories[0].id);
+    }
+  }, [repositories, selectedRepoId]);
+
   const handleSend = async (text) => {
     if (!text.trim() || isTyping) return;
     
@@ -56,6 +67,13 @@ export default function CopilotChat() {
 
     const getUUID = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
     const userMsg = { id: getUUID(), role: 'user', content: text };
+    
+    // We send current messages array as chat history to Gemini
+    const historyPayload = messages.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
@@ -63,7 +81,11 @@ export default function CopilotChat() {
     try {
       const res = await apiClient("/copilot/chat", {
         method: "POST",
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ 
+          message: text,
+          history: historyPayload,
+          repoId: selectedRepoId || undefined
+        }),
         signal: abortRef.current.signal
       });
       
@@ -86,6 +108,16 @@ export default function CopilotChat() {
     }
   };
 
+  const handleResetChat = () => {
+    setMessages([
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Hello! I am GitHub Copilot, your AI pair programmer. How can I help you write, debug, or document code today?"
+      }
+    ]);
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -94,17 +126,56 @@ export default function CopilotChat() {
     return () => abortRef.current?.abort();
   }, []);
 
+  const selectedRepo = repositories.find(r => (r._id || r.id) === selectedRepoId);
+
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] max-w-7xl mx-auto bg-white dark:bg-[#0d1117] transition-colors border border-[#d0d7de] dark:border-[#30363d] rounded-lg overflow-hidden my-4">
-      {/* Left sidebar: Prompts & Helper */}
-      <div className="w-full lg:w-64 bg-[#f6f8fa] dark:bg-[#161b22] border-r border-[#d0d7de] dark:border-[#30363d] p-4 flex flex-col justify-between">
+      {/* Left sidebar: Prompts & Repository Context */}
+      <div className="w-full lg:w-64 bg-[#f6f8fa] dark:bg-[#161b22] border-r border-[#d0d7de] dark:border-[#30363d] p-4 flex flex-col justify-between overflow-y-auto">
         <div className="space-y-4 text-left">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <h3 className="font-bold text-sm text-[#1f2328] dark:text-white">Copilot Suggestions</h3>
+          {/* AI Info & Suggestions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <h3 className="font-bold text-sm text-[#1f2328] dark:text-white">Copilot Context</h3>
+            </div>
+            <button 
+              onClick={handleResetChat} 
+              className="text-[10px] text-gray-500 hover:text-purple-600 hover:underline bg-transparent border-0 cursor-pointer"
+            >
+              Reset Chat
+            </button>
           </div>
+
+          {/* Repository Selector Dropdown (matches GitHub look and feel) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+              <Folder size={12} />
+              <span>Select Repository Context</span>
+            </label>
+            <select
+              value={selectedRepoId}
+              onChange={(e) => setSelectedRepoId(e.target.value)}
+              className="w-full text-xs bg-white dark:bg-[#0d1117] border border-[#d0d7de] dark:border-[#30363d] rounded-md px-2.5 py-1.5 text-gray-800 dark:text-gray-200 focus:border-purple-500 focus:outline-none cursor-pointer"
+            >
+              <option value="">None (General Coding Mode)</option>
+              {repositories.map(r => (
+                <option key={r._id || r.id} value={r._id || r.id}>
+                  {r.owner?.login}/{r.name}
+                </option>
+              ))}
+            </select>
+            {selectedRepo && (
+              <div className="p-2 border border-purple-100 dark:border-purple-950/40 bg-purple-50/50 dark:bg-purple-950/10 rounded-md text-[10px] text-purple-700 dark:text-purple-300">
+                ⚡ Copilot has read the file structure of **{selectedRepo.name}**. Try asking *"Explain this repository"* or check specific files.
+              </div>
+            )}
+          </div>
+
+          <hr className="border-[#d0d7de] dark:border-[#30363d] my-1" />
+
           <p className="text-xs text-[#57606a] dark:text-[#8b949e]">
-            Select a preset prompt below to test intelligent responses and code completion structures.
+            Select a preset prompt below to test responses and code completion structures.
           </p>
           <div className="space-y-2">
             {suggestedPrompts.map((p, idx) => (
@@ -123,7 +194,7 @@ export default function CopilotChat() {
           </div>
         </div>
 
-        <div className="border-t border-[#d0d7de] dark:border-[#30363d] pt-3 text-left space-y-1">
+        <div className="border-t border-[#d0d7de] dark:border-[#30363d] pt-3 mt-4 text-left space-y-1">
           <span className="text-[11px] text-gray-400 font-semibold block uppercase tracking-wider">Workspace Mode</span>
           <div className="flex items-center gap-1.5 text-xs text-[#24292f] dark:text-white font-semibold">
             <Terminal size={14} className="text-purple-600" />
@@ -144,7 +215,7 @@ export default function CopilotChat() {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center border shrink-0 ${m.role === 'user' ? 'bg-[#ebedf0] border-gray-300 dark:bg-gray-800' : 'bg-purple-100 border-purple-300 text-purple-700'}`}>
                 {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
               </div>
-              <div className={`relative px-4 py-2.5 rounded-lg text-xs md:text-sm shadow-sm ${m.role === 'user' ? 'bg-purple-600 text-white font-medium' : 'bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] text-[#1f2328] dark:text-[#c9d1d9] prose dark:prose-invert max-w-full'}`}>
+              <div className={`relative px-4 py-2.5 rounded-lg text-xs md:text-sm shadow-sm ${m.role === 'user' ? 'bg-purple-600 text-white font-medium animate-fade-in' : 'bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] text-[#1f2328] dark:text-[#c9d1d9] prose dark:prose-invert max-w-full'}`}>
                 {m.role === 'assistant' ? (
                   <div className="relative pt-2">
                     <ReactMarkdown
@@ -169,7 +240,7 @@ export default function CopilotChat() {
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <span>{m.content}</span>
+                  <span className="whitespace-pre-wrap">{m.content}</span>
                 )}
               </div>
             </div>
@@ -182,7 +253,7 @@ export default function CopilotChat() {
               </div>
               <div className="px-4 py-2.5 rounded-lg bg-[#f6f8fa] dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] flex items-center gap-1">
                 <RefreshCw size={14} className="animate-spin text-purple-600" />
-                <span className="text-xs text-[#57606a] dark:text-[#8b949e]">Copilot is typing…</span>
+                <span className="text-xs text-[#57606a] dark:text-[#8b949e]">Copilot is thinking…</span>
               </div>
             </div>
           )}
@@ -211,7 +282,7 @@ export default function CopilotChat() {
             </button>
           </form>
           <div className="flex items-center justify-between mt-2 text-[10px] text-gray-400">
-            <span>Copilot responses are generated using advanced coding models.</span>
+            <span>Copilot responses are generated using Gemini Flash.</span>
             <div className="flex items-center gap-1">
               <span>Press Enter</span>
               <CornerDownLeft size={10} />
