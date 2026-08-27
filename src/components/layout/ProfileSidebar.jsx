@@ -72,6 +72,8 @@ const ProfileSidebar = ({
           followers: u.followers_count || 0,
           following: u.following_count || 0,
           isFollowing: u.isFollowing || false,
+          storageUsed: u.storage_used || 0,
+          storageLimit: u.storage_limit || 1048576000,
         });
       } catch (err) {
         console.error("Failed to load profile for sidebar:", err);
@@ -197,6 +199,18 @@ const ProfileSidebar = ({
               >
                 Edit profile
               </Button>
+              <div className="mt-4 pt-4 border-t border-[#d0d7de] dark:border-[#30363d]">
+                <div className="flex justify-between text-sm mb-1 text-[#57606a] dark:text-[#8b949e]">
+                  <span className="font-semibold text-gray-900 dark:text-gray-300">Storage</span>
+                  <span>{(userProfile.storageUsed / (1024 * 1024)).toFixed(1)} MB / {(userProfile.storageLimit / (1024 * 1024)).toFixed(0)} MB</span>
+                </div>
+                <div className="w-full bg-[#eaecef] dark:bg-[#30363d] rounded-full h-2 mt-1 relative overflow-hidden">
+                  <div
+                    className="bg-[#2da44f] h-2 rounded-full absolute left-0 top-0"
+                    style={{ width: `${Math.min(100, (userProfile.storageUsed / userProfile.storageLimit) * 100)}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="mt-4">
