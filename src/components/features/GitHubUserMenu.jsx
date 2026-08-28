@@ -4,6 +4,7 @@ import { useGitHub } from "@contexts/GitHubContext";
 import { useClickOutside } from "@hooks/useGitHub_hooks";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { registerUser } from "../../services/GithubApi";
+import { generateIdenticon } from "../../utils/identicon";
 import GoogleSignInButton from "./GoogleSignInButton";
 
 // Icons
@@ -221,7 +222,7 @@ const GitHubUserMenu = () => {
       >
         <div className="w-8 h-8 rounded-full overflow-hidden border border-[#d0d7de] dark:border-[#30363d] flex items-center justify-center bg-gray-100 flex-shrink-0 transition-opacity group-hover:opacity-80 cursor-pointer">
           <img
-            src={user.avatar_url || "/profile.webp"}
+            src={user.avatar_url || generateIdenticon(user.login || "default")}
             alt={username}
             className="w-full h-full object-cover"
           />
@@ -240,7 +241,7 @@ const GitHubUserMenu = () => {
           <div className="flex items-center gap-3 p-4 border-b border-github-border bg-white relative">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d0d7de] dark:border-[#30363d] flex items-center justify-center bg-gray-100 flex-shrink-0">
               <img
-                src={user.avatar_url || "/profile.webp"}
+                src={user.avatar_url || generateIdenticon(user.login || "default")}
                 alt={username}
                 className="w-full h-full object-cover"
               />

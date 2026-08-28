@@ -166,7 +166,13 @@ export const apiClient = async (endpoint, options = {}) => {
     : { message: await response.text() };
 
   if (!response.ok) {
-    throw new ApiError(data.message || 'Something went wrong', response.status, data.code);
+    let errMsg = data.message || 'Something went wrong';
+    if (data.errors && Array.isArray(data.errors)) {
+      errMsg = data.errors.map(e => e.field ? `${e.field}: ${e.message}` : (e.msg || e.message || JSON.stringify(e))).join(', ');
+    } else if (data.error) {
+      errMsg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+    }
+    throw new ApiError(errMsg, response.status, data.code);
   }
 
   data = normalizeUrls(data);

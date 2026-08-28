@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getUser } from "@/services/GithubApi";
 import { apiClient } from "@/services/apiClient";
 import { useGitHub } from "@/contexts/GitHubContext";
+import { generateIdenticon } from "@/utils/identicon";
 
 const FollowRowButton = ({ targetUser, onToggle }) => {
   const { user } = useGitHub();
@@ -110,7 +111,7 @@ export default function Following() {
           <div key={followingUser._id || followingUser.id} className="py-4 flex items-center justify-between gap-4 border-b border-[#d0d7de] dark:border-[#30363d]">
             <div className="flex items-center gap-3">
               <img
-                src={followingUser.avatar_url || "/profile.webp"}
+                src={followingUser.avatar_url || generateIdenticon(followingUser.login || "default")}
                 alt={followingUser.login}
                 className="w-12 h-12 rounded-full border border-[#d0d7de] dark:border-[#30363d] object-cover"
               />

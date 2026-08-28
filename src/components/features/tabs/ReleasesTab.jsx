@@ -306,7 +306,7 @@ export default function ReleasesTab({ repoId, isOwner }) {
                   )}
                   <span className="text-gray-400">·</span>
                   <img
-                    src={release.author?.avatar_url || "/profile.webp"}
+                    src={release.author?.avatar_url || generateIdenticon(release.author?.login || "default")}
                     alt="avatar"
                     className="w-4 h-4 rounded-full border object-cover"
                   />

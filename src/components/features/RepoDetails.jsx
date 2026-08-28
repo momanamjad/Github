@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getRepo, getPRReviews, submitPRReview } from "@services/GithubApi.jsx";
+import { generateIdenticon } from "../../utils/identicon";
 import RepoHeader from "@features/RepoHeader";
 import { getTree } from "@services/fileSystemService.js";
 import { getStoredRepositories } from "@services/storageService.js";
@@ -1645,7 +1646,7 @@ const RepoDetails = () => {
                             <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
                                 <img
-                                  src={c.author?.avatar_url || "/profile.webp"}
+                                  src={c.author?.avatar_url || generateIdenticon(c.author?.login || "default")}
                                   alt="avatar"
                                   className="w-5 h-5 rounded-full border object-cover"
                                 />
@@ -2134,7 +2135,7 @@ const RepoDetails = () => {
                         {prReviews.map((rev, index) => (
                           <div key={index} className={`flex items-start gap-3 p-3 border rounded-md text-xs ${rev.state === 'APPROVED' ? 'bg-green-50/20 dark:bg-green-950/5 border-green-200 dark:border-green-900/30' : rev.state === 'CHANGES_REQUESTED' ? 'bg-red-50/20 dark:bg-red-950/5 border-red-200 dark:border-red-900/30' : 'bg-gray-50/50 dark:bg-gray-900/50 border-[#d0d7de] dark:border-[#30363d]'}`}>
                             <img
-                              src={rev.reviewer?.avatar_url || "/profile.webp"}
+                              src={rev.reviewer?.avatar_url || generateIdenticon(rev.reviewer?.login || "default")}
                               alt="avatar"
                               className="w-5 h-5 rounded-full object-cover border"
                             />
@@ -2202,7 +2203,7 @@ const RepoDetails = () => {
                             <div className="bg-[#f6f8fa] dark:bg-[#161b22] px-3.5 py-2 border-b border-[#d0d7de] dark:border-[#30363d] flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
                                 <img
-                                  src={c.author?.avatar_url || "/profile.webp"}
+                                  src={c.author?.avatar_url || generateIdenticon(c.author?.login || "default")}
                                   alt="avatar"
                                   className="w-5 h-5 rounded-full border object-cover"
                                 />
@@ -2304,7 +2305,7 @@ const RepoDetails = () => {
                                 {lineComments.map(lc => (
                                   <div key={lc._id || lc.id} className="flex bg-[#f6f8fa] dark:bg-[#161b22] py-2 border-t border-[#d0d7de]/30 dark:border-[#30363d]/30 text-[11px] pl-18 pr-4 gap-2.5">
                                     <img
-                                      src={lc.author?.avatar_url || "/profile.webp"}
+                                      src={lc.author?.avatar_url || generateIdenticon(lc.author?.login || "default")}
                                       alt="avatar"
                                       className="w-4 h-4 rounded-full object-cover shrink-0 border"
                                     />

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { XIcon } from "@primer/octicons-react";
+import { generateIdenticon } from "../../utils/identicon";
 import { Button } from "@ui/button";
 import { Input } from "@ui/input";
 import { Textarea } from "@ui/textarea";
@@ -55,7 +57,7 @@ const EditProfileForm = ({ userProfile, onSave, onCancel }) => {
       userProfile?.timezone || "(GMT-12:00) International Date Line West",
     website: userProfile?.website || "",
     socialLinks: userProfile?.socialLinks || ["", "", "", ""],
-    avatar: userProfile?.avatar || "/profile.webp",
+    avatar: userProfile?.avatar || generateIdenticon(userProfile?.username || "default"),
   });
 
   const [uploading, setUploading] = useState(false);

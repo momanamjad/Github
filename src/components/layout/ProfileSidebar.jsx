@@ -15,6 +15,7 @@ import StatusButton from "../common/StatusButton";
 import { RepoIcon, StarIcon, RepoForkedIcon, OrganizationIcon, LocationIcon, MailIcon, LinkIcon } from "@primer/octicons-react";
 import { getUser } from "../../services/GithubApi";
 import { apiClient } from "../../services/apiClient";
+import { generateIdenticon } from "../../utils/identicon";
 
 const ProfileSidebar = ({
   repositories = [],
@@ -34,7 +35,7 @@ const ProfileSidebar = ({
     name: "",
     username: username,
     pronouns: "he/him",
-    avatar: "/profile.webp",
+    avatar: generateIdenticon(username),
     bio: "",
     company: "",
     location: "",
@@ -60,7 +61,7 @@ const ProfileSidebar = ({
           name: u.name || u.login,
           username: u.login,
           pronouns: u.pronouns || "he/him",
-          avatar: u.avatar_url || "/profile.webp",
+          avatar: u.avatar_url || generateIdenticon(u.login || username),
           bio: u.bio || "",
           company: u.company || "",
           location: u.location || "",

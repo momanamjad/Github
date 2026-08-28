@@ -153,7 +153,7 @@ export default function SearchPage() {
                 {results.users.map(user => (
                   <div key={user.login} className="py-4 flex gap-3 items-start text-left">
                     <img
-                      src={user.avatar_url || "/profile.webp"}
+                      src={user.avatar_url || generateIdenticon(user.login || "default")}
                       alt="avatar"
                       className="w-10 h-10 rounded-full border object-cover shrink-0"
                     />
