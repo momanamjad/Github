@@ -67,23 +67,58 @@ const RepoHeader = ({ repo }) => {
     }
   };
 
+  const handleFork = async () => {
+    if (!user) {
+      alert("Please log in to fork a repository.");
+      return;
+    }
+    if (loading) return;
+    setLoading(true);
+    try {
+      const repoId = repo._id || repo.id;
+      const res = await apiClient(`/repos/${repoId}/fork`, { method: "POST" });
+      if (res?.data) {
+        window.location.href = `/${res.data.owner?.login}/${res.data.name}`;
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to fork repository");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="pt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2">
-      {/* Left: Repo name with breadcrumb & visibility badge */}
-      <div className="flex items-center gap-2 flex-wrap text-[18px] sm:text-[20px] font-normal text-[#1f2328] dark:text-[#c9d1d9]">
-        <RepoIcon size={16} className="text-[#57606a] dark:text-[#8b949e] shrink-0" />
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Link to={`/${repo.owner?.login}`} className="text-[#0969da] dark:text-[#58a6ff] hover:underline">
-            {repo.owner?.login}
-          </Link>
-          <span className="text-[#57606a] dark:text-[#8b949e]">/</span>
-          <Link to={`/${repo.owner?.login}/${repo.name}`} className="hover:underline font-semibold text-[#1f2328] dark:text-[#c9d1d9]">
-            {repo.name}
-          </Link>
+    <div className="pt-2 flex flex-col md:flex-row md:items-start md:justify-between gap-4 pb-2">
+      {/* Left: Repo name with avatar & visibility badge */}
+      <div className="flex flex-col gap-1 text-[18px] sm:text-[20px] font-normal text-[#1f2328] dark:text-[#c9d1d9]">
+        <div className="flex items-center gap-2 flex-wrap">
+          {repo.owner?.avatar_url ? (
+            <img src={repo.owner.avatar_url} alt={repo.owner.login} className="w-5 h-5 rounded-full" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs overflow-hidden">
+              <img src={`https://ui-avatars.com/api/?name=${repo.owner?.login || 'User'}&background=random`} alt={repo.owner?.login} className="w-full h-full" />
+            </div>
+          )}
+          
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Link to={`/${repo.owner?.login}/${repo.name}`} className="hover:underline font-semibold text-[#1f2328] dark:text-[#c9d1d9]">
+              {repo.name}
+            </Link>
+          </div>
+          <span className="text-[12px] px-[7px] py-[0.5px] border border-[#d0d7de] dark:border-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full font-medium capitalize bg-white dark:bg-[#161b22] ml-1">
+            {isPrivate ? "private" : "public"}
+          </span>
         </div>
-        <span className="text-[12px] px-[7px] py-[0.5px] border border-[#d0d7de] dark:border-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full font-medium capitalize bg-white dark:bg-[#161b22] ml-1">
-          {isPrivate ? "private" : "public"}
-        </span>
+        
+        {repo.is_fork && repo.forked_from && (
+          <div className="text-[12px] text-[#57606a] dark:text-[#8b949e] flex items-center gap-1 pl-7">
+            <span>forked from</span>
+            <Link to={`/${repo.forked_from.owner?.login}/${repo.forked_from.name}`} className="hover:text-[#0969da] hover:underline">
+              {repo.forked_from.owner?.login}/{repo.forked_from.name}
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Right: Stats row (Watch, Fork, Star) */}
@@ -91,9 +126,9 @@ const RepoHeader = ({ repo }) => {
         <StarButton repo={repo} />
         <PinButton repo={repo} />
 
-        <button className="flex items-center gap-1.5 px-3 py-[3.5px] text-[#24292f] dark:text-[#c9d1d9] border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0] dark:bg-[#21262d] dark:hover:bg-[#30363d] transition-colors cursor-pointer font-medium text-[12px]">
+        <button onClick={handleFork} disabled={loading} className="flex items-center gap-1.5 px-3 py-[3.5px] text-[#24292f] dark:text-[#c9d1d9] border border-[#d0d7de] dark:border-[#30363d] rounded-md bg-[#f6f8fa] hover:bg-[#ebedf0] dark:bg-[#21262d] dark:hover:bg-[#30363d] transition-colors cursor-pointer font-medium text-[12px] disabled:opacity-50">
           <RepoForkedIcon size={14} className="text-[#57606a] dark:text-[#8b949e]" />
-          <span>Fork</span>
+          <span>{loading ? 'Forking...' : 'Fork'}</span>
           <span className="ml-1 px-[6px] py-[1px] bg-white dark:bg-[#161b22] border border-[#d0d7de] dark:border-[#30363d] rounded-full text-[11px] font-semibold text-[#57606a] dark:text-[#8b949e]">
             {repo.forks_count || 0}
           </span>

@@ -12,6 +12,8 @@ export const Copilot = lazy(() => import('./Copilot'));
 export const Explore = lazy(() => import('./Explore'));
 export const Marketplace = lazy(() => import('./Marketplace'));
 export const MCPRegistry = lazy(() => import('./MCPRegistry'));
+export const OrganizationDashboard = lazy(() => import('./OrganizationDashboard'));
+export const GistsPage = lazy(() => import('./GistsPage'));
 export const Terminal = lazy(() => import('./Terminal'));
 export const ForgotPassword = lazy(() => import('./ForgotPasswordPage'));
 export const ResetPassword = lazy(() => import('./ResetPasswordPage'));

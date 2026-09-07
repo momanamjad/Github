@@ -254,6 +254,8 @@ const AppContent = () => {
           <Route path="/explore"       element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Explore /></Suspense></ErrorBoundary>} />
           <Route path="/marketplace"   element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Marketplace /></Suspense></ErrorBoundary>} />
           <Route path="/mcp-registry"  element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.MCPRegistry /></Suspense></ErrorBoundary>} />
+          <Route path="/organizations" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.OrganizationDashboard /></Suspense></ErrorBoundary>} />
+          <Route path="/gists"         element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.GistsPage /></Suspense></ErrorBoundary>} />
           <Route path="/terminal"      element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Terminal /></Suspense></ErrorBoundary>} />
           <Route path="/search"        element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.Search /></Suspense></ErrorBoundary>} />
           <Route path="/new"           element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><NewRepoPage /></Suspense></ErrorBoundary>} />
@@ -270,7 +272,11 @@ const AppContent = () => {
           <Route path="stars"        element={<Suspense fallback={<PageLoader />}><Stars /></Suspense>} />
           <Route path="followers"    element={<NavigateToQuery tab="followers" />} />
           <Route path="following"    element={<NavigateToQuery tab="following" />} />
-          <Route path=":repo"        element={<Suspense fallback={<PageLoader />}><RepoDetails /></Suspense>} />
+        </Route>
+
+        {/* Standalone Repo Route (Full width, like real GitHub) */}
+        <Route element={<RequireAuth><OpenMenuLayout /></RequireAuth>}>
+          <Route path="/:username/:repo" element={<Suspense fallback={<PageLoader />}><RepoDetails /></Suspense>} />
         </Route>
       </Routes>
     </div>

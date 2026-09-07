@@ -12,6 +12,9 @@ import ProjectsTab from "./tabs/ProjectsTab";
 import ActionsTab from "./tabs/ActionsTab";
 import WikiTab from "./tabs/WikiTab";
 import ReleasesTab from "./tabs/ReleasesTab";
+import PackagesTab from "./tabs/PackagesTab";
+import WebhooksSettings from "./tabs/WebhooksSettings";
+import BranchProtectionSettings from "./tabs/BranchProtectionSettings";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ConflictResolver from "./ConflictResolver";
 import {
@@ -35,10 +38,12 @@ import {
   CheckIcon,
   CommentDiscussionIcon,
   CodeIcon,
+  PackageIcon,
   ListUnorderedIcon,
   SearchIcon
 } from "@primer/octicons-react";
 import { apiClient } from "@services/apiClient.js";
+import CloneCodeDropdown from "./CloneCodeDropdown";
 
 
 // Helper to convert flat GitHub API tree to nested structure
@@ -352,6 +357,7 @@ const RepoDetails = () => {
   const [tags, setTags] = useState([]);
   const [currentBranch, setCurrentBranch] = useState("main");
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+  const [isCloneDropdownOpen, setIsCloneDropdownOpen] = useState(false);
   const [branchFilterQuery, setBranchFilterQuery] = useState("");
   const [newBranchInput, setNewBranchInput] = useState("");
   const [newTagInput, setNewTagInput] = useState("");
@@ -1031,6 +1037,7 @@ const RepoDetails = () => {
     { id: "projects", label: "Projects", icon: <ProjectIcon size={16} /> },
     { id: "wiki", label: "Wiki", icon: <BookIcon size={16} /> },
     { id: "releases", label: "Releases", icon: <TagIcon size={16} /> },
+    { id: "packages", label: "Packages", icon: <PackageIcon size={16} /> },
     { id: "security", label: "Security and quality", icon: <ShieldIcon size={16} />, badge: "1" },
     { id: "insights", label: "Insights", icon: <GraphIcon size={16} /> },
     { id: "discussions", label: "Discussions", icon: <CommentDiscussionIcon size={16} /> },
@@ -1038,43 +1045,54 @@ const RepoDetails = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] min-h-screen transition-colors">
-      <RepoHeader repo={repoData} />
-
-      {/* Repo Navigation Tabs */}
-      <div className="border-b border-[#d0d7de] dark:border-[#30363d] mb-4 mt-2 overflow-x-auto scrollbar-hide">
-        <nav className="flex space-x-2 sm:space-x-4 min-w-max pb-1" aria-label="Repository navigation">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveRepoTab(tab.id); setSelectedFile(null); }}
-              className={`pb-2 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 -mb-[1.5px] ${
-                activeRepoTab === tab.id
-                  ? 'border-[#f78166] text-[#1f2328] dark:text-white font-semibold'
-                  : 'border-transparent text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white hover:border-[#d0d7de] dark:hover:border-[#30363d]'
-              }`}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-              {tab.count !== undefined && (
-                <span className="px-1.5 py-0.2 bg-[#ebedf0] dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full text-[10px] font-semibold">
-                  {tab.count}
-                </span>
-              )}
-              {tab.badge !== undefined && (
-                <span className="px-1.5 py-0.2 bg-[#afb8c1]/20 dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full text-[10px] font-semibold border border-[#d0d7de] dark:border-[#30363d]">
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+    <div className="bg-white dark:bg-[#0d1117] text-[#1f2328] dark:text-[#c9d1d9] min-h-screen transition-colors">
+      
+      {/* Full-width Repo Navigation Tabs */}
+      <div className="bg-[#f6f8fa] dark:bg-[#0d1117] border-b border-[#d0d7de] dark:border-[#30363d] pt-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="overflow-x-auto scrollbar-hide">
+            <nav className="flex space-x-2 sm:space-x-4 min-w-max pb-0" aria-label="Repository navigation">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveRepoTab(tab.id); setSelectedFile(null); }}
+                  className={`pb-2 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 -mb-[1px] ${
+                    activeRepoTab === tab.id
+                      ? 'border-[#f78166] text-[#1f2328] dark:text-white font-semibold'
+                      : 'border-transparent text-[#57606a] dark:text-[#8b949e] hover:text-[#1f2328] dark:hover:text-white hover:border-[#d0d7de] dark:hover:border-[#30363d]'
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && (
+                    <span className="px-1.5 py-0.2 bg-[#d0d7de]/50 dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full text-[10px] font-semibold">
+                      {tab.count}
+                    </span>
+                  )}
+                  {tab.badge !== undefined && (
+                    <span className="px-1.5 py-0.2 bg-[#afb8c1]/20 dark:bg-[#30363d] text-[#57606a] dark:text-[#8b949e] rounded-full text-[10px] font-semibold border border-[#d0d7de] dark:border-[#30363d]">
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
       </div>
 
-      {activeRepoTab === 'code' ? (
-        selectedFile ? (
-          /* File Editor full-width blob view */
-          <div className="py-4 space-y-4">
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
+        
+        {/* Repo Header (Avatar, Title, Watch/Fork/Star) */}
+        <div className="mb-6">
+          <RepoHeader repo={repoData} />
+        </div>
+
+        {activeRepoTab === 'code' ? (
+          selectedFile ? (
+            /* File Editor full-width blob view */
+            <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#d0d7de] dark:border-[#30363d]">
               {renderBreadcrumbs()}
               <button
@@ -1259,10 +1277,23 @@ const RepoDetails = () => {
                     Add file
                     <ChevronDownIcon size={12} className="opacity-75" />
                   </button>
-                  <button className="px-3 py-1.5 border border-transparent rounded-md bg-[#2ea44f] hover:bg-[#2c974b] text-xs font-semibold text-white cursor-pointer transition-colors flex items-center gap-1">
-                    <span>Code</span>
-                    <ChevronDownIcon size={12} className="opacity-75" />
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsCloneDropdownOpen(!isCloneDropdownOpen)}
+                      className="px-3 py-1.5 border border-transparent rounded-md bg-[#2ea44f] hover:bg-[#2c974b] text-xs font-semibold text-white cursor-pointer transition-colors flex items-center gap-1 outline-none"
+                    >
+                      <span>Code</span>
+                      <ChevronDownIcon size={12} className="opacity-75" />
+                    </button>
+                    {isCloneDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsCloneDropdownOpen(false)}></div>
+                        <div className="relative z-50">
+                          <CloneCodeDropdown repoData={repoData} />
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2610,6 +2641,10 @@ const RepoDetails = () => {
             </form>
           </div>
 
+          <WebhooksSettings repoData={repoData} />
+          
+          <BranchProtectionSettings repoData={repoData} branches={branches} />
+
           <div className="border border-[#f85149]/30 rounded-md p-6 bg-white dark:bg-[#161b22] space-y-4">
             <h3 className="text-base font-semibold text-[#f85149] border-b border-[#f85149]/20 pb-2">Danger Zone</h3>
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -2692,6 +2727,8 @@ const RepoDetails = () => {
         <WikiTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
       ) : activeRepoTab === 'releases' ? (
         <ReleasesTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+      ) : activeRepoTab === 'packages' ? (
+        <PackagesTab repoData={repoData} />
       ) : (
         /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
         <div className="py-12 max-w-2xl mx-auto text-center space-y-4">
@@ -2787,6 +2824,7 @@ const RepoDetails = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
