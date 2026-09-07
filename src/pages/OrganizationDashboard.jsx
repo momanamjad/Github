@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useGitHub } from "@contexts/GitHubContext";
 import { apiClient } from "@services/apiClient";
 import { PeopleIcon, RepoIcon, GearIcon } from "@primer/octicons-react";
-import { generateIdenticon } from "../../utils/identicon";
+import { generateIdenticon } from "@utils/identicon";
 
 const OrganizationDashboard = () => {
   const { user } = useGitHub();
