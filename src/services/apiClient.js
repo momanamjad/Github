@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://github-backend.vercel.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://gtihub-backend.vercel.app/api';
 
 export const getBackendBaseUrl = () => {
   return API_URL.replace(/\/api$/, '');
