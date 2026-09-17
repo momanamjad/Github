@@ -56,5 +56,34 @@
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^2.0.5"
+  },
+  "overrides": {
+    "@tailwindcss/vite": {
+      "nanoid": "5.1.16"
+    },
+    "@vitejs/plugin-react": {
+      "nanoid": "5.1.16"
+    },
+    "boneyard-js": {
+      "nanoid": "5.1.16"
+    },
+    "nanoid": {
+      "nanoid": "5.1.16"
+    },
+    "postcss": {
+      "nanoid": "5.1.16"
+    },
+    "vite": {
+      "nanoid": "5.1.16"
+    },
+    "vite-node": {
+      "nanoid": "5.1.16"
+    },
+    "vite-plugin-pwa": {
+      "nanoid": "5.1.16"
+    },
+    "vitest": {
+      "nanoid": "5.1.16"
+    }
   }
 }
