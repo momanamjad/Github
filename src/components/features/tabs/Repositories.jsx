@@ -5,19 +5,23 @@ import RepoList from "@features/RepoList";
 import RepoFilterBar from "@features/RepoFilterBar";
 import { Skeleton } from 'boneyard-js/react';
 import { RepoSkeleton } from "@features/RepoSkeleton";
-import { getRepos } from "@services/GithubApi";
+import { getRepos, getCachedRepos } from "@services/GithubApi";
 
 const Repositories = () => {
   const { username } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useGitHub();
-  const [repos, setRepos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedInitial = getCachedRepos(username);
+  const [repos, setRepos] = useState(() => cachedInitial || []);
+  const [isLoading, setIsLoading] = useState(!cachedInitial);
 
   useEffect(() => {
     const fetchRepos = async () => {
       try {
-        setIsLoading(true);
+        const cached = getCachedRepos(username);
+        if (!cached) {
+          setIsLoading(true);
+        }
         const data = await getRepos(username);
         setRepos(data || []);
       } catch (err) {

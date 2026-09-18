@@ -4,14 +4,17 @@ import ChevronDownIcon from "../../../public/customIcons/ChevronDownIcon";
 import LoadingBar from 'react-top-loading-bar';
 import { useEffect, useState, useRef } from "react";
 import { useTabsContext } from "@/contexts/TabsContext";
-import { getRepos, getUser } from "@services/GithubApi.jsx";
+import { getUserWithRepos, getCachedUserWithRepos } from "@services/GithubApi.jsx";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { Users } from "lucide-react";
 
 
 const Tabs = ({ username }) => {
+  const cachedInitial = getCachedUserWithRepos(username);
   const [progress, setProgress] = useState(0);
-  const [repoCount, setRepoCount] = useState(0);
+  const [repoCount, setRepoCount] = useState(() => cachedInitial?.data?.repos?.length || 0);
+  const [followersCount, setFollowersCount] = useState(() => cachedInitial?.data?.user?.followers_count || 0);
+  const [followingCount, setFollowingCount] = useState(() => cachedInitial?.data?.user?.following_count || 0);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef(null);
   const location = useLocation();
@@ -41,21 +44,16 @@ const Tabs = ({ username }) => {
     };
   }, [location]);
 
-  const [followersCount, setFollowersCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-
   // Fetch repo count and follower counts for badges
   useEffect(() => {
-    getRepos(username)
-      .then((repos) => setRepoCount(repos?.length || 0))
-      .catch(() => setRepoCount(0));
-
-    getUser(username)
-      .then((user) => {
-        setFollowersCount(user?.followers_count || 0);
-        setFollowingCount(user?.following_count || 0);
+    getUserWithRepos(username)
+      .then((res) => {
+        setRepoCount(res?.data?.repos?.length || 0);
+        setFollowersCount(res?.data?.user?.followers_count || 0);
+        setFollowingCount(res?.data?.user?.following_count || 0);
       })
       .catch(() => {
+        setRepoCount(0);
         setFollowersCount(0);
         setFollowingCount(0);
       });

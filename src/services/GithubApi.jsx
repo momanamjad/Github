@@ -39,24 +39,87 @@ export const registerUser = async (login, email, password) => {
   return res.data;
 };
 
-// Pending requests cache for deduplication of concurrent requests
+// In-memory client cache with Stale-While-Revalidate (SWR) support
+const profileCache = new Map();
 const pendingRequests = new Map();
+const CACHE_TTL = 60 * 1000; // 60 seconds fresh TTL
 
-// Get full user with repos and other associated data (deduplicated)
-export const getUserWithRepos = async (username) => {
-  if (pendingRequests.has(username)) {
-    return pendingRequests.get(username);
+// Synchronous cache reader helpers
+export const getCachedUserWithRepos = (username) => {
+  if (!username) return null;
+  const key = username.toLowerCase();
+  const entry = profileCache.get(key);
+  return entry ? entry.data : null;
+};
+
+export const getCachedUser = (username) => {
+  const data = getCachedUserWithRepos(username);
+  return data?.data?.user ?? null;
+};
+
+export const getCachedRepos = (username) => {
+  const data = getCachedUserWithRepos(username);
+  return data?.data?.repos ?? null;
+};
+
+export const invalidateUserCache = (username) => {
+  if (username) {
+    const key = username.toLowerCase();
+    profileCache.delete(key);
+    pendingRequests.delete(key);
+  } else {
+    profileCache.clear();
+    pendingRequests.clear();
   }
+};
+
+// Get full user with repos and other associated data (SWR cached & deduplicated)
+export const getUserWithRepos = async (username, forceFresh = false) => {
+  if (!username) return null;
+  const key = username.toLowerCase();
+
+  // If cached, return immediately (0ms) and revalidate in background if stale
+  if (!forceFresh && profileCache.has(key)) {
+    const entry = profileCache.get(key);
+    const isFresh = (Date.now() - entry.timestamp) < CACHE_TTL;
+    if (isFresh) {
+      return entry.data;
+    }
+    // Stale-While-Revalidate in background
+    if (!pendingRequests.has(key)) {
+      const bgPromise = apiClient(`/auth/user/${username}`)
+        .then((res) => {
+          profileCache.set(key, { data: res, timestamp: Date.now() });
+          pendingRequests.delete(key);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('github_profile_revalidated', { detail: { username: key } }));
+          }
+          return res;
+        })
+        .catch(() => {
+          pendingRequests.delete(key);
+        });
+      pendingRequests.set(key, bgPromise);
+    }
+    return entry.data;
+  }
+
+  // Deduplicate concurrent in-flight requests
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
+  }
+
   const promise = apiClient(`/auth/user/${username}`)
     .then((res) => {
-      pendingRequests.delete(username);
+      profileCache.set(key, { data: res, timestamp: Date.now() });
+      pendingRequests.delete(key);
       return res;
     })
     .catch((err) => {
-      pendingRequests.delete(username);
+      pendingRequests.delete(key);
       throw err;
     });
-  pendingRequests.set(username, promise);
+  pendingRequests.set(key, promise);
   return promise;
 };
 
@@ -140,18 +203,21 @@ export const createRepository = async (repoData) => {
     method: "POST",
     body: JSON.stringify(repoData),
   });
+  invalidateUserCache();
   return res.data;
 };
 
 // Toggle star on a repository
 export const toggleStarRepo = async (repoId) => {
   const res = await apiClient(`/repos/${repoId}/star`, { method: "POST" });
+  invalidateUserCache();
   return res.data;
 };
 
 // Toggle pin on a repository
 export const togglePinRepo = async (repoId) => {
   const res = await apiClient(`/repos/${repoId}/pin`, { method: "POST" });
+  invalidateUserCache();
   return res.data;
 };
 
@@ -161,6 +227,7 @@ export const updateRepoApi = async (repoId, repoData) => {
     method: "PUT",
     body: JSON.stringify(repoData),
   });
+  invalidateUserCache();
   return res.data;
 };
 
