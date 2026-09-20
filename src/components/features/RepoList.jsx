@@ -253,6 +253,9 @@ const RepoList = ({ repos }) => {
     });
   }, []);
 
+  const starredSet = useMemo(() => new Set(starredIds), [starredIds]);
+  const pinnedSet = useMemo(() => new Set(pinnedIds), [pinnedIds]);
+
   if (!repos || repos.length === 0) {
     return (
       <div className="py-12 text-center text-github-muted">
@@ -269,9 +272,9 @@ const RepoList = ({ repos }) => {
           <RepoItem
             key={repoId}
             repo={repo}
-            isStarred={starredIds.includes(repoId)}
+            isStarred={starredSet.has(repoId)}
             onToggleStar={handleStarToggle}
-            isPinned={pinnedIds.includes(repoId)}
+            isPinned={pinnedSet.has(repoId)}
             onTogglePin={handlePinToggle}
           />
         );
@@ -280,4 +283,4 @@ const RepoList = ({ repos }) => {
   );
 };
 
-export default RepoList;
+export default React.memo(RepoList);

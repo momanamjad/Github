@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import PinnedRepoCard from "./PinnedRepoCard";
 import {
   DndContext,
@@ -165,4 +165,4 @@ function SortableItem({ id, repo, isOverlay, author }) {
   );
 }
 
-export default PinnedRepos;
+export default React.memo(PinnedRepos);

@@ -111,4 +111,4 @@ const ContributionGraph = ({ username, contributions: initialContributions }) =>
   );
 };
 
-export default ContributionGraph;
+export default React.memo(ContributionGraph);

@@ -89,12 +89,29 @@ const RepoFilterBar = ({
   setType,
   languages,
 }) => {
+  const [localSearch, setLocalSearch] = useState(search || "");
+
+  // Synchronize when external search prop changes
+  useEffect(() => {
+    setLocalSearch(search || "");
+  }, [search]);
+
+  // Debounce updating the parent URL/search parameter by 250ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== search) {
+        setSearch(localSearch);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localSearch, search, setSearch]);
+
   return (
     <div className="flex flex-col gap-3 py-4 border-b border-github-border">
       <div className="flex flex-col sm:flex-row gap-3">
         <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
           placeholder="Find a repository..."
           className="
             flex-1 bg-github-panel border border-github-border

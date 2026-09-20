@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { getRepo, getPRReviews, submitPRReview } from "@services/GithubApi.jsx";
 import { generateIdenticon } from "../../utils/identicon";
 import RepoHeader from "@features/RepoHeader";
@@ -7,16 +7,17 @@ import { getTree } from "@services/fileSystemService.js";
 import { getStoredRepositories } from "@services/storageService.js";
 import FileEditor from "@components/FileEditor.jsx";
 import { useGitHub } from "@contexts/GitHubContext";
-import DiscussionsTab from "./tabs/DiscussionsTab";
-import ProjectsTab from "./tabs/ProjectsTab";
-import ActionsTab from "./tabs/ActionsTab";
-import WikiTab from "./tabs/WikiTab";
-import ReleasesTab from "./tabs/ReleasesTab";
-import PackagesTab from "./tabs/PackagesTab";
-import WebhooksSettings from "./tabs/WebhooksSettings";
-import BranchProtectionSettings from "./tabs/BranchProtectionSettings";
 import MarkdownRenderer from "../common/MarkdownRenderer";
 import ConflictResolver from "./ConflictResolver";
+
+// Lazy-load secondary tabs to decrease initial bundle parse time
+const ProjectsTab = lazy(() => import("./tabs/ProjectsTab"));
+const ActionsTab = lazy(() => import("./tabs/ActionsTab"));
+const WikiTab = lazy(() => import("./tabs/WikiTab"));
+const ReleasesTab = lazy(() => import("./tabs/ReleasesTab"));
+const PackagesTab = lazy(() => import("./tabs/PackagesTab"));
+const WebhooksSettings = lazy(() => import("./tabs/WebhooksSettings"));
+const BranchProtectionSettings = lazy(() => import("./tabs/BranchProtectionSettings"));
 import {
   FileDirectoryFillIcon,
   FileIcon,
@@ -2641,9 +2642,10 @@ const RepoDetails = () => {
             </form>
           </div>
 
-          <WebhooksSettings repoData={repoData} />
-          
-          <BranchProtectionSettings repoData={repoData} branches={branches} />
+          <Suspense fallback={<div className="p-4 text-xs text-[#57606a] dark:text-[#8b949e]">Loading settings...</div>}>
+            <WebhooksSettings repoData={repoData} />
+            <BranchProtectionSettings repoData={repoData} branches={branches} />
+          </Suspense>
 
           <div className="border border-[#f85149]/30 rounded-md p-6 bg-white dark:bg-[#161b22] space-y-4">
             <h3 className="text-base font-semibold text-[#f85149] border-b border-[#f85149]/20 pb-2">Danger Zone</h3>
@@ -2720,15 +2722,25 @@ const RepoDetails = () => {
           </div>
         </div>
       ) : activeRepoTab === 'projects' ? (
-        <ProjectsTab repoId={repoData?._id || repoData?.id} />
+        <Suspense fallback={<div className="p-8 text-center text-xs text-[#57606a] dark:text-[#8b949e]">Loading projects...</div>}>
+          <ProjectsTab repoId={repoData?._id || repoData?.id} />
+        </Suspense>
       ) : activeRepoTab === 'actions' ? (
-        <ActionsTab repoId={repoData?._id || repoData?.id} />
+        <Suspense fallback={<div className="p-8 text-center text-xs text-[#57606a] dark:text-[#8b949e]">Loading actions...</div>}>
+          <ActionsTab repoId={repoData?._id || repoData?.id} />
+        </Suspense>
       ) : activeRepoTab === 'wiki' ? (
-        <WikiTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+        <Suspense fallback={<div className="p-8 text-center text-xs text-[#57606a] dark:text-[#8b949e]">Loading wiki...</div>}>
+          <WikiTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+        </Suspense>
       ) : activeRepoTab === 'releases' ? (
-        <ReleasesTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+        <Suspense fallback={<div className="p-8 text-center text-xs text-[#57606a] dark:text-[#8b949e]">Loading releases...</div>}>
+          <ReleasesTab repoId={repoData?._id || repoData?.id} isOwner={isOwner} />
+        </Suspense>
       ) : activeRepoTab === 'packages' ? (
-        <PackagesTab repoData={repoData} />
+        <Suspense fallback={<div className="p-8 text-center text-xs text-[#57606a] dark:text-[#8b949e]">Loading packages...</div>}>
+          <PackagesTab repoData={repoData} />
+        </Suspense>
       ) : (
         /* Dynamic placeholder views for all other tabs matching GitHub's premium design */
         <div className="py-12 max-w-2xl mx-auto text-center space-y-4">

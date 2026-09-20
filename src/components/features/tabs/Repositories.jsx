@@ -42,9 +42,13 @@ const Repositories = () => {
   const language = searchParams.get("language") || "All";
   const sort = searchParams.get("sort") || "updated";
   const type = searchParams.get("type") || "all";
+  const PAGE_SIZE = 30;
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+  const currentPage = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
   const updateFilters = (updates) => {
     const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("page"); // Reset pagination back to page 1 on filter changes
     Object.entries(updates).forEach(([key, value]) => {
       if (value && value !== "All" && value !== "all" && value !== "updated") {
         nextParams.set(key, value);
@@ -53,6 +57,17 @@ const Repositories = () => {
       }
     });
     setSearchParams(nextParams);
+  };
+
+  const setPage = (newPage) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (newPage > 1) {
+      nextParams.set("page", newPage);
+    } else {
+      nextParams.delete("page");
+    }
+    setSearchParams(nextParams);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const setSearch = (val) => updateFilters({ q: val });
@@ -110,6 +125,12 @@ const Repositories = () => {
     return result;
   }, [repos, search, language, sort, type]);
 
+  const totalPages = Math.ceil(filteredRepos.length / PAGE_SIZE) || 1;
+  const paginatedRepos = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredRepos.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredRepos, currentPage]);
+
   const languages = [
     "All",
     ...new Set(repos.map(r => r.language).filter(Boolean)),
@@ -144,7 +165,41 @@ const Repositories = () => {
         loading={isLoading} 
         fixture={fixture}
       >
-        <RepoList repos={filteredRepos} />
+        <RepoList repos={paginatedRepos} />
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 py-8 select-none">
+            <div className="inline-flex rounded-md shadow-sm border border-github-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className={`px-3 py-1.5 text-sm font-medium border-r border-github-border transition-colors ${
+                  currentPage <= 1
+                    ? "text-github-muted bg-github-panel/50 cursor-not-allowed"
+                    : "text-[#0969DA] bg-github-panel hover:bg-github-border/40 cursor-pointer"
+                }`}
+              >
+                Previous
+              </button>
+              <span className="px-4 py-1.5 text-sm text-github-text bg-github-panel font-medium flex items-center">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  currentPage >= totalPages
+                    ? "text-github-muted bg-github-panel/50 cursor-not-allowed"
+                    : "text-[#0969DA] bg-github-panel hover:bg-github-border/40 cursor-pointer"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </Skeleton>
     </>
   );
