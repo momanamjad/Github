@@ -1,6 +1,6 @@
 import React from "react";
 import { Star, GitFork, Scale } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getStoredStarredRepos, starRepository, unstarRepository, getStoredPinnedRepos, pinRepository, unpinRepository } from "@services/storageService.js";
 import { toggleStarRepo, togglePinRepo } from "@services/GithubApi.jsx";
 import { languageColors } from "@utils/LanguageColors.jsx";

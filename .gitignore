@@ -43,3 +43,6 @@ documentation/
 *.xlsx
 
 
+
+.vercel
+.env*
