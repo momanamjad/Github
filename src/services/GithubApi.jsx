@@ -143,6 +143,16 @@ export const getStarredRepos = async (username) => {
 
 // Get single repository details
 export const getRepo = async (username, repoName) => {
+  // Direct fast lookup via indexed endpoint (avoids loading 6 collections)
+  try {
+    const detailRes = await apiClient(`/repos/owner/${encodeURIComponent(username)}/${encodeURIComponent(repoName)}`);
+    if (detailRes && detailRes.data) {
+      return detailRes.data;
+    }
+  } catch (err) {
+    // If direct lookup fails or 404s, fall back to checking user profile
+  }
+
   const res = await getUserWithRepos(username);
   const foundRepo = res?.data?.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
   if (foundRepo) {

@@ -559,55 +559,28 @@ const RepoDetails = () => {
           setRepoData(repoInfo);
         }
 
-        // If this is the "Github" repository, fetch live data from the GitHub API!
-        if (repo.toLowerCase() === "github") {
-          try {
-            const treeRes = await fetch("https://api.github.com/repos/momanamjad/Github/git/trees/main?recursive=1");
-            const treeData = await treeRes.json();
-            if (treeData && treeData.tree) {
-              const nested = buildNestedTree(treeData.tree);
-              setFileTree(nested);
-            } else {
-              throw new Error("Failed to load GitHub tree structure");
-            }
-
-            const commitsRes = await fetch("https://api.github.com/repos/momanamjad/Github/commits?per_page=10");
-            const commitsData = await commitsRes.json();
-            if (Array.isArray(commitsData)) {
-              const formatted = commitsData.map(c => ({
-                hash: c.sha.substring(0, 7),
-                message: c.commit.message,
-                author: c.author?.login || c.commit.author.name,
-                avatar_url: c.author?.avatar_url || "https://avatars.githubusercontent.com/u/104862410?v=4",
-                date: formatGitHubDate(c.commit.author.date),
-                files: []
-              }));
-              setCommitsList(formatted);
-            }
-          } catch (apiErr) {
-            console.warn("GitHub API rate limit or network error, falling back to mock files:", apiErr);
-            useFallbackFiles(repoInfo);
-          }
-        } else {
-          const repoId = repoInfo?._id || repoInfo?.id;
-          if (repoId) {
-            const tree = await getTree(repoId, currentBranch);
+        const repoId = repoInfo?._id || repoInfo?.id;
+        if (repoId) {
+          const tree = await getTree(repoId, currentBranch);
+          if (tree && tree.length > 0) {
             setFileTree(tree);
-            // Fetch real commits for this repository
-            try {
-              const commitsRes = await apiClient(`/repos/${repoId}/commits`);
-              if (commitsRes && commitsRes.data) {
-                const formatted = (commitsRes.data || []).map(formatCommitItem);
-                if (formatted.length > 0) {
-                  setCommitsList(formatted);
-                }
-              }
-            } catch (commitErr) {
-              console.error("Failed to load real repository commits:", commitErr);
-            }
           } else {
             useFallbackFiles(repoInfo);
           }
+          // Fetch real commits for this repository
+          try {
+            const commitsRes = await apiClient(`/repos/${repoId}/commits`);
+            if (commitsRes && commitsRes.data) {
+              const formatted = (commitsRes.data || []).map(formatCommitItem);
+              if (formatted.length > 0) {
+                setCommitsList(formatted);
+              }
+            }
+          } catch (commitErr) {
+            console.error("Failed to load real repository commits:", commitErr);
+          }
+        } else {
+          useFallbackFiles(repoInfo);
         }
       } catch (err) {
         setError(err.message);
