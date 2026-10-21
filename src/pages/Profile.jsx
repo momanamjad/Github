@@ -10,13 +10,14 @@ import { getUserWithRepos, getCachedUserWithRepos } from "@services/GithubApi.js
 const Profile = () => {
   const { username } = useParams();
   const cachedInitial = getCachedUserWithRepos(username);
-  const [user, setUser] = useState(() => cachedInitial?.data?.user ?? null);
-  const [repos, setRepos] = useState(() => cachedInitial?.data?.repos ?? []);
-  const [pinnedRepos, setPinnedRepos] = useState(() => {
-    const pins = cachedInitial?.data?.pins || [];
-    return pins.map(p => p.repository).filter(Boolean);
-  });
-  const [loading, setLoading] = useState(!cachedInitial);
+  const initialUser = cachedInitial?.user ?? cachedInitial?.data?.user ?? null;
+  const initialRepos = cachedInitial?.repos ?? cachedInitial?.data?.repos ?? [];
+  const initialPins = (cachedInitial?.pins || cachedInitial?.data?.pins || []).map(p => p.repository).filter(Boolean);
+
+  const [user, setUser] = useState(initialUser);
+  const [repos, setRepos] = useState(initialRepos);
+  const [pinnedRepos, setPinnedRepos] = useState(initialPins);
+  const [loading, setLoading] = useState(!initialUser);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -72,8 +73,27 @@ const Profile = () => {
     };
   }, [username]);
 
-  if (loading) return <Loader />;
-  if (error) return <ErrorComponent message={error} />;
+  if (loading && !user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8 animate-pulse">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="w-full lg:w-72 shrink-0 space-y-4">
+            <div className="w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-800 mx-auto lg:mx-0" />
+            <div className="h-6 w-44 bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="h-4 w-28 bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded mt-4" />
+          </div>
+          <div className="flex-1 space-y-4">
+            <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="h-44 w-full bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="h-32 w-full bg-gray-200 dark:bg-gray-800 rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !user) return <ErrorComponent message={error} />;
 
   return (
     <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">

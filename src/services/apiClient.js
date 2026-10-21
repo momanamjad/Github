@@ -15,8 +15,8 @@ export const resolveAvatarUrl = (url) => {
 const normalizeUrls = (obj) => {
   if (obj === null || obj === undefined) return obj;
   
-  // Skip normalization entirely in production environments
-  if (!import.meta.env.DEV) {
+  // Skip normalization entirely in production environments or when already targeting localhost:5000
+  if (!import.meta.env.DEV || getBackendBaseUrl() === 'http://localhost:5000') {
     return obj;
   }
   if (typeof obj === 'object') {

@@ -2,7 +2,7 @@ import React from "react";
 import { Star, GitFork, Scale } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getStoredStarredRepos, starRepository, unstarRepository, getStoredPinnedRepos, pinRepository, unpinRepository } from "@services/storageService.js";
-import { toggleStarRepo, togglePinRepo } from "@services/GithubApi.jsx";
+import { toggleStarRepo, togglePinRepo, prefetchRepo } from "@services/GithubApi.jsx";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import { Link } from "react-router-dom";
 
@@ -48,6 +48,7 @@ const RepoItem = React.memo(({ repo, isStarred, onToggleStar, isPinned, onToggle
         <div className="flex items-center flex-wrap gap-2 mb-1">
           <Link
             to={`/${ownerLogin}/${encodeURIComponent(repo.name)}`}
+            onMouseEnter={() => prefetchRepo(ownerLogin, repo.name)}
             className="text-[#0969DA] text-[20px] font-semibold hover:underline truncate max-w-full"
           >
             {repo.name}

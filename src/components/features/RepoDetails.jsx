@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState, lazy, Suspense } from "react";
-import { getRepo, getPRReviews, submitPRReview } from "@services/GithubApi.jsx";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import { getRepo, getCachedRepo, getCachedUserWithRepos, getPRReviews, submitPRReview } from "@services/GithubApi.jsx";
 import { generateIdenticon } from "../../utils/identicon";
 import RepoHeader from "@features/RepoHeader";
 import { getTree } from "@services/fileSystemService.js";
@@ -111,14 +111,33 @@ const formatCommitItem = (c) => {
 const RepoDetails = () => {
   const { username, repo } = useParams();
   const { user } = useGitHub();
-  const [repoData, setRepoData] = useState(null);
+
+  // Instant 0ms synchronous retrieval from cache / storage
+  const initialRepo = useMemo(() => {
+    if (!repo) return null;
+    const cached = getCachedRepo(username, repo);
+    if (cached) return cached;
+
+    const stored = getStoredRepositories() || [];
+    const found = stored.find(
+      r => r.name?.toLowerCase() === repo?.toLowerCase() &&
+           (!username || r.owner?.login?.toLowerCase() === username.toLowerCase() || username.toLowerCase() === user?.login?.toLowerCase())
+    );
+    if (found) return found;
+
+    const profile = getCachedUserWithRepos(username);
+    const reposList = profile?.repos || profile?.data?.repos || [];
+    return reposList.find(r => r.name?.toLowerCase() === repo?.toLowerCase()) || null;
+  }, [username, repo, user?.login]);
+
+  const [repoData, setRepoData] = useState(() => initialRepo);
   const isOwner = user?.login === repoData?.owner?.login;
   const [activeRepoTab, setActiveRepoTab] = useState("code");
   const [currentPath, setCurrentPath] = useState("");
 
-  const [fileTree, setFileTree] = useState([]);
+  const [fileTree, setFileTree] = useState(() => initialRepo?.fileTree || []);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialRepo);
   const [error, setError] = useState(null);
   const [activeCommitDiff, setActiveCommitDiff] = useState(null);
   const [treeTrigger, setTreeTrigger] = useState(0);
@@ -536,7 +555,9 @@ const RepoDetails = () => {
   useEffect(() => {
     const loadRepo = async () => {
       try {
-        setLoading(true);
+        if (!repoData) {
+          setLoading(true);
+        }
         setError(null);
 
         let repoInfo;
@@ -544,46 +565,56 @@ const RepoDetails = () => {
           repoInfo = await getRepo(username, repo);
           setRepoData(repoInfo);
         } catch (e) {
-          console.warn("Repo not found in local backend, generating configuration...");
-          repoInfo = {
-            name: repo,
-            owner: { login: username, avatar_url: "https://avatars.githubusercontent.com/u/104862410?v=4" },
-            visibility: "public",
-            description: "No description provided.",
-            stars_count: 1,
-            watchers_count: 0,
-            forks_count: 0,
-            issues_count: 0,
-            pulls_count: 0
-          };
-          setRepoData(repoInfo);
+          if (!repoData) {
+            console.warn("Repo not found in local backend, generating configuration...");
+            repoInfo = {
+              name: repo,
+              owner: { login: username, avatar_url: "https://avatars.githubusercontent.com/u/104862410?v=4" },
+              visibility: "public",
+              description: "No description provided.",
+              stars_count: 1,
+              watchers_count: 0,
+              forks_count: 0,
+              issues_count: 0,
+              pulls_count: 0
+            };
+            setRepoData(repoInfo);
+          } else {
+            repoInfo = repoData;
+          }
         }
 
         const repoId = repoInfo?._id || repoInfo?.id;
         if (repoId) {
-          const tree = await getTree(repoId, currentBranch);
-          if (tree && tree.length > 0) {
-            setFileTree(tree);
+          // If repoInfo already has a fileTree, use it immediately (eliminates redundant round-trip)
+          if (repoInfo.fileTree && repoInfo.fileTree.length > 0) {
+            setFileTree(repoInfo.fileTree);
           } else {
-            useFallbackFiles(repoInfo);
+            getTree(repoId, currentBranch).then(tree => {
+              if (tree && tree.length > 0) {
+                setFileTree(tree);
+              } else {
+                useFallbackFiles(repoInfo);
+              }
+            }).catch(() => useFallbackFiles(repoInfo));
           }
-          // Fetch real commits for this repository
-          try {
-            const commitsRes = await apiClient(`/repos/${repoId}/commits`);
+
+          // Fetch real commits for this repository in parallel
+          apiClient(`/repos/${repoId}/commits`).then(commitsRes => {
             if (commitsRes && commitsRes.data) {
               const formatted = (commitsRes.data || []).map(formatCommitItem);
               if (formatted.length > 0) {
                 setCommitsList(formatted);
               }
             }
-          } catch (commitErr) {
-            console.error("Failed to load real repository commits:", commitErr);
-          }
+          }).catch(commitErr => {
+            console.warn("Failed to load real repository commits:", commitErr);
+          });
         } else {
           useFallbackFiles(repoInfo);
         }
       } catch (err) {
-        setError(err.message);
+        if (!repoData) setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -646,16 +677,12 @@ const RepoDetails = () => {
     fetchTreeOnBranchChange();
   }, [currentBranch, repoData, repo, treeTrigger]);
 
-  if (loading) {
+  if (loading && !repoData) {
     return (
-      <div className="flex items-center justify-center py-16 bg-white dark:bg-[#0d1117]">
-        <div className="flex items-center gap-3 text-[#636c76]">
-          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <span className="text-[14px]">Loading repository…</span>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 py-8 animate-pulse">
+        <div className="h-8 w-64 bg-gray-200 dark:bg-gray-800 rounded mb-4" />
+        <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded mb-6" />
+        <div className="h-64 w-full bg-gray-200 dark:bg-gray-800 rounded" />
       </div>
     );
   }

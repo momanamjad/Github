@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage, writeCached, STORAGE_KEYS } from '../services/storageService';
 import { apiClient, resolveAvatarUrl } from '../services/apiClient';
+import { getRepos } from '../services/GithubApi';
 
 const AuthContext = createContext();
 const RepoContext = createContext();
@@ -89,15 +90,24 @@ export const GitHubProvider = ({ children }) => {
         return false;
     }, []);
 
-    // 2. Repo Context State
-    const [repositories, setRepositories] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // 2. Repo Context State — Initialized synchronously from storage (0ms instant render)
+    const [repositories, setRepositories] = useState(() => getStoredRepositories() || []);
+    const [isLoading, setIsLoading] = useState(() => {
+        const stored = getStoredRepositories();
+        return !(stored && stored.length > 0);
+    });
 
     const refreshRepos = useCallback(async () => {
-        setIsLoading(true);
+        // Only show skeleton if we have zero cached repositories to display
+        setRepositories(prev => {
+            if (!prev || prev.length === 0) {
+                setIsLoading(true);
+            }
+            return prev;
+        });
+
         if (user?.login) {
             try {
-                const { getRepos } = await import('../services/GithubApi');
                 const repos = await getRepos(user.login);
                 setRepositories(repos || []);
                 if (repos) {

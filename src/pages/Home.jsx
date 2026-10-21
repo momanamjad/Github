@@ -30,8 +30,22 @@ const Home = React.memo(() => {
   const [filterValue, setFilterValue] = useState('all');
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [feedItems, setFeedItems] = useState([]);
+  const [feedItems, setFeedItems] = useState(() => {
+    try {
+      const cached = localStorage.getItem('github_cached_feed');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('github_cached_feed');
+      return !(cached && JSON.parse(cached).length > 0);
+    } catch {
+      return true;
+    }
+  });
   const [feedError, setFeedError] = useState(null);
   const navigate = useNavigate();
 
@@ -40,7 +54,12 @@ const Home = React.memo(() => {
     const fetchFeed = async () => {
       try {
         const data = await getUserActivityFeed(1, 20, { signal: controller.signal });
-        setFeedItems(data?.feed || []);
+        if (data?.feed) {
+          setFeedItems(data.feed);
+          try {
+            localStorage.setItem('github_cached_feed', JSON.stringify(data.feed));
+          } catch {}
+        }
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Failed to load activity feed:", err);
