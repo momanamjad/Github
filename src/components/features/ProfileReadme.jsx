@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useGitHub } from "@contexts/GitHubContext";
-import { getUser, getRepos } from "@services/GithubApi";
+import { getUser, getRepos, getCachedUser } from "@services/GithubApi";
 import { getTree } from "@services/fileSystemService";
 import MarkdownRenderer from "@common/MarkdownRenderer";
 import { BookIcon, PencilIcon } from "@primer/octicons-react";
 
 const ProfileReadme = ({ username }) => {
   const { user } = useGitHub();
-  const [readmeContent, setReadmeContent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cachedUser = getCachedUser(username);
+  const [readmeContent, setReadmeContent] = useState(() => cachedUser?.profileReadmeContent || null);
+  const [loading, setLoading] = useState(() => !cachedUser?.profileReadmeContent);
 
   useEffect(() => {
     if (!username) {

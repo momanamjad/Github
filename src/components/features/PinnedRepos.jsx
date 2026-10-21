@@ -18,11 +18,14 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { getPinnedRepos } from "@services/GithubApi";
+import { getPinnedRepos, getCachedUserWithRepos } from "@services/GithubApi";
 
 const PinnedRepos = ({ username, repos: initialRepos }) => {
-  const [repos, setRepos] = useState(initialRepos || []);
-  const [loading, setLoading] = useState(!initialRepos);
+  const cachedProfile = getCachedUserWithRepos(username);
+  const cachedPins = (cachedProfile?.pins || cachedProfile?.data?.pins || []).map(p => p.repository).filter(Boolean);
+  const initialData = initialRepos || (cachedPins.length > 0 ? cachedPins : []);
+  const [repos, setRepos] = useState(initialData);
+  const [loading, setLoading] = useState(() => !(initialData && initialData.length > 0));
   const [activeId, setActiveId] = useState(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {

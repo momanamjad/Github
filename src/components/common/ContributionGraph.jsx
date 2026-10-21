@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
-import { getUser } from '../../services/GithubApi';
+import { getUser, getCachedUser } from '../../services/GithubApi';
 import './ContributionGraph.css';
 
 const ContributionGraph = ({ username, contributions: initialContributions }) => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [registrationYear, setRegistrationYear] = useState(currentYear);
-  const [contributions, setContributions] = useState(initialContributions || []);
-  const [loading, setLoading] = useState(!initialContributions);
+  const cachedUser = getCachedUser(username);
+  const cachedContribs = initialContributions || cachedUser?.contributions || [];
+  const [contributions, setContributions] = useState(cachedContribs);
+  const [loading, setLoading] = useState(() => !(cachedContribs && cachedContribs.length > 0));
 
   useEffect(() => {
     if (initialContributions) {
@@ -19,7 +21,7 @@ const ContributionGraph = ({ username, contributions: initialContributions }) =>
 
     const fetchContribs = async () => {
       try {
-        setLoading(true);
+        if (!contributions.length) setLoading(true);
         const userData = await getUser(username);
         if (!userData) {
           throw new Error("User not found");

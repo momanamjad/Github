@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, X, Star, ChevronDown, Check } from 'lucide-react';
-import { getStarredRepos, toggleStarRepo } from "@services/GithubApi";
+import { getStarredRepos, toggleStarRepo, getCachedUserWithRepos } from "@services/GithubApi";
 import { starRepository, unstarRepository } from "@services/storageService.js";
 import { useParams, Link } from 'react-router-dom';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 
 
 const Stars = () => {
+  const params = useParams();
+  const username = params?.username || 'moman';
+  const cachedProfile = getCachedUserWithRepos(username);
+  const cachedStarred = cachedProfile?.starredRepos || cachedProfile?.data?.starredRepos || [];
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [repos, setRepos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [repos, setRepos] = useState(() => cachedStarred);
+  const [loading, setLoading] = useState(() => !(cachedStarred && cachedStarred.length > 0));
 
   // Filter states
   const [typeFilter, setTypeFilter] = useState('all');
@@ -36,22 +41,19 @@ const Stars = () => {
   // Scroll locks
   useScrollLock(isCreateListOpen || (isTypeOpen || isLanguageOpen || isSortOpen || isListSortOpen));
 
-
-  // Load data on component mount
-  const params = useParams();
   const fetchStarred = async () => {
-    const username = params?.username || 'moman';
     try {
       const starredRepos = await getStarredRepos(username);
-      setRepos(starredRepos);
+      setRepos(starredRepos || []);
     } catch (error) {
       console.error("Error fetching starred repos:", error);
-      setRepos([]);
     }
   };
 
   useEffect(() => {
-    setLoading(true);
+    if (!repos.length) {
+      setLoading(true);
+    }
     fetchStarred().finally(() => setLoading(false));
 
     window.addEventListener("github_stars_updated", fetchStarred);

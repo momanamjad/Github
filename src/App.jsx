@@ -22,9 +22,13 @@ const PackagesTab   = lazy(() => import("@features/tabs/Packages"));
 const RepoDetails   = lazy(() => import("@features/RepoDetails"));
 const NewRepoPage   = lazy(() => import("@features/NewRepoPage"));
 
+import { initRoutePreloader } from "./utils/routePreloader";
+
 const PageLoader = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <div className="spinner" aria-label="Loading..." role="status" />
+  <div className="max-w-7xl mx-auto px-4 py-8 animate-pulse w-full">
+    <div className="h-8 w-48 bg-gray-200 dark:bg-[#21262d] rounded mb-6" />
+    <div className="h-10 w-full bg-gray-200 dark:bg-[#21262d] rounded mb-4" />
+    <div className="h-64 w-full bg-gray-200 dark:bg-[#21262d] rounded" />
   </div>
 );
 
@@ -330,6 +334,7 @@ const App = () => {
 
   useEffect(() => {
     initializeStorage();
+    initRoutePreloader();
   }, []);
 
   // ARIA live announcement on route change
