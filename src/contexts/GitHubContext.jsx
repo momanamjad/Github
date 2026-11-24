@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage, writeCached, STORAGE_KEYS } from '../services/storageService';
 import { apiClient, resolveAvatarUrl } from '../services/apiClient';
-import { getRepos } from '../services/GithubApi';
+import { getRepos, clearClientCache } from '../services/GithubApi';
 
 const AuthContext = createContext();
 const RepoContext = createContext();
@@ -59,7 +59,7 @@ export const GitHubProvider = ({ children }) => {
 
     const logout = useCallback(() => {
         clearAllStorage();
-        localStorage.removeItem('github_token');
+        clearClientCache();
         setUser(null);
     }, []);
 

@@ -10,6 +10,7 @@ import rehypeSanitize from "rehype-sanitize";
 
 // ─── Constants ────────────────────────────────────────────────────
 const DAILY_LIMIT = 1500;
+const MAX_CHAT_HISTORY = 30; // Keep active context compact to save storage & parsing time
 const STORAGE_KEY_HISTORY = "buddy_chat_history";
 const STORAGE_KEY_VOICE   = "buddy_voice_uri";
 const STORAGE_KEY_QUERIES = "gemini_queries_today";
@@ -19,8 +20,9 @@ function loadPersistedMessages() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY_HISTORY);
         const parsed = saved ? JSON.parse(saved) : [];
+        const bounded = Array.isArray(parsed) ? parsed.slice(-MAX_CHAT_HISTORY) : [];
         // Ensure every stored message has a stable id
-        return parsed.map(m => ({ id: crypto.randomUUID(), ...m }));
+        return bounded.map(m => ({ id: crypto.randomUUID(), ...m }));
     } catch {
         return [];
     }
@@ -59,9 +61,11 @@ export default function Buddy() {
 
     // ── Persist messages to localStorage whenever they change ─────
     useEffect(() => {
-        // Strip transient `id` field before persisting (id is runtime-only)
-        const toStore = messages.map(({ id: _, ...rest }) => rest); // id intentionally omitted
-        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(toStore));
+        // Strip transient `id` field and retain only the most recent conversation window
+        const toStore = messages.slice(-MAX_CHAT_HISTORY).map(({ id: _, ...rest }) => rest);
+        try {
+            localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(toStore));
+        } catch {}
         // Defer credit update to avoid synchronous setState-in-effect
         const id = setTimeout(() => setCredits(getCurrentCredits()), 0);
         return () => clearTimeout(id);

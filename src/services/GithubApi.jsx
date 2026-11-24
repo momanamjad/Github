@@ -39,249 +39,121 @@ export const registerUser = async (login, email, password) => {
   return res.data;
 };
 
-// Persistent client cache with Stale-While-Revalidate (SWR) support
-const PROFILE_STORAGE_PREFIX = 'gh_profile_';
-const REPO_STORAGE_PREFIX = 'gh_repo_';
-const profileCache = new Map();
-const repoCache = new Map();
-const pendingRequests = new Map();
-const CACHE_TTL = 60 * 1000; // 60 seconds fresh TTL
+import { queryClient } from '../lib/queryClient';
+import {
+  queryKeys,
+  fetchUserWithRepos,
+  fetchRepo,
+  prefetchUserQuery,
+  prefetchRepoQuery,
+} from '../hooks/useQueries';
 
-// Storage helpers
-const readPersisted = (prefix, key) => {
+// One-time cleanup of legacy localStorage/sessionStorage cache keys
+if (typeof window !== 'undefined') {
   try {
-    const raw = localStorage.getItem(prefix + key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-};
+    ['localStorage', 'sessionStorage'].forEach((type) => {
+      const storage = window[type];
+      if (!storage) return;
+      for (let i = storage.length - 1; i >= 0; i--) {
+        const k = storage.key(i);
+        if (k && (k.startsWith('gh_profile_') || k.startsWith('gh_repo_') || k === 'gh_repo_lru_order')) {
+          storage.removeItem(k);
+        }
+      }
+    });
+  } catch {}
+}
 
-const writePersisted = (prefix, key, data, timestamp) => {
-  try {
-    localStorage.setItem(prefix + key, JSON.stringify({ data, timestamp }));
-  } catch (e) {
-    // Silently continue if quota exceeded
-  }
-};
-
-// Synchronous cache reader helpers (0ms latency)
+// Synchronous cache reader helpers (0ms latency, RAM-powered via TanStack Query)
 export const getCachedUserWithRepos = (username) => {
   if (!username) return null;
-  const key = username.toLowerCase();
-  let entry = profileCache.get(key);
-  if (!entry) {
-    const persisted = readPersisted(PROFILE_STORAGE_PREFIX, key);
-    if (persisted && persisted.data) {
-      profileCache.set(key, persisted);
-      entry = persisted;
-    }
-  }
-  return entry ? entry.data : null;
+  return queryClient.getQueryData(queryKeys.user(username)) ?? null;
 };
 
 export const getCachedUser = (username) => {
   const data = getCachedUserWithRepos(username);
-  return data?.data?.user ?? null;
+  return data?.data?.user ?? data?.user ?? null;
 };
 
 export const getCachedRepos = (username) => {
   const data = getCachedUserWithRepos(username);
-  return data?.data?.repos ?? null;
+  return data?.data?.repos ?? data?.repos ?? null;
 };
 
 export const getCachedRepo = (username, repoName) => {
   if (!username || !repoName) return null;
-  const key = `${username.toLowerCase()}/${repoName.toLowerCase()}`;
-  let entry = repoCache.get(key);
-  if (!entry) {
-    const persisted = readPersisted(REPO_STORAGE_PREFIX, key);
-    if (persisted && persisted.data) {
-      repoCache.set(key, persisted);
-      entry = persisted;
-    }
-  }
-  return entry ? entry.data : null;
+  return queryClient.getQueryData(queryKeys.repo(username, repoName)) ?? null;
 };
 
 export const invalidateUserCache = (username) => {
   if (username) {
-    const key = username.toLowerCase();
-    profileCache.delete(key);
-    pendingRequests.delete(key);
-    try {
-      localStorage.removeItem(PROFILE_STORAGE_PREFIX + key);
-    } catch {}
+    queryClient.invalidateQueries({ queryKey: queryKeys.user(username) });
   } else {
-    profileCache.clear();
-    repoCache.clear();
-    pendingRequests.clear();
-    try {
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith(PROFILE_STORAGE_PREFIX) || k.startsWith(REPO_STORAGE_PREFIX))) {
-          localStorage.removeItem(k);
-        }
-      }
-    } catch {}
+    queryClient.clear();
   }
 };
 
-// Get full user with repos and other associated data (SWR cached & deduplicated)
+export const clearClientCache = () => {
+  queryClient.clear();
+};
+
+// Get full user with repos and other associated data (TanStack Query managed, in-memory)
 export const getUserWithRepos = async (username, forceFresh = false) => {
   if (!username) return null;
-  const key = username.toLowerCase();
-
-  // Check in-memory or persisted cache
-  let entry = profileCache.get(key);
-  if (!entry) {
-    const persisted = readPersisted(PROFILE_STORAGE_PREFIX, key);
-    if (persisted && persisted.data) {
-      profileCache.set(key, persisted);
-      entry = persisted;
-    }
-  }
-
-  // If cached, return immediately (0ms) and revalidate in background if stale
-  if (!forceFresh && entry) {
-    const isFresh = (Date.now() - entry.timestamp) < CACHE_TTL;
-    if (isFresh) {
-      return entry.data;
-    }
-    // Stale-While-Revalidate in background
-    if (!pendingRequests.has(key)) {
-      const bgPromise = apiClient(`/auth/user/${username}`)
-        .then((res) => {
-          const timestamp = Date.now();
-          profileCache.set(key, { data: res, timestamp });
-          writePersisted(PROFILE_STORAGE_PREFIX, key, res, timestamp);
-          pendingRequests.delete(key);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('github_profile_revalidated', { detail: { username: key } }));
-          }
-          return res;
-        })
-        .catch(() => {
-          pendingRequests.delete(key);
-        });
-      pendingRequests.set(key, bgPromise);
-    }
-    return entry.data;
-  }
-
-  // Deduplicate concurrent in-flight requests
-  if (pendingRequests.has(key)) {
-    return pendingRequests.get(key);
-  }
-
-  const promise = apiClient(`/auth/user/${username}`)
-    .then((res) => {
-      const timestamp = Date.now();
-      profileCache.set(key, { data: res, timestamp });
-      writePersisted(PROFILE_STORAGE_PREFIX, key, res, timestamp);
-      pendingRequests.delete(key);
-      return res;
-    })
-    .catch((err) => {
-      pendingRequests.delete(key);
-      throw err;
+  if (forceFresh) {
+    return queryClient.fetchQuery({
+      queryKey: queryKeys.user(username),
+      queryFn: () => fetchUserWithRepos(username),
     });
-  pendingRequests.set(key, promise);
-  return promise;
+  }
+  return queryClient.ensureQueryData({
+    queryKey: queryKeys.user(username),
+    queryFn: () => fetchUserWithRepos(username),
+  });
 };
 
-// Prefetch helper for instant onHover clicks
+// Prefetch helper for instant onHover clicks (TanStack Query prefetch)
 export const prefetchUser = (username) => {
   if (!username) return;
-  const key = username.toLowerCase();
-  if (!profileCache.has(key) && !pendingRequests.has(key)) {
-    getUserWithRepos(username).catch(() => {});
-  }
+  prefetchUserQuery(username);
 };
 
 export const prefetchRepo = (username, repoName) => {
   if (!username || !repoName) return;
-  const key = `${username.toLowerCase()}/${repoName.toLowerCase()}`;
-  if (!repoCache.has(key)) {
-    getRepo(username, repoName).catch(() => {});
-  }
+  prefetchRepoQuery(username, repoName);
 };
 
 // Get user profile
 export const getUser = async (username) => {
   const res = await getUserWithRepos(username);
-  return res?.data?.user ?? null;
+  return res?.data?.user ?? res?.user ?? null;
 };
 
 // Get repositories
 export const getRepos = async (username) => {
   const res = await getUserWithRepos(username);
-  return res?.data?.repos || [];
+  return res?.data?.repos ?? res?.repos ?? [];
 };
 
 // Get starred repositories
 export const getStarredRepos = async (username) => {
   const res = await getUserWithRepos(username);
-  return res?.data?.starredRepos || [];
+  return res?.data?.starredRepos ?? res?.starredRepos ?? [];
 };
 
-// Get single repository details (with SWR caching)
+// Get single repository details (TanStack Query managed, in-memory)
 export const getRepo = async (username, repoName, forceFresh = false) => {
   if (!username || !repoName) return null;
-  const key = `${username.toLowerCase()}/${repoName.toLowerCase()}`;
-
-  // Check cache first
-  let cachedEntry = repoCache.get(key);
-  if (!cachedEntry) {
-    const persisted = readPersisted(REPO_STORAGE_PREFIX, key);
-    if (persisted && persisted.data) {
-      repoCache.set(key, persisted);
-      cachedEntry = persisted;
-    }
+  if (forceFresh) {
+    return queryClient.fetchQuery({
+      queryKey: queryKeys.repo(username, repoName),
+      queryFn: () => fetchRepo(username, repoName),
+    });
   }
-
-  if (!forceFresh && cachedEntry) {
-    const isFresh = (Date.now() - cachedEntry.timestamp) < CACHE_TTL;
-    if (isFresh) {
-      return cachedEntry.data;
-    }
-  }
-
-  // Direct fast lookup via indexed endpoint
-  try {
-    const detailRes = await apiClient(`/repos/owner/${encodeURIComponent(username)}/${encodeURIComponent(repoName)}`);
-    if (detailRes && detailRes.data) {
-      const timestamp = Date.now();
-      repoCache.set(key, { data: detailRes.data, timestamp });
-      writePersisted(REPO_STORAGE_PREFIX, key, detailRes.data, timestamp);
-      return detailRes.data;
-    }
-  } catch (err) {
-    // If direct lookup fails or 404s, fall back to checking user profile
-  }
-
-  if (cachedEntry) {
-    return cachedEntry.data;
-  }
-
-  const res = await getUserWithRepos(username);
-  const foundRepo = res?.data?.repos?.find(r => r.name.toLowerCase() === repoName.toLowerCase());
-  if (foundRepo) {
-    try {
-      const detailRes = await apiClient(`/repos/${foundRepo._id || foundRepo.id}`);
-      if (detailRes && detailRes.data) {
-        const timestamp = Date.now();
-        repoCache.set(key, { data: detailRes.data, timestamp });
-        writePersisted(REPO_STORAGE_PREFIX, key, detailRes.data, timestamp);
-        return detailRes.data;
-      }
-    } catch (err) {
-      console.error("Failed to fetch full repo details, using profile list data:", err);
-    }
-    return foundRepo;
-  }
-  throw new Error("Repo not found in user profile");
+  return queryClient.ensureQueryData({
+    queryKey: queryKeys.repo(username, repoName),
+    queryFn: () => fetchRepo(username, repoName),
+  });
 };
 
 // Get repo contents
