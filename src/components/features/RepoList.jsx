@@ -155,8 +155,14 @@ const RepoList = ({ repos }) => {
   const refreshData = useCallback(() => {
     // Star local backup or state
     try {
-      const storedStarred = JSON.parse(localStorage.getItem("starred_repo_ids") || "[]");
-      setStarredIds(storedStarred);
+      const rawStarred = sessionStorage.getItem("starred_repo_ids") || localStorage.getItem("starred_repo_ids");
+      const storedStarred = rawStarred ? JSON.parse(rawStarred) : null;
+      if (storedStarred) {
+        setStarredIds(storedStarred);
+      } else {
+        const starred = getStoredStarredRepos();
+        setStarredIds(starred.map(r => r._id || r.id));
+      }
     } catch {
       const starred = getStoredStarredRepos();
       setStarredIds(starred.map(r => r._id || r.id));
@@ -164,8 +170,14 @@ const RepoList = ({ repos }) => {
 
     // Pinned repos
     try {
-      const storedPinned = JSON.parse(localStorage.getItem("pinned_repo_ids") || "[]");
-      setPinnedIds(storedPinned);
+      const rawPinned = sessionStorage.getItem("pinned_repo_ids") || localStorage.getItem("pinned_repo_ids");
+      const storedPinned = rawPinned ? JSON.parse(rawPinned) : null;
+      if (storedPinned) {
+        setPinnedIds(storedPinned);
+      } else {
+        const pinned = getStoredPinnedRepos();
+        setPinnedIds(pinned.map(r => r._id || r.id));
+      }
     } catch {
       const pinned = getStoredPinnedRepos();
       setPinnedIds(pinned.map(r => r._id || r.id));
@@ -214,7 +226,10 @@ const RepoList = ({ repos }) => {
       } else {
         next = [...prev, repoId];
       }
-      localStorage.setItem("starred_repo_ids", JSON.stringify(next));
+      try {
+        sessionStorage.setItem("starred_repo_ids", JSON.stringify(next));
+        localStorage.removeItem("starred_repo_ids");
+      } catch {}
       window.dispatchEvent(new Event('github_starred_updated'));
       return next;
     });
@@ -248,7 +263,10 @@ const RepoList = ({ repos }) => {
       } else {
         next = [...prev, repoId];
       }
-      localStorage.setItem("pinned_repo_ids", JSON.stringify(next));
+      try {
+        sessionStorage.setItem("pinned_repo_ids", JSON.stringify(next));
+        localStorage.removeItem("pinned_repo_ids");
+      } catch {}
       window.dispatchEvent(new Event('github_pinned_updated'));
       return next;
     });

@@ -20,7 +20,8 @@ const PinnedRepoCard = ({
 
   useEffect(() => {
     try {
-      const storedStarred = JSON.parse(localStorage.getItem("starred_repo_ids") || "[]");
+      const raw = sessionStorage.getItem("starred_repo_ids") || localStorage.getItem("starred_repo_ids");
+      const storedStarred = raw ? JSON.parse(raw) : [];
       setIsStarred(storedStarred.includes(repo?._id || repo?.id));
     } catch {
       const starredRepos = getStoredStarredRepos();
@@ -61,13 +62,15 @@ const PinnedRepoCard = ({
       setStarCount(c => nextStarred ? c + 1 : Math.max(0, c - 1));
       
       try {
-        let stored = JSON.parse(localStorage.getItem("starred_repo_ids") || "[]");
+        const raw = sessionStorage.getItem("starred_repo_ids") || localStorage.getItem("starred_repo_ids");
+        let stored = raw ? JSON.parse(raw) : [];
         if (nextStarred) {
           if (!stored.includes(repoId)) stored.push(repoId);
         } else {
           stored = stored.filter(id => id !== repoId);
         }
-        localStorage.setItem("starred_repo_ids", JSON.stringify(stored));
+        sessionStorage.setItem("starred_repo_ids", JSON.stringify(stored));
+        localStorage.removeItem("starred_repo_ids");
       } catch (_err) {}
 
       window.dispatchEvent(new Event('github_starred_updated'));

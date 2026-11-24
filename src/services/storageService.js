@@ -1,4 +1,6 @@
 
+import { queryClient } from '../lib/queryClient';
+
 export const STORAGE_KEYS = {
   USER: 'github_user',
   REPOSITORIES: 'github_repositories',
@@ -421,17 +423,48 @@ export const getStoredRepoContents = (repoName) => {
 };
 
 /**
- * Clear all data from localStorage
- * Useful for testing or resetting the app
+ * Clear all user and application data from localStorage and sessionStorage
+ * Ensures zero data leakage between user sessions on logout
  */
 export const clearAllStorage = () => {
   try {
+    // 1. Clear known fixed keys
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
       delete _cache[key];
     });
-    localStorage.removeItem('github_token');
-    // Reset init promise so next mount re-seeds from JSON
+
+    const additionalKeys = [
+      'github_token',
+      'starred_repo_ids',
+      'pinned_repo_ids',
+      'github_cached_feed',
+      'recentProjects',
+    ];
+    additionalKeys.forEach(k => {
+      localStorage.removeItem(k);
+      delete _cache[k];
+    });
+
+    // 2. Scan and purge dynamic prefix keys (gh_repo_*, gh_profile_*)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('gh_repo_') || k.startsWith('gh_profile_') || k.startsWith('gh_feed_'))) {
+        localStorage.removeItem(k);
+      }
+    }
+
+    // 3. Purge session-scoped cache and query memory
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        sessionStorage.clear();
+      } catch {}
+    }
+    try {
+      queryClient.clear();
+    } catch {}
+
+    // Reset init promise so next mount re-seeds cleanly
     _initPromise = null;
     return true;
   } catch (error) {
