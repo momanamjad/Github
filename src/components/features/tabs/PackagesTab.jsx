@@ -47,17 +47,10 @@ const PackagesTab = ({ repoData }) => {
       formData.append('packageType', 'npm');
       formData.append('file', file);
 
-      // Using fetch directly because apiClient sends application/json usually
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/packages/upload', {
+      await apiClient('/packages/upload', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Upload failed');
       
       alert('Package uploaded successfully!');
       setShowUpload(false);

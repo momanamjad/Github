@@ -26,13 +26,6 @@ export const fetchUserWithRepos = async (username) => {
 
 export const fetchRepo = async (owner, repo) => {
   if (!owner || !repo) return null;
-  // Try indexed direct lookup endpoint first
-  try {
-    const res = await apiClient(`/repos/owner/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
-    if (res?.data) return res.data;
-  } catch {}
-  
-  // Fallback to searching user's repos
   const userProfile = await fetchUserWithRepos(owner);
   const found = userProfile?.repos?.find(r => r.name.toLowerCase() === repo.toLowerCase());
   if (found) {

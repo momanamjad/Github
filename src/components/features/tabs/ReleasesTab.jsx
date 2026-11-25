@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../../services/apiClient';
+import { generateIdenticon } from '../../../utils/identicon';
 import { TagIcon, TrashIcon, DownloadIcon, PlusIcon, InfoIcon } from '@primer/octicons-react';
 import MarkdownRenderer from '../../common/MarkdownRenderer';
 import { useGitHub } from '../../../contexts/GitHubContext';

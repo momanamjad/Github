@@ -1,5 +1,5 @@
-// API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// API Configuration (Rust CLI server runs on port 3001, separate from Express backend VITE_API_URL)
+export const API_URL = import.meta.env.VITE_CLI_API_URL || 'http://localhost:3001';
 export const WS_URL = import.meta.env.VITE_WS_URL || 
   (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//localhost:3001';
 

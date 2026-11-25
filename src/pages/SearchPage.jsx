@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
+import { generateIdenticon } from '../utils/identicon';
 import { RepoIcon, IssueOpenedIcon, GitPullRequestIcon, PeopleIcon, StarIcon, SearchIcon, FlameIcon } from '@primer/octicons-react';
 
 export default function SearchPage() {

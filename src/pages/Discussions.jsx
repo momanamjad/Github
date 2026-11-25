@@ -22,6 +22,35 @@ export default function Discussions() {
 
 
 
+  const fetchGlobalDiscussions = async () => {
+    if (!repositories || repositories.length === 0) {
+      setDiscussionsList([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const results = await Promise.all(
+        repositories.slice(0, 10).map(async (repo) => {
+          const id = repo._id || repo.id;
+          if (!id) return [];
+          try {
+            const res = await apiClient(`/repos/${id}/discussions`);
+            return (res?.data || []).map((d) => ({ ...d, repository: repo }));
+          } catch {
+            return [];
+          }
+        })
+      );
+      setDiscussionsList(results.flat());
+    } catch (err) {
+      setFetchError(err.message || "Failed to load discussions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchGlobalDiscussions();
   }, [repositories]);
