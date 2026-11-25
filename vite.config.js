@@ -55,7 +55,7 @@ export default defineConfig({
           },
           {
             // Backend API default fallback
-            urlPattern: /^https:\/\/github-backend\.vercel\.app\/api\//,
+            urlPattern: /^https:\/\/gtihub-backend\.vercel\.app\/api\//,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-default-cache',

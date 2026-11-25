@@ -49,6 +49,11 @@ const AuthPage = () => {
 
 
   useEffect(() => {
+    // Preload Home dashboard chunk while user is on the sign-in screen
+    import("@pages/Home").catch(() => {});
+  }, []);
+
+  useEffect(() => {
     setLoginUsername('');
     setEmail('');
     setPassword('');
@@ -60,19 +65,12 @@ const AuthPage = () => {
     setErrorMsg("");
     setLoading(true);
     try {
-      let loggedUser;
       if (activeTab === "login") {
-        const res = await login(email, password);
-        loggedUser = res?.data?.user;
+        await login(email, password);
       } else {
-        const res = await register(loginUsername, email, password);
-        loggedUser = res?.data?.user;
+        await register(loginUsername, email, password);
       }
-      if (loggedUser?.login) {
-        navigate(`/${loggedUser.login}`);
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     } catch (err) {
       setErrorMsg(err.message || "Authentication failed. Please check details.");
     } finally {
@@ -168,12 +166,8 @@ const AuthPage = () => {
           </div>
 
           <GoogleSignInButton
-            onSuccess={(u) => {
-              if (u?.login) {
-                navigate(`/${u.login}`);
-              } else {
-                navigate("/");
-              }
+            onSuccess={() => {
+              navigate("/");
             }}
             onFailure={(err) => {
               const msg = err.error === 'popup_closed_by_user' ? 'Sign-in was cancelled.' : 'Google Sign-In failed. Please try again.';
@@ -282,10 +276,28 @@ const AppContent = () => {
         <Route element={<RequireAuth><OpenMenuLayout /></RequireAuth>}>
           <Route path="/:username/:repo" element={<Suspense fallback={<PageLoader />}><RepoDetails /></Suspense>} />
         </Route>
+
+        {/* 404 Catch-all */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   );
 };
+
+const NotFoundPage = () => (
+  <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
+    <h1 className="text-4xl font-bold mb-2 text-[#1f2328] dark:text-white">404</h1>
+    <p className="text-sm text-[#57606a] dark:text-[#8b949e] mb-6">
+      This is not the web page you are looking for.
+    </p>
+    <Link
+      to="/"
+      className="px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white font-semibold text-sm rounded-md shadow-sm"
+    >
+      Go back home
+    </Link>
+  </div>
+);
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -295,6 +307,12 @@ class ErrorBoundary extends Component {
 
   static getDerivedStateFromError() {
     return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
   }
 
   componentDidCatch(error, errorInfo) {
@@ -359,7 +377,7 @@ const App = () => {
 
   return (
     <GitHubProvider>
-      <ErrorBoundary fallback={<ErrorPage />}>
+      <ErrorBoundary fallback={<ErrorPage />} resetKey={location.pathname}>
         {/* Screen Reader announcer */}
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           {announcement}

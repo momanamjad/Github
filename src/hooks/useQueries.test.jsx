@@ -13,4 +13,9 @@ describe('queryKeys factory', () => {
   it('handles empty path in repoContents query key', () => {
     expect(queryKeys.repoContents('user', 'repo', '')).toEqual(['repoContents', 'user', 'repo', '']);
   });
+
+  it('creates activityFeed query key with defaults and custom pagination', () => {
+    expect(queryKeys.activityFeed()).toEqual(['activityFeed', 1, 20]);
+    expect(queryKeys.activityFeed(2, 10)).toEqual(['activityFeed', 2, 10]);
+  });
 });
