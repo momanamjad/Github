@@ -74,6 +74,16 @@ const Navbar = () => {
   // Global Key Listeners
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
+      const target = e.target;
+      const isEditable =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable ||
+          Boolean(target.closest(".xterm, .monaco-editor")));
+      if (isEditable) return;
+
       // '/' to focus search
       if (e.key === "/" && document.activeElement !== searchInputRef.current) {
         e.preventDefault();

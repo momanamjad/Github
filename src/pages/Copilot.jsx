@@ -26,8 +26,13 @@ export default function CopilotChat() {
   const [selectedRepoId, setSelectedRepoId] = useState("");
   
   const [messages, setMessages] = useState(() => {
-    const saved = sessionStorage.getItem('copilot_messages');
-    return saved ? JSON.parse(saved) : [
+    try {
+      const saved = sessionStorage.getItem('copilot_messages');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      sessionStorage.removeItem('copilot_messages');
+    }
+    return [
       {
         id: 'welcome',
         role: 'assistant',

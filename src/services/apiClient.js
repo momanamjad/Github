@@ -129,7 +129,7 @@ export const apiClient = async (endpoint, options = {}) => {
           localStorage.removeItem('github_token');
           localStorage.removeItem('github_user');
           setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = '/';
           }, 0);
           throw new ApiError('Session expired', 401, 'SESSION_EXPIRED');
         }
