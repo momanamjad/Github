@@ -9,9 +9,15 @@ export const queryKeys = {
   starredRepos: (username) => ['starredRepos', username?.toLowerCase()],
   pinnedRepos: (username) => ['pinnedRepos', username?.toLowerCase()],
   repoContents: (owner, repo, path) => ['repoContents', owner?.toLowerCase(), repo?.toLowerCase(), path || ''],
+  activityFeed: (page = 1, limit = 20) => ['activityFeed', page, limit],
 };
 
 // Fetchers
+export const fetchActivityFeed = async (page = 1, limit = 20) => {
+  const res = await apiClient(`/users/activity/feed?page=${page}&limit=${limit}`);
+  return res?.data || { feed: [], total: 0 };
+};
+
 export const fetchUserWithRepos = async (username) => {
   if (!username) return null;
   const res = await apiClient(`/auth/user/${encodeURIComponent(username)}`);
@@ -58,6 +64,14 @@ export const useRepo = (owner, repo, options = {}) => {
   });
 };
 
+export const useActivityFeed = (page = 1, limit = 20, options = {}) => {
+  return useQuery({
+    queryKey: queryKeys.activityFeed(page, limit),
+    queryFn: () => fetchActivityFeed(page, limit),
+    ...options,
+  });
+};
+
 // Prefetch helpers (for route preloading / hover states)
 export const prefetchRepoQuery = (owner, repo) => {
   if (!owner || !repo) return;
@@ -73,6 +87,14 @@ export const prefetchUserQuery = (username) => {
   return queryClient.prefetchQuery({
     queryKey: queryKeys.user(username),
     queryFn: () => fetchUserWithRepos(username),
+    staleTime: 1000 * 60,
+  });
+};
+
+export const prefetchActivityFeed = (page = 1, limit = 20) => {
+  return queryClient.prefetchQuery({
+    queryKey: queryKeys.activityFeed(page, limit),
+    queryFn: () => fetchActivityFeed(page, limit),
     staleTime: 1000 * 60,
   });
 };

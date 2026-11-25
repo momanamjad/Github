@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage, writeCached, STORAGE_KEYS } from '../services/storageService';
 import { apiClient, resolveAvatarUrl } from '../services/apiClient';
 import { getRepos, clearClientCache } from '../services/GithubApi';
+import { prefetchUserQuery, prefetchActivityFeed } from '../hooks/useQueries';
 
 const AuthContext = createContext();
 const RepoContext = createContext();
@@ -17,6 +18,18 @@ export const GitHubProvider = ({ children }) => {
         return u;
     });
 
+    const completeAuthSession = useCallback((authData) => {
+      if (!authData?.accessToken) return;
+      localStorage.setItem('github_token', authData.accessToken);
+      localStorage.setItem('github_user', JSON.stringify(authData.user));
+      setUser(authData.user);
+      // Kick off Home feed + user profile/repos requests in parallel before navigation completes
+      if (authData.user?.login) {
+        prefetchUserQuery(authData.user.login);
+      }
+      prefetchActivityFeed(1, 20);
+    }, []);
+
     const login = useCallback(async (email, password) => {
       const res = await apiClient('/auth/login', {
         method: 'POST',
@@ -25,11 +38,9 @@ export const GitHubProvider = ({ children }) => {
       if (!res?.data?.accessToken) {
         throw new Error(res?.data?.message || 'Login failed: no token received');
       }
-      localStorage.setItem('github_token', res.data.accessToken);
-      localStorage.setItem('github_user', JSON.stringify(res.data.user));
-      setUser(res.data.user);
+      completeAuthSession(res.data);
       return res;
-    }, []);
+    }, [completeAuthSession]);
 
     const loginWithGoogle = useCallback(async (credential) => {
       const res = await apiClient('/auth/google-signin', {
@@ -37,12 +48,10 @@ export const GitHubProvider = ({ children }) => {
         body: JSON.stringify({ credential }),
       });
       if (res?.data?.accessToken) {
-        localStorage.setItem('github_token', res.data.accessToken);
-        localStorage.setItem('github_user', JSON.stringify(res.data.user));
-        setUser(res.data.user);
+        completeAuthSession(res.data);
       }
       return res;
-    }, []);
+    }, [completeAuthSession]);
 
     const register = useCallback(async (loginName, email, password) => {
       const res = await apiClient('/auth/register', {
@@ -50,12 +59,10 @@ export const GitHubProvider = ({ children }) => {
         body: JSON.stringify({ login: loginName, email, password }),
       });
       if (res?.data?.accessToken) {
-        localStorage.setItem('github_token', res.data.accessToken);
-        localStorage.setItem('github_user', JSON.stringify(res.data.user));
-        setUser(res.data.user);
+        completeAuthSession(res.data);
       }
       return res;
-    }, []);
+    }, [completeAuthSession]);
 
     const logout = useCallback(() => {
         clearAllStorage();

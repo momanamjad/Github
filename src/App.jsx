@@ -49,6 +49,11 @@ const AuthPage = () => {
 
 
   useEffect(() => {
+    // Preload Home dashboard chunk while user is on the sign-in screen
+    import("@pages/Home").catch(() => {});
+  }, []);
+
+  useEffect(() => {
     setLoginUsername('');
     setEmail('');
     setPassword('');
@@ -60,19 +65,12 @@ const AuthPage = () => {
     setErrorMsg("");
     setLoading(true);
     try {
-      let loggedUser;
       if (activeTab === "login") {
-        const res = await login(email, password);
-        loggedUser = res?.data?.user;
+        await login(email, password);
       } else {
-        const res = await register(loginUsername, email, password);
-        loggedUser = res?.data?.user;
+        await register(loginUsername, email, password);
       }
-      if (loggedUser?.login) {
-        navigate(`/${loggedUser.login}`);
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     } catch (err) {
       setErrorMsg(err.message || "Authentication failed. Please check details.");
     } finally {
@@ -168,12 +166,8 @@ const AuthPage = () => {
           </div>
 
           <GoogleSignInButton
-            onSuccess={(u) => {
-              if (u?.login) {
-                navigate(`/${u.login}`);
-              } else {
-                navigate("/");
-              }
+            onSuccess={() => {
+              navigate("/");
             }}
             onFailure={(err) => {
               const msg = err.error === 'popup_closed_by_user' ? 'Sign-in was cancelled.' : 'Google Sign-In failed. Please try again.';
