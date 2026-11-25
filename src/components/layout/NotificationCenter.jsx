@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BellIcon, CheckIcon } from "@primer/octicons-react";
-import { apiClient } from "@/services/apiClient";
+import { apiClient, getBackendBaseUrl } from "@/services/apiClient";
 import { useGitHub } from "@/contexts/GitHubContext";
-import { io } from "socket.io-client";
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://gtihub-backend.vercel.app/api';
-const SOCKET_URL = API_URL.replace('/api', '');
+const SOCKET_URL = getBackendBaseUrl();
 
 const NotificationCenter = () => {
   const { user } = useGitHub();
@@ -29,10 +27,12 @@ const NotificationCenter = () => {
     }
   };
 
+  const userId = user?._id || user?.id;
+
   useEffect(() => {
     fetchNotifications();
 
-    if (!user) return;
+    if (!userId) return;
 
     // Vercel serverless deployments do not support Socket.io stateful connections.
     // Fall back to polling for notifications if we are using the Vercel hosted backend.
@@ -47,23 +47,29 @@ const NotificationCenter = () => {
       };
     }
 
-    const socket = io(SOCKET_URL, {
-      withCredentials: true,
-      transports: ['websocket', 'polling']
-    });
+    let socket = null;
+    let cancelled = false;
 
-    const userId = user._id || user.id;
-    socket.emit('register', userId);
+    import("socket.io-client").then(({ io }) => {
+      if (cancelled) return;
+      socket = io(SOCKET_URL, {
+        withCredentials: true,
+        transports: ['websocket', 'polling']
+      });
 
-    socket.on('notification', (newNotif) => {
-      setNotifications(prev => [newNotif, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    });
+      socket.emit('register', userId);
+
+      socket.on('notification', (newNotif) => {
+        setNotifications(prev => [newNotif, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+    }).catch(() => {});
 
     return () => {
-      socket.disconnect();
+      cancelled = true;
+      if (socket) socket.disconnect();
     };
-  }, [user]);
+  }, [userId]);
 
   // Handle click outside to close dropdown
   useEffect(() => {

@@ -23,46 +23,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // skip files >3MB from precache
         runtimeCaching: [
           {
-            // Repositories listing cache - StaleWhileRevalidate
-            urlPattern: /\/api\/repos(?:\?.*)?$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'api-repos-list-cache',
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 }, // 5 minutes
-            },
-          },
-          {
-            // Repository details - CacheFirst (e.g. read-heavy branches/trees)
-            urlPattern: /\/api\/repos\/[^/]+(?:\?.*)?$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'api-repo-details-cache',
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 200, maxAgeSeconds: 2 * 60 }, // 2 minutes
-            },
-          },
-          {
-            // Users and auth profile - NetworkFirst
-            urlPattern: /\/api\/users(?:\/.*)?$|\/api\/auth\/me$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-users-cache',
-              networkTimeoutSeconds: 5,
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 50, maxAgeSeconds: 30 }, // 30 seconds
-            },
-          },
-          {
-            // Backend API default fallback
-            urlPattern: /^https:\/\/github-backend\.vercel\.app\/api\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-default-cache',
-              networkTimeoutSeconds: 8,
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 100, maxAgeSeconds: 30 },
-            },
+            // API requests are managed in-memory by TanStack Query; never cache authenticated API payloads in SW
+            urlPattern: /^https:\/\/(?:gtihub-backend|github-backend)\.vercel\.app\/api\/|\/api\//,
+            handler: 'NetworkOnly',
           },
           {
             // Gemini API — network-first with offline fallback

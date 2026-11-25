@@ -5,9 +5,10 @@ import OpenMenuLayout from "./layout/OpenMenuLayout";
 import { initializeStorage } from "@services/storageService";
 import { useGitHub, GitHubProvider } from "@contexts/GitHubContext";
 import { useDocumentTitle } from "@hooks/useDocumentTitle";
-import Buddy from "./bot/Buddy";
 import GoogleSignInButton from "./components/features/GoogleSignInButton";
 import "./bones/registry";
+
+const Buddy = lazy(() => import("./bot/Buddy"));
 
 
 const Profile       = lazy(() => import("@pages/Profile"));
@@ -231,7 +232,11 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-github-bg text-github-text text-[14px] leading-normal">
-      {user && <Buddy />}
+      {user && (
+        <Suspense fallback={null}>
+          <Buddy />
+        </Suspense>
+      )}
       <Routes>
         {/* Public Routes */}
         <Route path="/forgot-password" element={<ErrorBoundary fallback={<ErrorPage />}><Suspense fallback={<PageLoader />}><Pages.ForgotPassword /></Suspense></ErrorBoundary>} />
@@ -334,7 +339,7 @@ const App = () => {
 
   useEffect(() => {
     initializeStorage();
-    initRoutePreloader();
+    return initRoutePreloader();
   }, []);
 
   // ARIA live announcement on route change

@@ -89,7 +89,8 @@ export const invalidateUserCache = (username) => {
   if (username) {
     queryClient.invalidateQueries({ queryKey: queryKeys.user(username) });
   } else {
-    queryClient.clear();
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+    queryClient.invalidateQueries({ queryKey: ['repo'] });
   }
 };
 

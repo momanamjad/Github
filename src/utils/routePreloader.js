@@ -14,8 +14,16 @@ const chunkLoaders = {
   '/explore': () => import('../pages/Explore'),
   '/marketplace': () => import('../pages/Marketplace'),
   '/mcp-registry': () => import('../pages/MCPRegistry'),
+  '/organizations': () => import('../pages/OrganizationDashboard'),
+  '/gists': () => import('../pages/GistsPage'),
+  '/terminal': () => import('../pages/Terminal'),
+  '/search': () => import('../pages/SearchPage'),
+  '/forgot-password': () => import('../pages/ForgotPasswordPage'),
+  '/reset-password': () => import('../pages/ResetPasswordPage'),
   '/new': () => import('../components/features/NewRepoPage'),
 };
+
+const NON_DYNAMIC_PREFIXES = new Set(['stars', 'profile', 'login', 'register']);
 
 /**
  * Preloads both the route chunk and its corresponding API data on hover/touch
@@ -25,14 +33,18 @@ export const preloadRoute = (href) => {
   const path = href.split('?')[0].split('#')[0].toLowerCase();
 
   // 1. Preload Route Chunk if static match
-  if (chunkLoaders[path] && !preloadedChunks.has(path)) {
-    preloadedChunks.add(path);
-    chunkLoaders[path]().catch(() => {});
+  if (chunkLoaders[path]) {
+    if (!preloadedChunks.has(path)) {
+      preloadedChunks.add(path);
+      chunkLoaders[path]().catch(() => {});
+    }
     return;
   }
 
   // 2. Identify dynamic routes
   const segments = path.replace(/^\//, '').split('/');
+  if (NON_DYNAMIC_PREFIXES.has(segments[0])) return;
+
   if (segments.length === 2 && segments[0] && segments[1]) {
     // Repo route: /:username/:repo
     const [owner, repo] = segments;
@@ -58,7 +70,7 @@ export const preloadRoute = (href) => {
  * Attach global hover/touchstart delegation to prefetch routes instantly (Turbo-style)
  */
 export const initRoutePreloader = () => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return undefined;
 
   const handlePointerInteraction = (e) => {
     const anchor = e.target.closest('a[href], button[data-to]');
@@ -72,4 +84,9 @@ export const initRoutePreloader = () => {
 
   document.addEventListener('mouseover', handlePointerInteraction, { passive: true });
   document.addEventListener('touchstart', handlePointerInteraction, { passive: true });
+
+  return () => {
+    document.removeEventListener('mouseover', handlePointerInteraction);
+    document.removeEventListener('touchstart', handlePointerInteraction);
+  };
 };
