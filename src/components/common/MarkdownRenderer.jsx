@@ -56,8 +56,9 @@ export default function MarkdownRenderer({ content = '' }) {
         } else if (m.type === 'bold') {
           elements.push(<strong key={idx} className="font-bold">{m.text}</strong>);
         } else if (m.type === 'link') {
+          const safeHref = /^(https?:\/\/|mailto:|\/|#)/i.test(m.href?.trim() || '') ? m.href.trim() : '#';
           elements.push(
-            <a key={idx} href={m.href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <a key={idx} href={safeHref} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
               {m.text}
             </a>
           );

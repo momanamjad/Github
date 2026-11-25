@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BellIcon, CheckIcon } from "@primer/octicons-react";
-import { apiClient } from "@/services/apiClient";
+import { apiClient, getBackendBaseUrl } from "@/services/apiClient";
 import { useGitHub } from "@/contexts/GitHubContext";
 import { io } from "socket.io-client";
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://gtihub-backend.vercel.app/api';
-const SOCKET_URL = API_URL.replace('/api', '');
+const SOCKET_URL = getBackendBaseUrl();
 
 const NotificationCenter = () => {
   const { user } = useGitHub();
