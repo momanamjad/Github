@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import StarButton from "@/components/common/StarButton";
 import NewRepoBtn from "@/components/common/NewRepoBtn";
 import { useGitHub } from "@/contexts/GitHubContext";
@@ -9,7 +9,7 @@ import { Skeleton } from 'boneyard-js/react';
 import { HomeSidebarSkeleton, HomeFeedSkeleton } from "@features/HomeSkeleton";
 import { languageColors } from "@utils/LanguageColors.jsx";
 import PinnedRepoCard from "@features/PinnedRepoCard";
-import { getUserActivityFeed } from "@services/GithubApi.jsx";
+import { useActivityFeed } from "@hooks/useQueries";
 import { resolveAvatarUrl } from "@/services/apiClient";
 import { 
   Star, 
@@ -30,48 +30,10 @@ const Home = React.memo(() => {
   const [filterValue, setFilterValue] = useState('all');
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const [feedItems, setFeedItems] = useState(() => {
-    try {
-      const cached = localStorage.getItem('github_cached_feed');
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [isLoading, setIsLoading] = useState(() => {
-    try {
-      const cached = localStorage.getItem('github_cached_feed');
-      return !(cached && JSON.parse(cached).length > 0);
-    } catch {
-      return true;
-    }
-  });
-  const [feedError, setFeedError] = useState(null);
+  const { data: feedData, isLoading, error: feedQueryError } = useActivityFeed(1, 20);
+  const feedItems = feedData?.feed || [];
+  const feedError = feedQueryError ? "Failed to load activity feed." : null;
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const fetchFeed = async () => {
-      try {
-        const data = await getUserActivityFeed(1, 20, { signal: controller.signal });
-        if (data?.feed) {
-          setFeedItems(data.feed);
-          try {
-            localStorage.setItem('github_cached_feed', JSON.stringify(data.feed));
-          } catch {}
-        }
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Failed to load activity feed:", err);
-          setFeedError("Failed to load activity feed.");
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFeed();
-    return () => controller.abort();
-  }, []);
 
 
 
