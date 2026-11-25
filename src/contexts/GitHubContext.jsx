@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getStoredUser, updateStoredUser, getStoredStatus, updateStoredStatus, getStoredRepositories, clearAllStorage, writeCached, STORAGE_KEYS } from '../services/storageService';
 import { apiClient, resolveAvatarUrl } from '../services/apiClient';
 import { getRepos, clearClientCache } from '../services/GithubApi';
@@ -92,19 +92,16 @@ export const GitHubProvider = ({ children }) => {
 
     // 2. Repo Context State — Initialized synchronously from storage (0ms instant render)
     const [repositories, setRepositories] = useState(() => getStoredRepositories() || []);
-    const [isLoading, setIsLoading] = useState(() => {
-        const stored = getStoredRepositories();
-        return !(stored && stored.length > 0);
-    });
+    const hasReposRef = useRef(repositories.length > 0);
+    hasReposRef.current = repositories.length > 0;
+
+    const [isLoading, setIsLoading] = useState(() => !hasReposRef.current);
 
     const refreshRepos = useCallback(async () => {
         // Only show skeleton if we have zero cached repositories to display
-        setRepositories(prev => {
-            if (!prev || prev.length === 0) {
-                setIsLoading(true);
-            }
-            return prev;
-        });
+        if (!hasReposRef.current) {
+            setIsLoading(true);
+        }
 
         if (user?.login) {
             try {
@@ -197,13 +194,26 @@ export const GitHubProvider = ({ children }) => {
     );
 };
 
+// Focused context hooks to avoid unnecessary re-renders
+export const useAuth = () => {
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error('useAuth must be used within a GitHubProvider');
+    return ctx;
+};
+
+export const useRepos = () => {
+    const ctx = useContext(RepoContext);
+    if (!ctx) throw new Error('useRepos must be used within a GitHubProvider');
+    return ctx;
+};
+
+export const useUI = () => {
+    const ctx = useContext(UIContext);
+    if (!ctx) throw new Error('useUI must be used within a GitHubProvider');
+    return ctx;
+};
+
 // Unified hook exposing sub-contexts transparently to consumers
 export const useGitHub = () => {
-    const authCtx = useContext(AuthContext);
-    const repoCtx = useContext(RepoContext);
-    const uiCtx   = useContext(UIContext);
-    if (!authCtx || !repoCtx || !uiCtx) {
-        throw new Error('useGitHub must be used within a GitHubProvider');
-    }
-    return { ...authCtx, ...repoCtx, ...uiCtx };
+    return { ...useAuth(), ...useRepos(), ...useUI() };
 };

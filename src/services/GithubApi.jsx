@@ -1,19 +1,11 @@
 import { apiClient } from "./apiClient.js";
 import {
-  getStoredUser,
-  getStoredRepositories,
-  getStoredStarredRepos,
-  getStoredPinnedRepos,
   getStoredRepoContents,
   initializeStorage,
 } from "./storageService.js";
-import { createUserData } from "./staticData.js";
 
 // Ensure storage is initialized once (for fallback offline mode)
 const storageReady = initializeStorage();
-
-// Simulated delay for fallback mock data
-const simulateDelay = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Authenticate / Login user
 export const loginUser = async (email, password) => {
